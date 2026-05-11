@@ -10,7 +10,6 @@ import plotly.graph_objects as go
 st.set_page_config(page_title="Protellect", page_icon="🔬", layout="wide",
                    initial_sidebar_state="expanded")
 
-# ── Proper module imports (no exec hacks) ─────────────────────────────────
 import ui
 from auth import (is_authenticated, render_login, render_quota_banner,
                   logout, can_search, record_search, current_user)
@@ -30,21 +29,18 @@ DOMAINS = ["Neuroscience","Cancer Biology","Pharmaceuticals","Microbiome","Molec
 DOMAIN_ICONS = {"Neuroscience":"🧠","Cancer Biology":"🎗","Pharmaceuticals":"💊",
                 "Microbiome":"🦠","Molecular Biology":"⚛️"}
 
-# ── Session defaults ───────────────────────────────────────────────────────
 for k,v in {"auth_user":None,"searches_used":0,"workspace":[],"current_protein":None,
             "protein_data_cache":{},"domain":None,"research_goal":"Drug target identification",
             "anthropic_key":"","sensitivity":0.70,"csv_data":None,"wet_lab_text":"",
             "_qval":"","_dval":"","_trigger_search":False,"_trigger_disease":False}.items():
     if k not in st.session_state: st.session_state[k]=v
 
-# ── Auth gate ──────────────────────────────────────────────────────────────
 if not is_authenticated():
     render_login()
     st.stop()
 
 user = current_user()
 
-# ── Sidebar ────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown(f"""<div style="padding:10px 0 6px">
       <span style="font-size:1.1rem;font-weight:800;background:linear-gradient(90deg,#00e5ff,#7c3aed);
@@ -80,7 +76,7 @@ with st.sidebar:
 
     st.markdown(ui.lbl("WET-LAB DATA (CSV)"), unsafe_allow_html=True)
     with st.expander("▸ Accepted formats", expanded=False):
-        st.markdown('<div style="color:#2a5070;font-size:.7rem">ClinVar export, VCF variants, AlphaMissense TSV, proteomics CSV (gene, fc, p-value). Max 50MB.</div>', unsafe_allow_html=True)
+        st.markdown('<div style="color:#2a5070;font-size:.7rem">ClinVar export, VCF variants, AlphaMissense TSV, proteomics CSV. Max 50MB.</div>', unsafe_allow_html=True)
     csv_file = st.file_uploader("csv_up", type=["csv","txt","tsv"],
                                  label_visibility="collapsed", key="csv_uploader")
     if csv_file:
@@ -102,7 +98,7 @@ with st.sidebar:
 
     st.markdown(ui.lbl("WET-LAB ASSAY"), unsafe_allow_html=True)
     wl = st.text_area("wl", value=st.session_state.wet_lab_text,
-                       placeholder="Describe assay result — e.g. Ser2152-P detected at 10nM, abolished in R2149Q variant.",
+                       placeholder="Describe assay result — e.g. Ser2152-P detected at 10nM.",
                        label_visibility="collapsed", height=60, key="wet_lab_input")
     st.session_state.wet_lab_text = wl
 
@@ -123,14 +119,12 @@ with st.sidebar:
     with c3:
         if st.button("Logout", use_container_width=True): logout(); st.rerun()
 
-# ── Domain landing ─────────────────────────────────────────────────────────
 if not st.session_state.domain:
     ui.show_domain_landing()
     st.stop()
 
 domain = st.session_state.domain
 
-# ── Header ─────────────────────────────────────────────────────────────────
 st.markdown(f"""<div style="display:flex;align-items:center;gap:8px;padding:2px 0;margin-bottom:4px">
   <span style="font-size:.85rem;font-weight:700;color:#00e5ff">🔬 Protellect</span>
   <span style="color:#1e3a5f;font-size:.75rem">—</span>
@@ -138,7 +132,6 @@ st.markdown(f"""<div style="display:flex;align-items:center;gap:8px;padding:2px 
   <span style="color:#1e3a5f;font-size:.7rem;margin-left:auto;font-family:monospace">{st.session_state.research_goal[:35]}</span>
 </div>""", unsafe_allow_html=True)
 
-# Domain switcher (compact)
 dc = st.columns(len(DOMAINS))
 for i,d in enumerate(DOMAINS):
     with dc[i]:
@@ -146,33 +139,28 @@ for i,d in enumerate(DOMAINS):
                      type="primary" if d==domain else "secondary"):
             st.session_state.domain=d; st.session_state.current_protein=None; st.rerun()
 
-# ── Disease trigger ────────────────────────────────────────────────────────
 if st.session_state._trigger_disease and st.session_state._dval:
     st.session_state._trigger_disease = False
     ui.show_disease_link_inline(st.session_state._dval)
     st.stop()
 
-# ── Microbiome ─────────────────────────────────────────────────────────────
 if domain == "Microbiome":
     T.show_microbiome()
     st.stop()
 
-# ── No query ───────────────────────────────────────────────────────────────
 query = st.session_state._qval.strip()
 if not query and not st.session_state._trigger_search:
     ui.show_domain_workspace(domain)
     st.stop()
 st.session_state._trigger_search = False
 
-# ── Validation ─────────────────────────────────────────────────────────────
 if any(t in query.lower() for t in NON_HUMAN_TERMS):
-    st.error(f"⛔ '{query}' is not a human protein. Protellect analyses human proteins only (taxon 9606).")
+    st.error(f"⛔ '{query}' is not a human protein. Protellect analyses human proteins only.")
     st.stop()
 if not can_search():
     st.error("Search quota exhausted.")
     st.stop()
 
-# ── Load data ──────────────────────────────────────────────────────────────
 cache_key = query.upper()
 if cache_key not in st.session_state.protein_data_cache:
     prog = st.progress(0, text=f"Resolving {query}…")
@@ -180,7 +168,7 @@ if cache_key not in st.session_state.protein_data_cache:
         prog.progress(5,  "UniProt…");       uraw = fetch_uniprot(query)
         prog.progress(15, "Parsing…");       pdata = parse_uniprot(uraw)
         if not pdata or not pdata.get("accession"):
-            st.error(f"⛔ '{query}' not found in UniProt Swiss-Prot. Use the official gene symbol."); st.stop()
+            st.error(f"⛔ '{query}' not found in UniProt Swiss-Prot."); st.stop()
         if not pdata.get("is_human", True):
             st.error(f"⛔ Not human (organism: {pdata.get('organism','?')})."); st.stop()
         gene=pdata["gene"] or query.upper(); acc=pdata["accession"]
@@ -214,7 +202,6 @@ if cache_key not in st.session_state.protein_data_cache:
 else:
     st.session_state.current_protein = cache_key
 
-# ── Retrieve ───────────────────────────────────────────────────────────────
 D     = st.session_state.protein_data_cache[cache_key]
 pdata = D["pdata"]; pdb=D["pdb"]; plddt=D["plddt"]; cv=D["cv"]
 gnomad= D["gnomad"]; string=D["string"]; ot=D["ot"]; am=D["am"]
@@ -227,7 +214,6 @@ is_cardiac= gene.upper() in {"ADRB1","ADRB2","AGTR1","CHRM2"}
 is_filamin= any(k in " ".join(pdata.get("functions",[])+pdata.get("keywords",[])).lower()
                 for k in ["filamin","actin-binding protein 280"])
 
-# ── Protein header (compact) ───────────────────────────────────────────────
 vcolor=gi["color"]; verdict=gi["verdict"]
 flags = ""
 if is_gpcr:    flags += ' <span style="background:rgba(0,229,255,0.1);color:#00e5ff;border:1px solid rgba(0,229,255,0.3);border-radius:3px;padding:1px 6px;font-size:.65rem">GPCR</span>'
@@ -249,12 +235,10 @@ st.markdown(f"""<div style="display:flex;align-items:flex-start;gap:8px;padding:
   </div>
 </div>""", unsafe_allow_html=True)
 
-# ── ARRB intercept ─────────────────────────────────────────────────────────
 if is_arrb:
     T.show_arrb_analysis(gene, cv, pdata)
     st.stop()
 
-# ── Tabs ───────────────────────────────────────────────────────────────────
 t0,t1,t2,t3,t4,t5,t6,t7,t8 = st.tabs([
     "📊 Summary","🎯 Triage","🔬 Case Study","🧩 Explorer",
     "⚗️ Experiments","📋 CSV Analysis","🤖 AI Report","📁 Workspace","🦠 Disease Link"])
