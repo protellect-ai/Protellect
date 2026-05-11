@@ -1,7 +1,7 @@
 from __future__ import annotations
 # ═══════════════════════════════════════════════════════════════════
 #  Protellect v6 — single-file, no local imports
-#  All new: pursue banner · disease→proteins · GPCR detail ·
+#  All new: pursue banner · disease→proteins · GPCR detail · 
 #           genomic visual · mutation cascade · source links ·
 #           plain-language terms · CSV standalone · fixed empty sections
 # ═══════════════════════════════════════════════════════════════════
