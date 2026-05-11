@@ -8,12 +8,12 @@ st.set_page_config(page_title="Protellect", page_icon="🔬", layout="wide",
 
 st.markdown("""<style>
 @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap');
-body,p,div,span,input,textarea,button,select,label,h1,h2,h3,h4,h5,h6,.stMarkdown,.stText{font-family:'Quicksand',sans-serif!important}
+.stMarkdown *,[data-testid='stSidebar'] label,[data-testid='stMetricLabel'],[data-testid='stMetricValue'],[data-testid='stTextInput'] input,[data-testid='stAlert'] *{font-family:'Quicksand',sans-serif!important;font-size:12px}
 html,body,[data-testid="stAppViewContainer"]{background:#010306!important}
-#MainMenu,footer,header,[data-testid="stToolbar"]{visibility:hidden;height:0}
+#MainMenu,footer,header,[data-testid="stToolbar"],[data-testid="stSidebarCollapseButton"],[data-testid="collapsedControl"]{display:none!important;visibility:hidden!important;height:0!important;overflow:hidden!important}
 .block-container{padding:.5rem 1.2rem!important;max-width:100%}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#0d1a2a;border-radius:2px}
-[data-testid="stSidebar"]{background:#020609!important;border-right:1px solid #0a1520!important;min-width:240px!important;max-width:265px!important}
+[data-testid="stSidebar"]{background:#020609!important;border-right:1px solid #0a1520!important;min-width:252px!important;max-width:252px!important;display:block!important;transform:translateX(0)!important}
 [data-testid="stSidebar"] .block-container{padding:.5rem .7rem!important}
 [data-testid="stTabs"] [data-baseweb="tab-list"]{background:#020609;border-radius:5px;padding:2px;gap:1px;border:1px solid #0a1520}
 [data-testid="stTabs"] [data-baseweb="tab"]{border-radius:4px;color:#2a5070;font-size:.74rem;font-weight:500;padding:4px 10px;min-height:26px}
@@ -175,10 +175,35 @@ def _parse(e):
     seq = e.get("sequence", {}).get("value", "")
     genes = [g.get("geneName", {}).get("value", "") for g in e.get("genes", []) if g.get("geneName", {}).get("value")]
     diseases, functions, subcell, domains_f = [], [], [], []
+    # Also extract variants from UniProt features (reliable fallback for ClinVar)
+    uni_variants = []
+    for f in e.get("features", []):
+        if f.get("type") == "NATURAL_VARIANT":
+            desc = f.get("description", "")
+            loc = f.get("location", {}); pos = loc.get("start", {}).get("value", 0)
+            orig = f.get("alternativeSequence", {}).get("originalSequence", "")
+            alt_list = f.get("alternativeSequence", {}).get("alternativeSequences", [])
+            alt = alt_list[0] if alt_list else "?"
+            conds = [a.get("name", "") for a in f.get("evidences", []) if a.get("name")]
+            is_path = any(k in desc.lower() for k in ["disease", "pathogenic", "associated"])
+            if is_path or "in " in desc.lower():
+                cls = "CRITICAL" if "disease" in desc.lower() else "HIGH"
+                uni_variants.append({
+                    "id": f.get("ftId", f"UNI{pos}"),
+                    "title": f"{orig}{pos}{alt} — {desc[:60]}",
+                    "significance": "Pathogenic" if cls=="CRITICAL" else "Likely pathogenic",
+                    "ml_class": cls,
+                    "protein_change": f"{orig}{pos}{alt}",
+                    "position": pos,
+                    "conditions": [desc[:50]] if desc else [],
+                    "stars": 2,
+                    "url": f"https://www.uniprot.org/uniprotkb/{e.get('primaryAccession','')}/entry#disease_variants"
+                })
     for c in e.get("comments", []):
         ct = c.get("commentType", "")
         if ct == "DISEASE":
-            d = c.get("disease", {}); diseases.append({"name": d.get("name", d.get("diseaseName", "?")), "desc": d.get("description", "")[:180]})
+            d = c.get("disease", {})
+            diseases.append({"name": d.get("name") or d.get("diseaseName") or "Unnamed disease", "desc": d.get("description", "")[:180]})
         elif ct == "FUNCTION":
             for t in c.get("texts", []): functions.append(t.get("value", "")[:300])
         elif ct == "SUBCELLULAR LOCATION":
@@ -191,7 +216,7 @@ def _parse(e):
     kws = [k.get("name", "") for k in e.get("keywords", [])]; kl = " ".join(kws).lower()
     is_gpcr = any(x in kl for x in ["g protein-coupled","gpcr","seven-transmembrane"])
     org = e.get("organism", {}); taxid = org.get("taxonId", 0)
-    return {"accession": e.get("primaryAccession",""), "gene": genes[0] if genes else "",
+    return {"uni_variants": uni_variants, "accession": e.get("primaryAccession",""), "gene": genes[0] if genes else "",
             "protein_name": e.get("proteinDescription",{}).get("recommendedName",{}).get("fullName",{}).get("value",""),
             "organism": org.get("scientificName",""), "taxon_id": taxid, "is_human": taxid == 9606,
             "sequence": seq, "seq_len": len(seq), "diseases": diseases, "functions": functions,
@@ -202,7 +227,7 @@ def _parse(e):
 def _clinvar(gene, mx=50):
     try:
         r = requests.get("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi",
-            params={"db":"clinvar","term":f"{gene}[gene] AND (pathogenic[clinsig] OR likely_pathogenic[clinsig])","retmax":mx,"retmode":"json"}, headers=HDR, timeout=20)
+            params={"db":"clinvar","term":f"{gene}[gene] AND homo sapiens[organism]","retmax":mx,"retmode":"json"}, headers=HDR, timeout=15)
         ids = r.json().get("esearchresult", {}).get("idlist", [])
         if not ids: return []
         time.sleep(0.35)
@@ -490,9 +515,12 @@ el.addEventListener('click',()=>{{el.style.transform='scale(0.97)';setTimeout(()
     components.html(html, height=640, scrolling=False)
     cols = st.columns(5)
     for i,(d,m) in enumerate(DOMAIN_META.items()):
+        c = m.get("color","#00e5ff")
         with cols[i]:
-            if st.button(f"{m['icon']} {d}", key=f"dl_{d}", use_container_width=True):
+            st.markdown(f'<style>#db{i}>div>button{{background:{c}0d;border:1px solid {c}40;color:{c};font-weight:600;border-radius:8px;font-size:.78rem}}#db{i}>div>button:hover{{background:{c}1c;transform:translateY(-2px)}}</style><div id="db{i}">', unsafe_allow_html=True)
+            if st.button(f"{m['icon']}  {d}", key=f"dl_{d}", use_container_width=True):
                 st.session_state.domain = d; st.rerun()
+            st.markdown("</div>", unsafe_allow_html=True)
 
 # ── sidebar ───────────────────────────────────────────────────────────────
 user = _user()
@@ -553,8 +581,11 @@ st.markdown(f"""<div style="display:flex;align-items:center;gap:8px;padding:2px 
 <span style="font-size:.85rem;font-weight:700;color:#00e5ff">🔬 Protellect</span><span style="color:#1e3a5f">—</span>
 <span style="color:#4a7090;font-size:.75rem">{ICONS.get(domain,'')} {domain}</span>
 <span style="color:#1e3a5f;font-size:.68rem;margin-left:auto;font-family:monospace">{st.session_state.research_goal[:35]}</span></div>""", unsafe_allow_html=True)
-if st.button(f"← Back to Domains", key="back_domains", help="Return to domain selection"):
-    st.session_state.domain = None; st.session_state.current_protein = None; st.rerun()
+dc = st.columns(5)
+for i,d in enumerate(["Neuroscience","Cancer Biology","Pharmaceuticals","Microbiome","Molecular Biology"]):
+    with dc[i]:
+        if st.button(f"{ICONS[d]} {d}", key=f"dt_{d}", use_container_width=True, type="primary" if d==domain else "secondary"):
+            st.session_state.domain=d; st.session_state.current_protein=None; st.rerun()
 
 # ── disease trigger ───────────────────────────────────────────────────────
 if st.session_state._dtrig and st.session_state._dval:
@@ -632,19 +663,8 @@ if not query and not st.session_state._trig:
                 if st.button(ex, key=f"dex_{ex}_{domain}", use_container_width=True): st.session_state._qval=ex; st.rerun()
     st.stop()
 st.session_state._trig = False
-# Normalise common name variants to gene symbols before searching
-_NAME_MAP = {
-    "filamin a": "FLNA", "filamin-a": "FLNA", "filamin alpha": "FLNA",
-    "beta arrestin 2": "ARRB2", "beta-arrestin-2": "ARRB2", "beta arrestin2": "ARRB2",
-    "beta arrestin 1": "ARRB1", "p53": "TP53", "p21": "CDKN1A",
-    "beta 2 adrenergic": "ADRB2", "beta-2 adrenergic": "ADRB2",
-    "angiotensin ii receptor": "AGTR1", "dopamine d2": "DRD2",
-    "lrrk2 kinase": "LRRK2", "alpha synuclein": "SNCA", "alpha-synuclein": "SNCA",
-    "tau": "MAPT", "amyloid precursor": "APP", "brca": "BRCA1",
-    "egfr": "EGFR", "kras": "KRAS", "ras": "KRAS",
-}
-query = _NAME_MAP.get(query.lower(), query)
-st.session_state._qval = query
+_NAMES={"filamin a":"FLNA","filamin":"FLNA","filamin-a":"FLNA","beta arrestin 2":"ARRB2","beta-arrestin-2":"ARRB2","arrestin 2":"ARRB2","beta arrestin 1":"ARRB1","p53":"TP53","alpha synuclein":"SNCA","alpha-synuclein":"SNCA","tau":"MAPT","amyloid precursor":"APP","beta 2 adrenergic":"ADRB2","beta-2 adrenergic":"ADRB2","grk2":"GRK2","akt":"AKT1","brca":"BRCA1","kras":"KRAS"}
+query=_NAMES.get(query.strip().lower(),query); st.session_state._qval=query
 if any(t in query.lower() for t in NON_HUMAN): st.error(f"⛔ '{query}' is not a human protein."); st.stop()
 if not _can(): st.error("Quota exhausted."); st.stop()
 
@@ -660,6 +680,13 @@ if ck not in st.session_state.protein_data_cache:
         gene = pdata["gene"] or query.upper(); acc = pdata["accession"]
         prog.progress(25,"AlphaFold…"); pdb = _alphafold(acc); plddt = _plddt(pdb)
         prog.progress(35,"ClinVar…"); cv = _clinvar(gene)
+        # Merge UniProt natural variants if ClinVar returns few results
+        _uni_v = pdata.get("uni_variants", [])
+        if len(cv) < 5 and _uni_v:
+            _existing = {v.get("position",0) for v in cv}
+            for _uv in _uni_v:
+                if _uv.get("position",0) not in _existing: cv.append(_uv)
+            cv = sorted(cv, key=lambda x: x.get("ml_class","LOW")=="CRITICAL", reverse=True)
         prog.progress(50,"gnomAD + STRING…"); gnomad = _gnomad(gene); string_d = _string(gene)
         prog.progress(62,"OpenTargets…"); ot = _opentargets(gene); dgidb = _dgidb(gene)
         prog.progress(74,"AlphaMissense + PubMed…"); am = _alphamissense(acc); papers = _pubmed(gene)
