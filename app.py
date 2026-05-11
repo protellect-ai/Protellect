@@ -231,7 +231,7 @@ NAME_MAP = {
     "beta arrestin 1":"ARRB1","arrestin 1":"ARRB1",
     "p53":"TP53","tumor protein p53":"TP53","p21":"CDKN1A",
     "alpha synuclein":"SNCA","alpha-synuclein":"SNCA","synuclein":"SNCA",
-    "tau":"MAPT","tau protein":"MAPT","microtubule-associated protein tau":"MAPT",
+    "tau":"MAPT","tau protein":"MAPT","trpc":"TRPC3","trpc1":"TRPC1","trpc2":"TRPC2","trpc3":"TRPC3","trpc4":"TRPC4","trpc5":"TRPC5","trpc6":"TRPC6","trpc7":"TRPC7","cftr":"CFTR","dystrophin":"DMD","huntingtin":"HTT","titin":"TTN","ryanodine":"RYR1","calmodulin":"CALM1","calcineurin":"PPP3CA","myosin":"MYH7","actin":"ACTB","tubulin":"TUBB","cofilin":"CFL1","profilin":"PFN1","gelsolin":"GSN","vinculin":"VCL","talin":"TLN1","paxillin":"PXN","zyxin":"ZYX","tensin":"TNS1","microtubule-associated protein tau":"MAPT",
     "amyloid precursor":"APP","amyloid":"APP","amyloid beta precursor":"APP",
     "beta 2 adrenergic":"ADRB2","beta-2 adrenergic":"ADRB2","b2ar":"ADRB2","beta2ar":"ADRB2",
     "beta 1 adrenergic":"ADRB1","b1ar":"ADRB1",
@@ -1145,6 +1145,11 @@ with t0:
 <div><span style="font-size:.95rem;font-weight:800;color:{vcolor}">{pl}</span> <span style="background:{vcolor}18;color:{vcolor};border-radius:4px;padding:1px 7px;font-size:.67rem;font-weight:700">{verdict}</span></div>
 <div style="color:{vcolor}88;font-size:.72rem;flex:1">{' · '.join(gi_s.get('reasons',[])[:3])}</div></div>""", unsafe_allow_html=True)
     
+    # ALWAYS show AlphaFold structure preview at top of Summary
+    if pdb:
+        with st.expander("🔬 AlphaFold 3D Structure Preview — click Triage tab for full interactive view", expanded=False):
+            _viewer3d(pdb, cv=cv, style="plddt", height=320, spin=False, show_variants=True)
+    
     c1,c2,c3,c4,c5,c6 = st.columns(6)
     c1.metric("Diseases",len(pdata.get("diseases",[])))
     c2.metric("P/LP Variants",gi_s.get("n_pathogenic",0))
@@ -1160,7 +1165,15 @@ with t0:
             n=d.get("name","?"); desc=d.get("desc","")[:120]; inh=d.get("inheritance","Unknown")
             cc="#ff8c42" if inh=="Somatic" else "#818cf8" if inh=="Germline" else "#3a5570"
             st.markdown(f'<div style="display:flex;gap:6px;padding:5px 0;border-bottom:1px solid #0d1a2a"><span style="color:{cc};font-size:.62rem;font-weight:600;min-width:58px">{inh}</span><div><b style="color:#d0e8ff;font-size:.73rem">{n}</b><br><span class="dim">{desc}</span></div></div>', unsafe_allow_html=True)
-        if not pdata.get("diseases"): st.markdown('<div class="dim" style="padding:8px">No disease annotations — null mutant with no phenotype. Consider deprioritising.</div>', unsafe_allow_html=True)
+        if not pdata.get("diseases"):
+            st.markdown(f'''<div style="background:rgba(58,85,112,.08);border:1px solid #1a2a3a;border-radius:8px;padding:12px 16px">
+<div style="color:#ffd60a;font-size:.74rem;font-weight:600;margin-bottom:6px">No Confirmed Disease Associations</div>
+<div class="dim" style="line-height:1.7">ClinVar has no pathogenic variants for <b style="color:#d0e8ff">{gene}</b> and UniProt lists no disease annotations.<br>
+<br>This does not mean the protein is unimportant — it may mean:<br>
+▸ The gene is understudied or rarely submitted to ClinVar<br>
+▸ Loss-of-function is embryonic lethal (pLI={gnomad.get("pLI","N/A")} — check below)<br>
+▸ The protein is redundant in vivo (compensated by paralogs)<br>
+<br>Use the gnomAD constraint, STRING network, and GTEx expression (right column) to assess relevance before deprioritising.</div></div>''', unsafe_allow_html=True)
         
         _sec("Highest-Priority Variants")
         path_v = [v for v in cv if v.get("ml_class") in ("CRITICAL","HIGH")][:8]
@@ -1172,6 +1185,16 @@ with t0:
         if not path_v: st.markdown('<div class="dim" style="padding:6px">No pathogenic/likely pathogenic variants in ClinVar or UniProt.</div>', unsafe_allow_html=True)
     
     with cr:
+        # ALWAYS show protein function even with 0 variants
+        fns = pdata.get("functions",[])
+        if fns:
+            st.markdown(f'<div class="card" style="font-size:.73rem;color:#d0e8ff;line-height:1.7;margin-bottom:8px">{fns[0][:280]}</div>', unsafe_allow_html=True)
+        
+        # ALWAYS show subcellular location
+        locs = pdata.get("subcellular",[])
+        if locs:
+            st.markdown('<div style="margin-bottom:8px">' + " ".join(f'<span class="pill">{l}</span>' for l in locs[:6]) + '</div>', unsafe_allow_html=True)
+
         _sec("gnomAD Constraint")
         for lbl2,val,thresh,dh in [("pLI",gnomad.get("pLI"),0.9,"high"),("o/e LoF",gnomad.get("lof_oe"),0.35,"low"),("o/e Missense",gnomad.get("missense_oe"),0.6,"low")]:
             if val is None: continue
@@ -1192,6 +1215,20 @@ with t0:
             _sec("Active Clinical Trials")
             for t in trials[:3]:
                 st.markdown(f'<div class="dim"><a href="{t["url"]}" target="_blank" style="color:#00e5ff">{t["nct_id"]}</a> · Phase {t["phase"]} · {t["title"][:55]}</div>', unsafe_allow_html=True)
+        
+        # ALWAYS show STRING top partners
+        if string_d:
+            _sec("Top Interaction Partners (STRING)")
+            for p in string_d[:5]:
+                st.markdown(f'<div style="display:flex;gap:6px;padding:3px 0;border-bottom:1px solid #0d1a2a;font-size:.71rem"><span style="color:#00e5ff;font-family:monospace;min-width:60px">{p["partner"]}</span><span class="dim">score {p["score"]:.2f}</span></div>', unsafe_allow_html=True)
+        
+        # ALWAYS show GTEx top tissues
+        if gtex:
+            _sec("Top Expressed Tissues (GTEx)")
+            top_tissues = sorted(gtex.items(), key=lambda x:x[1], reverse=True)[:5]
+            for tissue, tpm in top_tissues:
+                bar_w = int(tpm / max(gtex.values()) * 100) if max(gtex.values()) > 0 else 0
+                st.markdown(f'<div style="margin:2px 0"><div style="display:flex;justify-content:space-between;font-size:.7rem"><span style="color:#d0e8ff">{tissue[:30]}</span><span class="dim">{tpm:.1f} TPM</span></div><div style="background:#0d1a2a;border-radius:2px;height:3px"><div style="background:#00e5ff;width:{bar_w}%;height:3px;border-radius:2px"></div></div></div>', unsafe_allow_html=True)
     
     # ── Mutation Timeline (variant positions by severity) ──────────
     if cv:
