@@ -8,12 +8,12 @@ st.set_page_config(page_title="Protellect", page_icon="🔬", layout="wide",
 
 st.markdown("""<style>
 @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap');
-*{font-family:'Quicksand',sans-serif!important;font-size:13.5px}
+body,p,div,span,input,textarea,button,select,label,h1,h2,h3,h4,h5,h6,.stMarkdown,.stText{font-family:'Quicksand',sans-serif!important}
 html,body,[data-testid="stAppViewContainer"]{background:#010306!important}
 #MainMenu,footer,header,[data-testid="stToolbar"]{visibility:hidden;height:0}
 .block-container{padding:.5rem 1.2rem!important;max-width:100%}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#0d1a2a;border-radius:2px}
-[data-testid="stSidebar"]{background:#020609!important;border-right:1px solid #0a1520!important;min-width:252px!important;max-width:252px!important;display:block!important;transform:translateX(0)!important}
+[data-testid="stSidebar"]{background:#020609!important;border-right:1px solid #0a1520!important;min-width:240px!important;max-width:265px!important}
 [data-testid="stSidebar"] .block-container{padding:.5rem .7rem!important}
 [data-testid="stTabs"] [data-baseweb="tab-list"]{background:#020609;border-radius:5px;padding:2px;gap:1px;border:1px solid #0a1520}
 [data-testid="stTabs"] [data-baseweb="tab"]{border-radius:4px;color:#2a5070;font-size:.74rem;font-weight:500;padding:4px 10px;min-height:26px}
@@ -38,7 +38,6 @@ html,body,[data-testid="stAppViewContainer"]{background:#010306!important}
 .pill{display:inline-block;background:rgba(0,229,255,0.06);color:#00e5ff;border:1px solid rgba(0,229,255,0.15);border-radius:10px;padding:1px 7px;font-size:.66rem;margin:1px;text-decoration:none}
 .src{display:inline-block;background:#020609;color:#1e3a5f;border:1px solid #0a1520;border-radius:2px;padding:0 4px;font-size:.63rem;margin:1px}
 .dim{color:#2a5070;font-size:.7rem}
-[data-testid='stCodeBlock'],pre,code{display:none!important}
 </style>""", unsafe_allow_html=True)
 
 # ── helpers ──────────────────────────────────────────────────────────────
@@ -165,18 +164,6 @@ def _uniprot(gene):
         r = requests.get("https://rest.uniprot.org/uniprotkb/search",
             params={"query": f"gene:{gene} AND organism_id:9606 AND reviewed:true", "format": "json", "size": 1}, headers=HDR, timeout=15)
         res = r.json().get("results", [])
-        if not res:
-            # Try protein name search
-            r2 = requests.get("https://rest.uniprot.org/uniprotkb/search",
-                params={"query": f"protein_name:{gene} AND organism_id:9606 AND reviewed:true",
-                        "format": "json", "size": 1}, headers=HDR, timeout=15)
-            res = r2.json().get("results", [])
-        if not res:
-            # Try full text search
-            r3 = requests.get("https://rest.uniprot.org/uniprotkb/search",
-                params={"query": f"({gene}) AND organism_id:9606 AND reviewed:true",
-                        "format": "json", "size": 1}, headers=HDR, timeout=15)
-            res = r3.json().get("results", [])
         if not res: return {}
         acc = res[0]["primaryAccession"]
         r2 = requests.get(f"https://rest.uniprot.org/uniprotkb/{acc}.json", headers=HDR, timeout=15); r2.raise_for_status()
@@ -191,7 +178,7 @@ def _parse(e):
     for c in e.get("comments", []):
         ct = c.get("commentType", "")
         if ct == "DISEASE":
-            d = c.get("disease", {}); diseases.append({"name": d.get("diseaseName", "?"), "desc": d.get("description", "")[:180]})
+            d = c.get("disease", {}); diseases.append({"name": d.get("name", d.get("diseaseName", "?")), "desc": d.get("description", "")[:180]})
         elif ct == "FUNCTION":
             for t in c.get("texts", []): functions.append(t.get("value", "")[:300])
         elif ct == "SUBCELLULAR LOCATION":
@@ -215,7 +202,7 @@ def _parse(e):
 def _clinvar(gene, mx=50):
     try:
         r = requests.get("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi",
-            params={"db":"clinvar","term":f"{gene}[gene] AND homo sapiens[organism]","retmax":mx,"retmode":"json"}, headers=HDR, timeout=15)
+            params={"db":"clinvar","term":f"{gene}[gene] AND (pathogenic[clinsig] OR likely_pathogenic[clinsig])","retmax":mx,"retmode":"json"}, headers=HDR, timeout=20)
         ids = r.json().get("esearchresult", {}).get("idlist", [])
         if not ids: return []
         time.sleep(0.35)
@@ -566,11 +553,8 @@ st.markdown(f"""<div style="display:flex;align-items:center;gap:8px;padding:2px 
 <span style="font-size:.85rem;font-weight:700;color:#00e5ff">🔬 Protellect</span><span style="color:#1e3a5f">—</span>
 <span style="color:#4a7090;font-size:.75rem">{ICONS.get(domain,'')} {domain}</span>
 <span style="color:#1e3a5f;font-size:.68rem;margin-left:auto;font-family:monospace">{st.session_state.research_goal[:35]}</span></div>""", unsafe_allow_html=True)
-dc = st.columns(5)
-for i,d in enumerate(["Neuroscience","Cancer Biology","Pharmaceuticals","Microbiome","Molecular Biology"]):
-    with dc[i]:
-        if st.button(f"{ICONS[d]} {d}", key=f"dt_{d}", use_container_width=True, type="primary" if d==domain else "secondary"):
-            st.session_state.domain=d; st.session_state.current_protein=None; st.rerun()
+if st.button(f"← Back to Domains", key="back_domains", help="Return to domain selection"):
+    st.session_state.domain = None; st.session_state.current_protein = None; st.rerun()
 
 # ── disease trigger ───────────────────────────────────────────────────────
 if st.session_state._dtrig and st.session_state._dval:
@@ -648,6 +632,19 @@ if not query and not st.session_state._trig:
                 if st.button(ex, key=f"dex_{ex}_{domain}", use_container_width=True): st.session_state._qval=ex; st.rerun()
     st.stop()
 st.session_state._trig = False
+# Normalise common name variants to gene symbols before searching
+_NAME_MAP = {
+    "filamin a": "FLNA", "filamin-a": "FLNA", "filamin alpha": "FLNA",
+    "beta arrestin 2": "ARRB2", "beta-arrestin-2": "ARRB2", "beta arrestin2": "ARRB2",
+    "beta arrestin 1": "ARRB1", "p53": "TP53", "p21": "CDKN1A",
+    "beta 2 adrenergic": "ADRB2", "beta-2 adrenergic": "ADRB2",
+    "angiotensin ii receptor": "AGTR1", "dopamine d2": "DRD2",
+    "lrrk2 kinase": "LRRK2", "alpha synuclein": "SNCA", "alpha-synuclein": "SNCA",
+    "tau": "MAPT", "amyloid precursor": "APP", "brca": "BRCA1",
+    "egfr": "EGFR", "kras": "KRAS", "ras": "KRAS",
+}
+query = _NAME_MAP.get(query.lower(), query)
+st.session_state._qval = query
 if any(t in query.lower() for t in NON_HUMAN): st.error(f"⛔ '{query}' is not a human protein."); st.stop()
 if not _can(): st.error("Quota exhausted."); st.stop()
 
