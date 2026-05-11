@@ -1,101 +1,44 @@
 """Protellect v2 — single file, zero external module imports."""
 import streamlit as st, streamlit.components.v1 as components
-import hashlib, re, re, math, time, json
+import hashlib, re, math, time, json
 import numpy as np, pandas as pd, plotly.graph_objects as go, requests
 
 st.set_page_config(page_title="Protellect", page_icon="🔬", layout="wide",
                    initial_sidebar_state="expanded")
 
 st.markdown("""<style>
-@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap');
-
-/* ── Base ── */
-*, *::before, *::after { font-family: 'EB Garamond', Georgia, serif !important; }
-html, body, [data-testid="stAppViewContainer"] { background: #010306 !important; font-size: 13px; }
-#MainMenu, footer, [data-testid="stToolbar"] { visibility: hidden !important; height: 0 !important; }
-header { height: 2px !important; min-height: 0 !important; overflow: hidden; padding: 0 !important; }
-.block-container { padding: .4rem 1.1rem !important; max-width: 100%; }
-::-webkit-scrollbar { width: 3px; } ::-webkit-scrollbar-thumb { background: #0d1a2a; border-radius: 2px; }
-
-/* ── Sidebar — always visible ── */
-[data-testid="stSidebar"] {
-  background: #020609 !important; border-right: 1px solid #0a1520 !important;
-  min-width: 248px !important; max-width: 248px !important;
-  display: block !important; transform: translateX(0) !important; visibility: visible !important;
-}
-[data-testid="stSidebar"] .block-container { padding: .4rem .65rem !important; }
-[data-testid="stSidebarCollapseButton"] { display: none !important; }
-[data-testid="stSidebar"] .stButton>button { font-size: .73rem !important; padding: 3px 8px !important; min-height: 24px !important; }
-
-/* ── Tabs ── */
-[data-testid="stTabs"] [data-baseweb="tab-list"] {
-  background: #020609; border-radius: 5px; padding: 2px; gap: 1px; border: 1px solid #0a1520;
-}
-[data-testid="stTabs"] [data-baseweb="tab"] {
-  border-radius: 4px; color: #2a5070; font-size: .72rem; font-weight: 500;
-  padding: 4px 10px; min-height: 26px; font-family: 'EB Garamond', serif !important;
-}
-[data-testid="stTabs"] [aria-selected="true"] {
-  background: rgba(0,229,255,0.1) !important; color: #00e5ff !important;
-  border: 1px solid rgba(0,229,255,0.2) !important;
-}
-
-/* ── Metrics ── */
-[data-testid="stMetric"] { background: #020609; border: 1px solid #0a1520; border-radius: 6px; padding: 7px 10px; }
-[data-testid="stMetricValue"] { color: #00e5ff !important; font-size: .9rem !important; font-weight: 700 !important; }
-[data-testid="stMetricLabel"] { color: #2a5070 !important; font-size: .6rem !important; text-transform: uppercase; letter-spacing: .05em; }
-
-/* ── Expanders ── */
-[data-testid="stExpander"] { background: #020609; border: 1px solid #0a1520 !important; border-radius: 5px; margin: 2px 0; }
-[data-testid="stExpander"] summary { color: #4a7090 !important; font-size: .72rem !important; padding: 4px 8px !important; }
-
-/* ── Inputs ── */
-[data-testid="stTextInput"] input {
-  background: #020609 !important; border: 1px solid #0d1a2a !important;
-  color: #d0e8ff !important; border-radius: 4px !important; font-size: .78rem !important;
-  padding: 4px 8px !important; font-family: 'EB Garamond', serif !important;
-}
-[data-testid="stTextInput"] input:focus { border-color: rgba(0,229,255,.4) !important; }
-[data-testid="stTextArea"] textarea {
-  background: #020609 !important; border: 1px solid #0d1a2a !important;
-  color: #d0e8ff !important; border-radius: 4px !important; font-size: .74rem !important;
-}
-[data-testid="stSelectbox"] div[data-baseweb="select"]>div {
-  background: #020609 !important; border-color: #0d1a2a !important;
-  font-size: .74rem !important; min-height: 26px !important;
-}
-[data-testid="stFileUploader"] { border: 1px dashed #0d1a2a !important; border-radius: 4px !important; background: #020609 !important; }
-[data-testid="stFileUploader"] * { font-size: .7rem !important; color: #4a7090 !important; }
-
-/* ── Buttons ── */
-.stButton>button {
-  background: #020609; border: 1px solid #0d1a2a; color: #8baabf;
-  border-radius: 4px; font-size: .73rem; padding: 3px 10px; min-height: 28px;
-  transition: all .12s; font-family: 'EB Garamond', serif !important;
-}
-.stButton>button:hover { background: #0a1520; border-color: rgba(0,229,255,.2); color: #00e5ff; }
-.stButton>button[kind="primary"] {
-  background: rgba(0,229,255,.07) !important; border-color: rgba(0,229,255,.3) !important;
-  color: #00e5ff !important; font-weight: 600 !important;
-}
-
-/* ── Misc ── */
-[data-testid="stDataFrame"] * { font-size: .7rem !important; }
-[data-testid="stSlider"] * { font-size: .7rem !important; }
-[data-testid="stAlert"] { padding: 5px 9px !important; font-size: .73rem !important; border-radius: 4px !important; }
-[data-testid="stCodeBlock"], .stCode, pre, code { display: none !important; }
-
-/* ── Utility classes ── */
-.sec { font-size: .74rem; font-weight: 600; color: #00e5ff; border-bottom: 1px solid #0a1520; padding-bottom: 4px; margin: 10px 0 6px; letter-spacing: .02em; }
-.card { background: #020609; border: 1px solid #0a1520; border-radius: 5px; padding: 8px 12px; margin: 4px 0; font-size: .75rem; }
-.pill { display: inline-block; background: rgba(0,229,255,.06); color: #00e5ff; border: 1px solid rgba(0,229,255,.15); border-radius: 10px; padding: 1px 7px; font-size: .65rem; margin: 1px; text-decoration: none; }
-.src { display: inline-block; background: #020609; color: #1e3a5f; border: 1px solid #0a1520; border-radius: 2px; padding: 0 4px; font-size: .62rem; margin: 1px; }
-.dim { color: #2a5070; font-size: .69rem; }
-/* Hide any icon text glitches */
-[data-testid="stStatusWidget"], [data-testid="stDecoration"] { display: none !important; }
-span.material-icons, span[class*="icon"] { font-size: 0 !important; }
-[data-testid="stSpinner"] p { display: none !important; }
-/* Hide domain switcher breadcrumb - clean header only */
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap');
+*{font-family:'Quicksand',sans-serif!important;font-size:13.5px}
+html,body,[data-testid="stAppViewContainer"]{background:#010306!important}
+#MainMenu,footer,header,[data-testid="stToolbar"]{visibility:hidden;height:0}
+.block-container{padding:.5rem 1.2rem!important;max-width:100%}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#0d1a2a;border-radius:2px}
+[data-testid="stSidebar"]{background:#020609!important;border-right:1px solid #0a1520!important;min-width:252px!important;max-width:252px!important;display:block!important;transform:translateX(0)!important}
+[data-testid="stSidebar"] .block-container{padding:.5rem .7rem!important}
+[data-testid="stTabs"] [data-baseweb="tab-list"]{background:#020609;border-radius:5px;padding:2px;gap:1px;border:1px solid #0a1520}
+[data-testid="stTabs"] [data-baseweb="tab"]{border-radius:4px;color:#2a5070;font-size:.74rem;font-weight:500;padding:4px 10px;min-height:26px}
+[data-testid="stTabs"] [aria-selected="true"]{background:rgba(0,229,255,0.1)!important;color:#00e5ff!important;border:1px solid rgba(0,229,255,0.2)!important}
+[data-testid="stMetric"]{background:#020609;border:1px solid #0a1520;border-radius:6px;padding:7px 10px}
+[data-testid="stMetricValue"]{color:#00e5ff!important;font-size:.95rem!important;font-weight:700!important}
+[data-testid="stMetricLabel"]{color:#2a5070!important;font-size:.62rem!important;text-transform:uppercase;letter-spacing:.04em}
+[data-testid="stExpander"]{background:#020609;border:1px solid #0a1520!important;border-radius:5px;margin:2px 0}
+[data-testid="stExpander"] summary{color:#4a7090!important;font-size:.73rem!important;padding:4px 8px!important}
+[data-testid="stTextInput"] input{background:#020609!important;border:1px solid #0d1a2a!important;color:#d0e8ff!important;border-radius:4px!important;font-size:.78rem!important;padding:4px 8px!important}
+[data-testid="stTextArea"] textarea{background:#020609!important;border:1px solid #0d1a2a!important;color:#d0e8ff!important;border-radius:4px!important;font-size:.74rem!important;padding:4px 8px!important}
+[data-testid="stSelectbox"] div[data-baseweb="select"]>div{background:#020609!important;border-color:#0d1a2a!important;font-size:.75rem!important;min-height:26px!important}
+[data-testid="stFileUploader"]{border:1px dashed #0d1a2a!important;border-radius:4px!important;padding:4px!important;background:#020609!important}
+[data-testid="stFileUploader"] *{font-size:.71rem!important;color:#4a7090!important}
+.stButton>button{background:#020609;border:1px solid #0d1a2a;color:#8baabf;border-radius:4px;font-size:.74rem;padding:3px 10px;min-height:28px;transition:all .12s}
+.stButton>button:hover{background:#0a1520;border-color:rgba(0,229,255,0.2);color:#00e5ff}
+.stButton>button[kind="primary"]{background:rgba(0,229,255,0.07)!important;border-color:rgba(0,229,255,0.25)!important;color:#00e5ff!important}
+[data-testid="stDataFrame"] *{font-size:.72rem!important}
+[data-testid="stAlert"]{padding:5px 9px!important;font-size:.74rem!important;border-radius:4px!important}
+.sec{font-size:.78rem;font-weight:600;color:#00e5ff;border-bottom:1px solid #0a1520;padding-bottom:4px;margin:10px 0 6px}
+.card{background:#020609;border:1px solid #0a1520;border-radius:5px;padding:8px 12px;margin:4px 0;font-size:.76rem}
+.pill{display:inline-block;background:rgba(0,229,255,0.06);color:#00e5ff;border:1px solid rgba(0,229,255,0.15);border-radius:10px;padding:1px 7px;font-size:.66rem;margin:1px;text-decoration:none}
+.src{display:inline-block;background:#020609;color:#1e3a5f;border:1px solid #0a1520;border-radius:2px;padding:0 4px;font-size:.63rem;margin:1px}
+.dim{color:#2a5070;font-size:.7rem}
+[data-testid='stCodeBlock'],pre,code{display:none!important}
 </style>""", unsafe_allow_html=True)
 
 # ── helpers ──────────────────────────────────────────────────────────────
@@ -217,24 +160,27 @@ ICONS = {"Neuroscience":"🧠","Cancer Biology":"🎗","Pharmaceuticals":"💊",
 HDR = {"User-Agent": "Protellect/2.0"}
 
 @st.cache_data(ttl=86400, show_spinner=False)
-def _uniprot(query_raw):
-    """Smart search: gene symbol, protein name, full text."""
-    q_clean = re.sub(r"['\"()]", "", query_raw).strip()
-    def _get(acc):
-        r2 = requests.get(f"https://rest.uniprot.org/uniprotkb/{acc}.json", headers=HDR, timeout=15)
-        r2.raise_for_status(); return r2.json()
-    queries = [
-        f"gene:{q_clean} AND organism_id:9606 AND reviewed:true",
-        f"protein_name:{q_clean} AND organism_id:9606 AND reviewed:true",
-        f"({q_clean}) AND organism_id:9606 AND reviewed:true",
-    ]
+def _uniprot(gene):
     try:
-        for q in queries:
-            r = requests.get("https://rest.uniprot.org/uniprotkb/search",
-                params={"query": q, "format": "json", "size": 1}, headers=HDR, timeout=15)
-            res = r.json().get("results", [])
-            if res: return _get(res[0]["primaryAccession"])
-        return {}
+        r = requests.get("https://rest.uniprot.org/uniprotkb/search",
+            params={"query": f"gene:{gene} AND organism_id:9606 AND reviewed:true", "format": "json", "size": 1}, headers=HDR, timeout=15)
+        res = r.json().get("results", [])
+        if not res:
+            # Try protein name search
+            r2 = requests.get("https://rest.uniprot.org/uniprotkb/search",
+                params={"query": f"protein_name:{gene} AND organism_id:9606 AND reviewed:true",
+                        "format": "json", "size": 1}, headers=HDR, timeout=15)
+            res = r2.json().get("results", [])
+        if not res:
+            # Try full text search
+            r3 = requests.get("https://rest.uniprot.org/uniprotkb/search",
+                params={"query": f"({gene}) AND organism_id:9606 AND reviewed:true",
+                        "format": "json", "size": 1}, headers=HDR, timeout=15)
+            res = r3.json().get("results", [])
+        if not res: return {}
+        acc = res[0]["primaryAccession"]
+        r2 = requests.get(f"https://rest.uniprot.org/uniprotkb/{acc}.json", headers=HDR, timeout=15); r2.raise_for_status()
+        return r2.json()
     except: return {}
 
 def _parse(e):
@@ -264,7 +210,6 @@ def _parse(e):
             "sequence": seq, "seq_len": len(seq), "diseases": diseases, "functions": functions,
             "subcellular": list(set(subcell)), "domains": domains_f, "keywords": kws, "is_gpcr": is_gpcr,
             "mw_kda": round(len(seq)*110/1000, 1)}
-
 
 @st.cache_data(ttl=86400, show_spinner=False)
 def _clinvar(gene, mx=50):
@@ -695,28 +640,12 @@ if domain == "Microbiome":
 query = st.session_state._qval.strip()
 if not query and not st.session_state._trig:
     meta = DOMAIN_META.get(domain,{}); exs2 = DOMAIN_EXAMPLES.get(domain,[])
-    color = meta.get("color","#00e5ff")
-    desc = meta.get("desc","")
-    icon = meta.get("icon","🔬")
-    tags = " · ".join(meta.get("tags",[])[:6])
-    st.markdown(
-        '<div style="border:1px solid ' + color + '22;border-radius:12px;padding:28px 32px;margin:16px 0;background:linear-gradient(135deg,#020609,#050f1a)">'
-        + '<div style="font-size:1.6rem;margin-bottom:8px">' + icon + '</div>'
-        + '<div style="font-size:1.1rem;font-weight:600;color:' + color + ';margin-bottom:6px">' + domain + '</div>'
-        + '<div style="color:#4a7090;font-size:.9rem;margin-bottom:12px;line-height:1.7">' + desc + '</div>'
-        + '<div style="color:#1e3a5f;font-size:.78rem;margin-bottom:16px">' + tags + '</div>'
-        + '<div style="color:#2a5070;font-size:.82rem;border-top:1px solid #0a1520;padding-top:12px">'
-        + 'Type a gene symbol in the <b style="color:#d0e8ff">Protein Search</b> field on the left, then click <b style="color:' + color + '">Analyse Protein</b>'
-        + '</div></div>',
-        unsafe_allow_html=True
-    )
+    st.markdown(f"### {meta.get('icon','🔬')} {domain}"); st.caption(f"Enter a gene symbol in the sidebar · {st.session_state.research_goal}")
     if exs2:
-        st.markdown('<p style="color:#1e3a5f;font-size:.75rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;margin:12px 0 6px">Examples</p>', unsafe_allow_html=True)
-        ec = st.columns(min(7,len(exs2)))
+        st.markdown("**Quick examples:**"); ec = st.columns(min(7,len(exs2)))
         for i,ex in enumerate(exs2):
             with ec[i]:
-                if st.button(ex, key=f"dex_{ex}_{domain}", use_container_width=True):
-                    st.session_state._qval=ex; st.rerun()
+                if st.button(ex, key=f"dex_{ex}_{domain}", use_container_width=True): st.session_state._qval=ex; st.rerun()
     st.stop()
 st.session_state._trig = False
 if any(t in query.lower() for t in NON_HUMAN): st.error(f"⛔ '{query}' is not a human protein."); st.stop()
@@ -729,7 +658,7 @@ if ck not in st.session_state.protein_data_cache:
     try:
         prog.progress(5,"UniProt…"); uraw = _uniprot(query)
         prog.progress(15,"Parsing…"); pdata = _parse(uraw)
-        if not pdata or not pdata.get("accession"): st.error(f"Not found: '{query}'. Try the gene symbol — FLNA, TP53, ADRB2, KRAS etc."); st.stop()
+        if not pdata or not pdata.get("accession"): st.error(f"⛔ '{query}' not found in UniProt Swiss-Prot."); st.stop()
         if not pdata.get("is_human",True): st.error(f"⛔ Not human (organism: {pdata.get('organism','?')})."); st.stop()
         gene = pdata["gene"] or query.upper(); acc = pdata["accession"]
         prog.progress(25,"AlphaFold…"); pdb = _alphafold(acc); plddt = _plddt(pdb)
