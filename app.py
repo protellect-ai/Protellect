@@ -1,6 +1,6 @@
 """Protellect v2 — single file, zero external module imports."""
 import streamlit as st, streamlit.components.v1 as components
-import hashlib, re, math, time, json
+import hashlib, re, re, math, time, json
 import numpy as np, pandas as pd, plotly.graph_objects as go, requests
 
 st.set_page_config(page_title="Protellect", page_icon="🔬", layout="wide",
@@ -91,6 +91,11 @@ header { height: 2px !important; min-height: 0 !important; overflow: hidden; pad
 .pill { display: inline-block; background: rgba(0,229,255,.06); color: #00e5ff; border: 1px solid rgba(0,229,255,.15); border-radius: 10px; padding: 1px 7px; font-size: .65rem; margin: 1px; text-decoration: none; }
 .src { display: inline-block; background: #020609; color: #1e3a5f; border: 1px solid #0a1520; border-radius: 2px; padding: 0 4px; font-size: .62rem; margin: 1px; }
 .dim { color: #2a5070; font-size: .69rem; }
+/* Hide any icon text glitches */
+[data-testid="stStatusWidget"], [data-testid="stDecoration"] { display: none !important; }
+span.material-icons, span[class*="icon"] { font-size: 0 !important; }
+[data-testid="stSpinner"] p { display: none !important; }
+/* Hide domain switcher breadcrumb - clean header only */
 </style>""", unsafe_allow_html=True)
 
 # ── helpers ──────────────────────────────────────────────────────────────
@@ -214,7 +219,6 @@ HDR = {"User-Agent": "Protellect/2.0"}
 @st.cache_data(ttl=86400, show_spinner=False)
 def _uniprot(query_raw):
     """Smart search: gene symbol, protein name, full text."""
-    import re
     q_clean = re.sub(r"['\"()]", "", query_raw).strip()
     def _get(acc):
         r2 = requests.get(f"https://rest.uniprot.org/uniprotkb/{acc}.json", headers=HDR, timeout=15)
@@ -232,6 +236,36 @@ def _uniprot(query_raw):
             if res: return _get(res[0]["primaryAccession"])
         return {}
     except: return {}
+
+def _parse(e):
+    if not e: return {}
+    seq = e.get("sequence", {}).get("value", "")
+    genes = [g.get("geneName", {}).get("value", "") for g in e.get("genes", []) if g.get("geneName", {}).get("value")]
+    diseases, functions, subcell, domains_f = [], [], [], []
+    for c in e.get("comments", []):
+        ct = c.get("commentType", "")
+        if ct == "DISEASE":
+            d = c.get("disease", {}); diseases.append({"name": d.get("diseaseName", "?"), "desc": d.get("description", "")[:180]})
+        elif ct == "FUNCTION":
+            for t in c.get("texts", []): functions.append(t.get("value", "")[:300])
+        elif ct == "SUBCELLULAR LOCATION":
+            for loc in c.get("subcellularLocations", []): subcell.append(loc.get("location", {}).get("value", ""))
+    for f in e.get("features", []):
+        ft = f.get("type", ""); loc = f.get("location", {})
+        s = loc.get("start", {}).get("value", "?"); en = loc.get("end", {}).get("value", "?")
+        if ft in ("DOMAIN","REGION","MOTIF","DNA_BIND","ACT_SITE","BINDING"):
+            domains_f.append({"type": ft, "name": f.get("description", ft), "start": s, "end": en})
+    kws = [k.get("name", "") for k in e.get("keywords", [])]; kl = " ".join(kws).lower()
+    is_gpcr = any(x in kl for x in ["g protein-coupled","gpcr","seven-transmembrane"])
+    org = e.get("organism", {}); taxid = org.get("taxonId", 0)
+    return {"accession": e.get("primaryAccession",""), "gene": genes[0] if genes else "",
+            "protein_name": e.get("proteinDescription",{}).get("recommendedName",{}).get("fullName",{}).get("value",""),
+            "organism": org.get("scientificName",""), "taxon_id": taxid, "is_human": taxid == 9606,
+            "sequence": seq, "seq_len": len(seq), "diseases": diseases, "functions": functions,
+            "subcellular": list(set(subcell)), "domains": domains_f, "keywords": kws, "is_gpcr": is_gpcr,
+            "mw_kda": round(len(seq)*110/1000, 1)}
+
+
 @st.cache_data(ttl=86400, show_spinner=False)
 def _clinvar(gene, mx=50):
     try:
