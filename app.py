@@ -40,6 +40,8 @@ st.markdown("""
 #MainMenu, footer, [data-testid="stToolbar"],
 [data-testid="stSidebarCollapseButton"],
 [data-testid="collapsedControl"],
+[data-testid="stSidebarCollapseButton"] *,
+[data-testid="collapsedControl"] *,
 header { display: none !important; visibility: hidden !important; }
 
 html, body, [data-testid="stAppViewContainer"] { background: #060b14 !important; }
@@ -51,7 +53,7 @@ html, body, [data-testid="stAppViewContainer"] { background: #060b14 !important;
   background: #080f1a !important;
   border-right: 1px solid #1a2a3a !important;
   min-width: 270px !important; max-width: 270px !important;
-  display: block !important; transform: translateX(0) !important;
+  display: block !important; transform: translateX(0) !important; visibility: visible !important;
 }
 [data-testid="stSidebar"] .block-container { padding: .5rem .7rem !important; }
 
@@ -689,68 +691,120 @@ def _tutorial():
 # DOMAIN LANDING
 # ═══════════════════════════════════════════════════════════════════
 def _landing():
-    dm_js = json.dumps([{"id":d,"icon":m["icon"],"color":m["color"],"glow":m["glow"],"tags":m["tags"][:6],"desc":m["desc"]} for d,m in DOMAIN_META.items()])
-    html = f"""<!DOCTYPE html><html><head>
+    """Domain landing — pure Streamlit styled cards, no iframe, fully accessible."""
+    # Animated header via small component
+    components.html("""<!DOCTYPE html><html><head>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-*{{margin:0;padding:0;box-sizing:border-box;font-family:'DM Sans',sans-serif}}
-body{{background:#060b14;color:#d0e8ff;overflow-x:hidden;min-height:100vh}}
-#canvas{{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}}
-.w{{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:28px 20px 40px;text-align:center}}
-.logo{{font-size:1.8rem;font-weight:700;background:linear-gradient(90deg,#00e5ff,#818cf8,#f43f5e);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200%;animation:shimmer 4s linear infinite}}
-.sub{{color:#1a3a5a;font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;margin:5px 0 8px}}
-.tagline{{color:#3a5570;font-size:.82rem;margin-bottom:28px}}
-.grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px;text-align:left}}
-.card{{background:rgba(8,15,26,.92);border:1px solid rgba(255,255,255,.05);border-radius:12px;
-  padding:18px 20px;cursor:pointer;transition:all .3s;position:relative;overflow:hidden;
-  animation:fadeUp .4s ease both;opacity:0;backdrop-filter:blur(10px)}}
-.card:hover{{transform:translateY(-4px) scale(1.01);border-color:var(--col);
-  box-shadow:0 0 35px var(--glow),0 10px 35px rgba(0,0,0,.5)}}
-.card:active{{transform:scale(0.98)}}
-.ch{{display:flex;align-items:center;gap:10px;margin-bottom:9px}}
-.ci{{font-size:1.4rem;transition:transform .3s}}.card:hover .ci{{transform:scale(1.15) rotate(6deg)}}
-.ct{{font-size:.9rem;font-weight:600;color:#fff}}
-.cd{{font-size:.7rem;color:#3a5570;line-height:1.6;margin-bottom:11px}}
-.tags{{display:flex;flex-wrap:wrap;gap:3px}}
-.tg{{font-size:.59rem;color:var(--col);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:2px 7px;transition:all .2s}}
-.card:hover .tg{{background:rgba(255,255,255,.07);border-color:var(--col)}}
-.scan{{position:absolute;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--col),transparent);top:-100%;transition:top .45s;opacity:.4}}.card:hover .scan{{top:100%}}
-.foot{{margin-top:24px;color:#0d1a2a;font-size:.64rem;font-style:italic}}
-@keyframes fadeUp{{from{{opacity:0;transform:translateY(14px)}}to{{opacity:1;transform:translateY(0)}}}}
-@keyframes shimmer{{0%{{background-position:0 50%}}100%{{background-position:200% 50%}}}}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'DM Sans',sans-serif}
+body{background:#060b14;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;overflow:hidden}
+#canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.hero{position:relative;z-index:1;text-align:center}
+.logo{font-size:2rem;font-weight:700;background:linear-gradient(90deg,#00e5ff,#818cf8,#f43f5e);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200%;animation:shimmer 4s linear infinite}
+.sub{color:#1a3a5a;font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;margin:6px 0 5px}
+.tagline{color:#3a5570;font-size:.8rem}
+@keyframes shimmer{0%{background-position:0 50%}100%{background-position:200% 50%}}
 </style></head><body>
 <canvas id="canvas"></canvas>
-<div class="w">
+<div class="hero">
   <div class="logo">🔬 Protellect</div>
   <div class="sub">Genetics-First Protein Intelligence</div>
-  <div class="tagline">Select a research domain to enter your workspace</div>
-  <div class="grid" id="grid"></div>
-  <div class="foot">The only platform that tells you which proteins to abandon before you spend the money.</div>
+  <div class="tagline">Select a domain below to enter your workspace</div>
 </div>
 <script>
 const c=document.getElementById('canvas'),ctx=c.getContext('2d');c.width=window.innerWidth;c.height=window.innerHeight;
-const pts=Array.from({{length:55}},()=>({{x:Math.random()*c.width,y:Math.random()*c.height,vx:(Math.random()-.5)*.35,vy:(Math.random()-.5)*.35,r:Math.random()*1.4+.4,col:`rgba(${{Math.random()>.5?'0,229,255':'129,140,248'}},0.3)`}}));
-function draw(){{ctx.clearRect(0,0,c.width,c.height);pts.forEach(p=>{{p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>c.width)p.vx*=-1;if(p.y<0||p.y>c.height)p.vy*=-1;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=p.col;ctx.fill();}});pts.forEach((a,i)=>pts.slice(i+1).forEach(b=>{{const d=Math.hypot(a.x-b.x,a.y-b.y);if(d<110){{ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle=`rgba(0,229,255,${{.06*(1-d/110)}})`;ctx.lineWidth=.5;ctx.stroke();}}}}));requestAnimationFrame(draw);}}
-draw();window.addEventListener('resize',()=>{{c.width=window.innerWidth;c.height=window.innerHeight;}});
-const DOMAINS={dm_js};const grid=document.getElementById('grid');
-DOMAINS.forEach((d,i)=>{{
-  const el=document.createElement('div');el.className='card';
-  el.style.cssText=`--col:${{d.color}};--glow:${{d.glow}};animation-delay:${{i*.07}}s`;
-  el.innerHTML=`<div class="scan"></div><div class="ch"><span class="ci">${{d.icon}}</span><span class="ct">${{d.id}}</span></div><div class="cd">${{d.desc}}</div><div class="tags">${{d.tags.map(t=>`<span class="tg">${{t}}</span>`).join('')}}</div>`;
-  el.addEventListener('click',()=>{{el.style.transform='scale(0.97)';setTimeout(()=>window.parent.postMessage({{isStreamlitMessage:true,type:'streamlit:setComponentValue',value:d.id}},'*'),120);}});
-  grid.appendChild(el);
-}});
-</script></body></html>"""
-    components.html(html, height=560, scrolling=False)
-    cols = st.columns(5)
-    for i,(d,m) in enumerate(DOMAIN_META.items()):
-        c_col = m.get("color","#00e5ff")
-        with cols[i]:
-            st.markdown(f'<style>#ldb{i}>div>button{{background:{c_col}0d;border:1px solid {c_col}35;color:{c_col};font-weight:600;border-radius:8px;font-size:.76rem}}</style><div id="ldb{i}">', unsafe_allow_html=True)
-            if st.button(f"{m['icon']}  {d}", key=f"dl_{d}", use_container_width=True):
-                st.session_state.domain = d; st.rerun()
-            st.markdown("</div>", unsafe_allow_html=True)
+const pts=Array.from({length:45},()=>({x:Math.random()*c.width,y:Math.random()*c.height,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,r:Math.random()*1.3+.4,col:`rgba(${Math.random()>.5?'0,229,255':'129,140,248'},0.25)`}));
+function draw(){ctx.clearRect(0,0,c.width,c.height);pts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>c.width)p.vx*=-1;if(p.y<0||p.y>c.height)p.vy*=-1;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=p.col;ctx.fill();});pts.forEach((a,i)=>pts.slice(i+1).forEach(b=>{const d=Math.hypot(a.x-b.x,a.y-b.y);if(d<100){ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle=`rgba(0,229,255,${.05*(1-d/100)})`;ctx.lineWidth=.5;ctx.stroke();}}));requestAnimationFrame(draw);}
+draw();
+</script></body></html>""", height=180, scrolling=False)
+
+    # Pure Streamlit domain cards — 2 rows of buttons, styled beautifully
+    st.markdown("""
+    <style>
+    .domain-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 10px; }
+    .domain-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 24px; max-width: 66%; margin-left: auto; margin-right: auto; }
+    </style>
+    """, unsafe_allow_html=True)
+
+    # Row 1: Neuroscience, Cancer Biology, Pharmaceuticals
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        col = DOMAIN_META["Neuroscience"]["color"]
+        tags = " · ".join(DOMAIN_META["Neuroscience"]["tags"][:4])
+        st.markdown(f'''<style>#dn0>div>button{{
+          background:{col}0d!important;border:1px solid {col}35!important;color:{col}!important;
+          font-weight:600!important;border-radius:10px!important;height:auto!important;
+          padding:14px 16px!important;font-size:.82rem!important;text-align:left!important;
+          white-space:normal!important;line-height:1.5!important;transition:all .2s!important}}
+        #dn0>div>button:hover{{background:{col}1c!important;border-color:{col}70!important;transform:translateY(-2px)!important;box-shadow:0 0 20px {col}22!important}}
+        </style>
+        <div id="dn0">''', unsafe_allow_html=True)
+        if st.button(f"🧠  Neuroscience\n{tags}", key="dl_Neuroscience", use_container_width=True):
+            st.session_state.domain = "Neuroscience"; st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
+    with c2:
+        col = DOMAIN_META["Cancer Biology"]["color"]
+        tags = " · ".join(DOMAIN_META["Cancer Biology"]["tags"][:4])
+        st.markdown(f'''<style>#dn1>div>button{{
+          background:{col}0d!important;border:1px solid {col}35!important;color:{col}!important;
+          font-weight:600!important;border-radius:10px!important;height:auto!important;
+          padding:14px 16px!important;font-size:.82rem!important;text-align:left!important;
+          white-space:normal!important;line-height:1.5!important;transition:all .2s!important}}
+        #dn1>div>button:hover{{background:{col}1c!important;border-color:{col}70!important;transform:translateY(-2px)!important;box-shadow:0 0 20px {col}22!important}}
+        </style>
+        <div id="dn1">''', unsafe_allow_html=True)
+        if st.button(f"🎗  Cancer Biology\n{tags}", key="dl_Cancer Biology", use_container_width=True):
+            st.session_state.domain = "Cancer Biology"; st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
+    with c3:
+        col = DOMAIN_META["Pharmaceuticals"]["color"]
+        tags = " · ".join(DOMAIN_META["Pharmaceuticals"]["tags"][:4])
+        st.markdown(f'''<style>#dn2>div>button{{
+          background:{col}0d!important;border:1px solid {col}35!important;color:{col}!important;
+          font-weight:600!important;border-radius:10px!important;height:auto!important;
+          padding:14px 16px!important;font-size:.82rem!important;text-align:left!important;
+          white-space:normal!important;line-height:1.5!important;transition:all .2s!important}}
+        #dn2>div>button:hover{{background:{col}1c!important;border-color:{col}70!important;transform:translateY(-2px)!important;box-shadow:0 0 20px {col}22!important}}
+        </style>
+        <div id="dn2">''', unsafe_allow_html=True)
+        if st.button(f"💊  Pharmaceuticals\n{tags}", key="dl_Pharmaceuticals", use_container_width=True):
+            st.session_state.domain = "Pharmaceuticals"; st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    # Row 2: Microbiome, Molecular Biology — centred
+    _, c4, c5, _ = st.columns([0.5, 1, 1, 0.5])
+    with c4:
+        col = DOMAIN_META["Microbiome"]["color"]
+        tags = " · ".join(DOMAIN_META["Microbiome"]["tags"][:4])
+        st.markdown(f'''<style>#dn3>div>button{{
+          background:{col}0d!important;border:1px solid {col}35!important;color:{col}!important;
+          font-weight:600!important;border-radius:10px!important;height:auto!important;
+          padding:14px 16px!important;font-size:.82rem!important;text-align:left!important;
+          white-space:normal!important;line-height:1.5!important;transition:all .2s!important}}
+        #dn3>div>button:hover{{background:{col}1c!important;border-color:{col}70!important;transform:translateY(-2px)!important;box-shadow:0 0 20px {col}22!important}}
+        </style>
+        <div id="dn3">''', unsafe_allow_html=True)
+        if st.button(f"🦠  Microbiome\n{tags}", key="dl_Microbiome", use_container_width=True):
+            st.session_state.domain = "Microbiome"; st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
+    with c5:
+        col = DOMAIN_META["Molecular Biology"]["color"]
+        tags = " · ".join(DOMAIN_META["Molecular Biology"]["tags"][:4])
+        st.markdown(f'''<style>#dn4>div>button{{
+          background:{col}0d!important;border:1px solid {col}35!important;color:{col}!important;
+          font-weight:600!important;border-radius:10px!important;height:auto!important;
+          padding:14px 16px!important;font-size:.82rem!important;text-align:left!important;
+          white-space:normal!important;line-height:1.5!important;transition:all .2s!important}}
+        #dn4>div>button:hover{{background:{col}1c!important;border-color:{col}70!important;transform:translateY(-2px)!important;box-shadow:0 0 20px {col}22!important}}
+        </style>
+        <div id="dn4">''', unsafe_allow_html=True)
+        if st.button(f"⚛️  Molecular Biology\n{tags}", key="dl_Molecular Biology", use_container_width=True):
+            st.session_state.domain = "Molecular Biology"; st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown('<div style="text-align:center;color:#0d1a2a;font-size:.63rem;font-style:italic;margin-top:8px">The only platform that tells you which proteins to abandon before you spend the money.</div>', unsafe_allow_html=True)
+
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -978,8 +1032,9 @@ if not query and not st.session_state._trig:
     )
     if exs2:
         st.markdown('<div style="color:#1a3a5a;font-size:.6rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin:12px 0 5px">QUICK EXAMPLES</div>', unsafe_allow_html=True)
-        ec = st.columns(min(7,len(exs2)))
-        for i,ex in enumerate(exs2):
+        n_cols = max(1, min(7, len(exs2)))
+        ec = st.columns(n_cols)
+        for i,ex in enumerate(exs2[:n_cols]):
             with ec[i]:
                 if st.button(ex, key=f"dex_{ex}_{domain}", use_container_width=True): st.session_state._qval=ex; st.rerun()
     st.stop()
@@ -1138,6 +1193,73 @@ with t0:
             for t in trials[:3]:
                 st.markdown(f'<div class="dim"><a href="{t["url"]}" target="_blank" style="color:#00e5ff">{t["nct_id"]}</a> · Phase {t["phase"]} · {t["title"][:55]}</div>', unsafe_allow_html=True)
     
+    # ── Mutation Timeline (variant positions by severity) ──────────
+    if cv:
+        _sec("Mutation Dynamics — Variant Positions Across Protein")
+        path_all = [v for v in cv if v.get("ml_class") in ("CRITICAL","HIGH","MODERATE","LOW")]
+        fig_mut = go.Figure()
+        seq_len2 = pdata.get("seq_len", 500)
+        # Backbone
+        fig_mut.add_trace(go.Scatter(x=[0, seq_len2], y=[0,0], mode="lines",
+            line=dict(color="#1a2a3a", width=6), hoverinfo="none", showlegend=False))
+        # Domain bands
+        for dom_f in pdata.get("domains",[])[:8]:
+            try:
+                s_pos = int(dom_f.get("start","0")); e_pos = int(dom_f.get("end","0"))
+                if s_pos and e_pos:
+                    fig_mut.add_shape(type="rect", x0=s_pos, x1=e_pos, y0=-0.3, y1=0.3,
+                        fillcolor="rgba(0,229,255,0.08)", line=dict(color="rgba(0,229,255,0.2)",width=1))
+                    fig_mut.add_annotation(x=(s_pos+e_pos)/2, y=0.45, text=dom_f.get("name","")[:12],
+                        showarrow=False, font=dict(size=8, color="#3a5570"))
+            except: pass
+        # Variants
+        for cls, col, y_pos, size in [("CRITICAL","#ff2d55",1.0,12),("HIGH","#ff8c42",0.6,9),("MODERATE","#ffd60a",-0.5,6),("LOW","#3a5570",-0.9,5)]:
+            grp = [v for v in path_all if v.get("ml_class")==cls and v.get("position",0)>0]
+            if grp:
+                fig_mut.add_trace(go.Scatter(
+                    x=[v["position"] for v in grp], y=[y_pos]*len(grp), mode="markers",
+                    marker=dict(size=size, color=col, line=dict(color="#060b14",width=1), opacity=0.9),
+                    text=[f"{v.get('protein_change','?')}<br>{', '.join(v.get('conditions',[])[:1])[:40]}" for v in grp],
+                    hoverinfo="text", name=cls,
+                ))
+        fig_mut.update_layout(height=200, plot_bgcolor="#060b14", paper_bgcolor="#060b14",
+            xaxis=dict(title="Residue Position", gridcolor="#0d1a2a", color="#3a5570", range=[0, seq_len2]),
+            yaxis=dict(title="Severity", tickvals=[1.0,0.6,-0.5,-0.9], ticktext=["CRITICAL","HIGH","MODERATE","LOW"],
+                color="#3a5570", gridcolor="#0d1a2a", range=[-1.4,1.4]),
+            font=dict(color="#d0e8ff",size=10),
+            legend=dict(bgcolor="#080f1a",bordercolor="#1a2a3a",font=dict(size=9)),
+            margin=dict(t=10,b=35,l=75,r=10))
+        st.plotly_chart(fig_mut, use_container_width=True, config={"displayModeBar":False})
+        n_path2 = sum(1 for v in cv if v.get("ml_class") in ("CRITICAL","HIGH"))
+        n_mod2 = sum(1 for v in cv if v.get("ml_class")=="MODERATE")
+        st.markdown(f'<span class="dim">Pathogenic/LP: <b style="color:#ff2d55">{n_path2}</b> · Moderate (VUS): <b style="color:#ffd60a">{n_mod2}</b> · Total: {len(cv)} · Source: ClinVar + UniProt</span>', unsafe_allow_html=True)
+
+    # ── Disease Progression Timeline ──────────────────────────────
+    diseases_all2 = pdata.get("diseases",[])
+    if diseases_all2:
+        _sec("Disease Associations — Progression & Classification")
+        ONSET = {"periventricular nodular heterotopia":"Congenital","cancer":"Adult onset","carcinoma":"Adult onset","syndrome":"Variable","congenital":"Congenital","infant":"Infantile","childhood":"Childhood","juvenile":"Juvenile","adult":"Adult onset","late-onset":"Late onset","early-onset":"Early onset","progressive":"Progressive"}
+        fig_dis = go.Figure()
+        categories = {"Somatic (Cancer)":[], "Germline (Congenital)":[], "Germline (Variable)":[]}
+        for d in diseases_all2[:12]:
+            n2 = d.get("name","?"); inh = d.get("inheritance","Unknown")
+            if inh=="Somatic": categories["Somatic (Cancer)"].append(n2)
+            elif "congenital" in n2.lower() or "hereditary" in n2.lower(): categories["Germline (Congenital)"].append(n2)
+            else: categories["Germline (Variable)"].append(n2)
+        y_pos = 0; colors = {"Somatic (Cancer)":"#ff8c42","Germline (Congenital)":"#818cf8","Germline (Variable)":"#4ade80"}
+        for cat, items in categories.items():
+            for item in items:
+                fig_dis.add_trace(go.Bar(x=[1], y=[item[:40]], orientation="h",
+                    marker_color=colors[cat], name=cat, showlegend=y_pos==0,
+                    hovertext=cat, hoverinfo="text"))
+                y_pos += 1
+        fig_dis.update_layout(height=max(180, len(diseases_all2)*30+40), plot_bgcolor="#060b14", paper_bgcolor="#060b14",
+            xaxis=dict(visible=False), yaxis=dict(color="#7a9aaa",tickfont=dict(size=10)),
+            font=dict(color="#d0e8ff",size=10), barmode="stack",
+            legend=dict(bgcolor="#080f1a",bordercolor="#1a2a3a",font=dict(size=9),orientation="h",yanchor="bottom",y=1.02),
+            margin=dict(t=30,b=5,l=5,r=5))
+        st.plotly_chart(fig_dis, use_container_width=True, config={"displayModeBar":False})
+
     if papers:
         _sec("Evidence-Tiered Literature — Cited Sources")
         for p in papers[:10]:
