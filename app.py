@@ -1,56 +1,133 @@
-"""Protellect v2 — single file, zero external module imports."""
-import streamlit as st, streamlit.components.v1 as components
+"""
+Protellect v3 — Genetics-First Protein Intelligence Platform
+Complete rewrite per workflow specification.
+"""
+import streamlit as st
+import streamlit.components.v1 as components
 import hashlib, re, math, time, json
-import numpy as np, pandas as pd, plotly.graph_objects as go, requests
+import numpy as np, pandas as pd
+import plotly.graph_objects as go
+import requests
 
-st.set_page_config(page_title="Protellect", page_icon="🔬", layout="wide",
-                   initial_sidebar_state="expanded")
+st.set_page_config(
+    page_title="Protellect",
+    page_icon="🔬",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
 
-st.markdown("""<style>
-@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap');
-.stMarkdown *,[data-testid='stSidebar'] label,[data-testid='stMetricLabel'],[data-testid='stMetricValue'],[data-testid='stTextInput'] input,[data-testid='stAlert'] *{font-family:'Quicksand',sans-serif!important;font-size:12px}
-html,body,[data-testid="stAppViewContainer"]{background:#010306!important}
-#MainMenu,footer,header,[data-testid="stToolbar"],[data-testid="stSidebarCollapseButton"],[data-testid="collapsedControl"]{display:none!important;visibility:hidden!important;height:0!important;overflow:hidden!important}
-.block-container{padding:.5rem 1.2rem!important;max-width:100%}
-::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#0d1a2a;border-radius:2px}
-[data-testid="stSidebar"]{background:#020609!important;border-right:1px solid #0a1520!important;min-width:252px!important;max-width:252px!important;display:block!important;transform:translateX(0)!important}
-[data-testid="stSidebar"] .block-container{padding:.5rem .7rem!important}
-[data-testid="stTabs"] [data-baseweb="tab-list"]{background:#020609;border-radius:5px;padding:2px;gap:1px;border:1px solid #0a1520}
-[data-testid="stTabs"] [data-baseweb="tab"]{border-radius:4px;color:#2a5070;font-size:.74rem;font-weight:500;padding:4px 10px;min-height:26px}
-[data-testid="stTabs"] [aria-selected="true"]{background:rgba(0,229,255,0.1)!important;color:#00e5ff!important;border:1px solid rgba(0,229,255,0.2)!important}
-[data-testid="stMetric"]{background:#020609;border:1px solid #0a1520;border-radius:6px;padding:7px 10px}
-[data-testid="stMetricValue"]{color:#00e5ff!important;font-size:.95rem!important;font-weight:700!important}
-[data-testid="stMetricLabel"]{color:#2a5070!important;font-size:.62rem!important;text-transform:uppercase;letter-spacing:.04em}
-[data-testid="stExpander"]{background:#020609;border:1px solid #0a1520!important;border-radius:5px;margin:2px 0}
-[data-testid="stExpander"] summary{color:#4a7090!important;font-size:.73rem!important;padding:4px 8px!important}
-[data-testid="stTextInput"] input{background:#020609!important;border:1px solid #0d1a2a!important;color:#d0e8ff!important;border-radius:4px!important;font-size:.78rem!important;padding:4px 8px!important}
-[data-testid="stTextArea"] textarea{background:#020609!important;border:1px solid #0d1a2a!important;color:#d0e8ff!important;border-radius:4px!important;font-size:.74rem!important;padding:4px 8px!important}
-[data-testid="stSelectbox"] div[data-baseweb="select"]>div{background:#020609!important;border-color:#0d1a2a!important;font-size:.75rem!important;min-height:26px!important}
-[data-testid="stFileUploader"]{border:1px dashed #0d1a2a!important;border-radius:4px!important;padding:4px!important;background:#020609!important}
-[data-testid="stFileUploader"] *{font-size:.71rem!important;color:#4a7090!important}
-.stButton>button{background:#020609;border:1px solid #0d1a2a;color:#8baabf;border-radius:4px;font-size:.74rem;padding:3px 10px;min-height:28px;transition:all .12s}
-.stButton>button:hover{background:#0a1520;border-color:rgba(0,229,255,0.2);color:#00e5ff}
-.stButton>button[kind="primary"]{background:rgba(0,229,255,0.07)!important;border-color:rgba(0,229,255,0.25)!important;color:#00e5ff!important}
-[data-testid="stDataFrame"] *{font-size:.72rem!important}
-[data-testid="stAlert"]{padding:5px 9px!important;font-size:.74rem!important;border-radius:4px!important}
-.sec{font-size:.78rem;font-weight:600;color:#00e5ff;border-bottom:1px solid #0a1520;padding-bottom:4px;margin:10px 0 6px}
-.card{background:#020609;border:1px solid #0a1520;border-radius:5px;padding:8px 12px;margin:4px 0;font-size:.76rem}
-.pill{display:inline-block;background:rgba(0,229,255,0.06);color:#00e5ff;border:1px solid rgba(0,229,255,0.15);border-radius:10px;padding:1px 7px;font-size:.66rem;margin:1px;text-decoration:none}
-.src{display:inline-block;background:#020609;color:#1e3a5f;border:1px solid #0a1520;border-radius:2px;padding:0 4px;font-size:.63rem;margin:1px}
-.dim{color:#2a5070;font-size:.7rem}
-</style>""", unsafe_allow_html=True)
+# ═══════════════════════════════════════════════════════════════════
+# CSS — DM Sans font, safe selectors only, never touch icon spans
+# ═══════════════════════════════════════════════════════════════════
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
 
-# ── helpers ──────────────────────────────────────────────────────────────
-def _sec(t): st.markdown(f'<div class="sec">{t}</div>', unsafe_allow_html=True)
-def _src(l, u=""): return f'<a class="src" href="{u}" target="_blank">{l}</a>' if u else f'<span class="src">{l}</span>'
-
-# ── auth ─────────────────────────────────────────────────────────────────
-def _h(pw): return hashlib.sha256(pw.encode()).hexdigest()
-ACCOUNTS = {
-    "protellect@gmail.com": {"hash": _h("dev@protellect"), "tier": "enterprise", "name": "Protellect Dev", "quota": 999999, "dev": True},
-    "demo@protellect.io":   {"hash": _h("demo2025"),       "tier": "free",       "name": "Demo User",     "quota": 5,      "dev": False},
+/* Apply font ONLY to content — never to span (breaks icons) */
+.stMarkdown, .stMarkdown *, .stText, .stCaption,
+[data-testid="stSidebar"] label, [data-testid="stSidebar"] p,
+[data-testid="stMetricLabel"], [data-testid="stMetricValue"],
+[data-testid="stTextInput"] input, [data-testid="stTextArea"] textarea,
+[data-testid="stSelectbox"] [data-baseweb="select"] *,
+[data-testid="stAlert"] *, [data-testid="stExpander"] summary,
+[data-testid="stTabs"] [data-baseweb="tab"],
+.stButton > button, p, h1, h2, h3, h4 {
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: 13px;
 }
-def _authed(): return st.session_state.get("auth_user") is not None
+
+/* Hide ALL Streamlit chrome */
+#MainMenu, footer, [data-testid="stToolbar"],
+[data-testid="stSidebarCollapseButton"],
+[data-testid="collapsedControl"],
+header { display: none !important; visibility: hidden !important; }
+
+html, body, [data-testid="stAppViewContainer"] { background: #060b14 !important; }
+.block-container { padding: .4rem 1rem !important; max-width: 100%; }
+::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-thumb { background: #1a2a3a; border-radius: 2px; }
+
+/* Sidebar */
+[data-testid="stSidebar"] {
+  background: #080f1a !important;
+  border-right: 1px solid #1a2a3a !important;
+  min-width: 270px !important; max-width: 270px !important;
+  display: block !important; transform: translateX(0) !important;
+}
+[data-testid="stSidebar"] .block-container { padding: .5rem .7rem !important; }
+
+/* Tabs */
+[data-testid="stTabs"] [data-baseweb="tab-list"] {
+  background: #080f1a; border-radius: 8px; padding: 3px; gap: 2px; border: 1px solid #1a2a3a;
+}
+[data-testid="stTabs"] [data-baseweb="tab"] {
+  border-radius: 6px; color: #3a5570; font-size: .72rem; font-weight: 500; padding: 5px 12px; min-height: 28px;
+}
+[data-testid="stTabs"] [aria-selected="true"] {
+  background: rgba(0,229,255,.1) !important; color: #00e5ff !important; border: 1px solid rgba(0,229,255,.2) !important;
+}
+
+/* Metrics */
+[data-testid="stMetric"] { background: #080f1a; border: 1px solid #1a2a3a; border-radius: 8px; padding: 8px 12px; }
+[data-testid="stMetricValue"] { color: #00e5ff !important; font-size: .9rem !important; font-weight: 700 !important; }
+[data-testid="stMetricLabel"] { color: #3a5570 !important; font-size: .6rem !important; text-transform: uppercase; letter-spacing: .06em; }
+
+/* Expanders */
+[data-testid="stExpander"] { background: #080f1a !important; border: 1px solid #1a2a3a !important; border-radius: 6px; margin: 3px 0; }
+[data-testid="stExpander"] summary { color: #5a7590 !important; font-size: .72rem !important; }
+[data-testid="stExpander"] summary:hover { color: #00e5ff !important; }
+
+/* Inputs */
+[data-testid="stTextInput"] input {
+  background: #080f1a !important; border: 1px solid #1a2a3a !important;
+  color: #d0e8ff !important; border-radius: 5px !important; font-size: .78rem !important; padding: 5px 9px !important;
+}
+[data-testid="stTextInput"] input:focus { border-color: rgba(0,229,255,.4) !important; }
+[data-testid="stTextArea"] textarea {
+  background: #080f1a !important; border: 1px solid #1a2a3a !important; color: #d0e8ff !important;
+  border-radius: 5px !important; font-size: .74rem !important;
+}
+[data-testid="stSelectbox"] div[data-baseweb="select"] > div {
+  background: #080f1a !important; border-color: #1a2a3a !important; font-size: .74rem !important;
+}
+[data-testid="stFileUploader"] { border: 1px dashed #1a2a3a !important; border-radius: 5px !important; background: #080f1a !important; }
+
+/* Buttons */
+.stButton > button {
+  background: #080f1a; border: 1px solid #1a2a3a; color: #7a9aaa;
+  border-radius: 5px; padding: 4px 12px; min-height: 30px; transition: all .15s;
+  font-size: .73rem;
+}
+.stButton > button:hover { background: #0f1f2f; border-color: rgba(0,229,255,.25); color: #00e5ff; }
+.stButton > button[kind="primary"] {
+  background: rgba(0,229,255,.08) !important; border-color: rgba(0,229,255,.35) !important;
+  color: #00e5ff !important; font-weight: 600 !important;
+}
+
+/* Utility */
+.sec { font-size: .74rem; font-weight: 600; color: #00e5ff; border-bottom: 1px solid #1a2a3a; padding-bottom: 5px; margin: 12px 0 8px; }
+.card { background: #080f1a; border: 1px solid #1a2a3a; border-radius: 6px; padding: 10px 14px; margin: 4px 0; }
+.pill { display: inline-block; background: rgba(0,229,255,.06); color: #00e5ff; border: 1px solid rgba(0,229,255,.15); border-radius: 10px; padding: 1px 8px; font-size: .65rem; margin: 2px; text-decoration: none; }
+.dim { color: #3a5570; font-size: .69rem; }
+.badge-crit { background: rgba(255,45,85,.12); color: #ff2d55; border: 1px solid rgba(255,45,85,.3); border-radius: 4px; padding: 1px 7px; font-size: .63rem; font-weight: 700; }
+.badge-high { background: rgba(255,140,66,.1); color: #ff8c42; border: 1px solid rgba(255,140,66,.3); border-radius: 4px; padding: 1px 7px; font-size: .63rem; font-weight: 700; }
+.badge-mod  { background: rgba(255,214,10,.07); color: #ffd60a; border: 1px solid rgba(255,214,10,.25); border-radius: 4px; padding: 1px 7px; font-size: .63rem; font-weight: 700; }
+.badge-neu  { background: rgba(58,85,112,.15); color: #5a7590; border: 1px solid #1a2a3a; border-radius: 4px; padding: 1px 7px; font-size: .63rem; font-weight: 700; }
+</style>
+""", unsafe_allow_html=True)
+
+
+def _sec(t): st.markdown(f'<div class="sec">{t}</div>', unsafe_allow_html=True)
+def _h(pw): return hashlib.sha256(pw.encode()).hexdigest()
+
+
+# ═══════════════════════════════════════════════════════════════════
+# AUTH
+# ═══════════════════════════════════════════════════════════════════
+ACCOUNTS = {
+    "protellect@gmail.com": {"hash": _h("dev@protellect"), "tier": "enterprise", "name": "Dr Smith", "quota": 999999, "dev": True},
+    "demo@protellect.io":   {"hash": _h("demo2025"),       "tier": "free",       "name": "Demo User", "quota": 5,      "dev": False},
+}
+def _authed(): return bool(st.session_state.get("auth_user"))
 def _user():   return st.session_state.get("auth_user", {})
 def _used():   return st.session_state.get("searches_used", 0)
 def _quota():  return _user().get("quota", 5)
@@ -58,17 +135,17 @@ def _can():    u = _user(); return True if (u.get("dev") or u.get("tier") == "en
 def _record():
     if not _user().get("dev"): st.session_state.searches_used = _used() + 1
 def _logout():
-    for k in ["auth_user", "searches_used", "workspace", "current_protein", "protein_data_cache"]:
+    for k in ["auth_user","searches_used","workspace","current_protein","protein_data_cache","domain"]:
         st.session_state.pop(k, None)
 
 if not _authed():
-    _, cc, _ = st.columns([1, 1.2, 1])
+    _, cc, _ = st.columns([1, 1.3, 1])
     with cc:
-        st.markdown("<div style='height:50px'></div>", unsafe_allow_html=True)
-        st.markdown("""<div style='text-align:center;margin-bottom:28px'>
-          <div style='font-size:2.4rem;font-weight:800;background:linear-gradient(90deg,#00e5ff,#7c3aed);
-            -webkit-background-clip:text;-webkit-text-fill-color:transparent'>🔬 Protellect</div>
-          <div style='color:#2a5070;font-size:.8rem;margin-top:4px;letter-spacing:.1em'>GENETICS-FIRST PROTEIN INTELLIGENCE</div>
+        st.markdown("<div style='height:40px'></div>", unsafe_allow_html=True)
+        st.markdown("""<div style='text-align:center;margin-bottom:24px'>
+          <div style='font-size:2.2rem;font-weight:700;background:linear-gradient(90deg,#00e5ff,#7c3aed);
+            -webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-0.5px'>🔬 Protellect</div>
+          <div style='color:#3a5570;font-size:.75rem;margin-top:4px;letter-spacing:.12em'>GENETICS-FIRST PROTEIN INTELLIGENCE</div>
         </div>""", unsafe_allow_html=True)
         tl, td = st.tabs(["Sign In", "Try Demo"])
         with tl:
@@ -78,161 +155,212 @@ if not _authed():
                 ac = ACCOUNTS.get(em.strip().lower())
                 if ac and ac["hash"] == _h(pw):
                     st.session_state.auth_user = {"email": em, "name": ac["name"], "tier": ac["tier"], "quota": ac["quota"], "dev": ac["dev"]}
-                    st.session_state.searches_used = 0; st.session_state.workspace = []; st.rerun()
+                    st.session_state.searches_used = 0; st.session_state.workspace = []
+                    st.session_state.show_tutorial = True; st.rerun()
                 else: st.error("Invalid credentials.")
         with td:
             dn = st.text_input("Name", placeholder="Dr. Smith", key="td_n")
             de = st.text_input("Email", placeholder="you@lab.edu", key="td_e")
-            dg = st.selectbox("Goal", ["Drug target identification","Disease mechanism","Variant pathogenicity","Therapeutic hypothesis","Protein function","Academic research"], key="td_g")
             if st.button("Start Free Trial →", type="primary", use_container_width=True, key="td_btn"):
                 if dn and de:
                     st.session_state.auth_user = {"email": de, "name": dn, "tier": "free", "quota": 5, "dev": False}
-                    st.session_state.searches_used = 0; st.session_state.workspace = []; st.rerun()
+                    st.session_state.searches_used = 0; st.session_state.workspace = []
+                    st.session_state.show_tutorial = True; st.rerun()
                 else: st.warning("Enter name and email.")
-        st.markdown("""<div style='display:flex;gap:10px;margin-top:20px'>
-          <div style='flex:1;background:#020609;border:1px solid #1e3a5f;border-radius:8px;padding:12px;text-align:center'><div style='color:#4a7090;font-size:.7rem'>FREE</div><div style='color:#d0e8ff;font-weight:700'>$0</div><div style='color:#2a5070;font-size:.7rem'>5/month</div></div>
-          <div style='flex:1;background:rgba(0,229,255,0.05);border:1px solid rgba(0,229,255,0.25);border-radius:8px;padding:12px;text-align:center'><div style='color:#00e5ff;font-size:.7rem'>PRO</div><div style='color:#d0e8ff;font-weight:700'>$49/mo</div><div style='color:#2a5070;font-size:.7rem'>200 searches</div></div>
-          <div style='flex:1;background:rgba(249,115,22,0.05);border:1px solid rgba(249,115,22,0.25);border-radius:8px;padding:12px;text-align:center'><div style='color:#f97316;font-size:.7rem'>ENTERPRISE</div><div style='color:#d0e8ff;font-weight:700'>$299/mo</div><div style='color:#2a5070;font-size:.7rem'>Unlimited</div></div>
+        st.markdown("""<div style='display:flex;gap:8px;margin-top:16px'>
+          <div style='flex:1;background:#080f1a;border:1px solid #1a2a3a;border-radius:8px;padding:12px;text-align:center'>
+            <div style='color:#3a5570;font-size:.68rem;font-weight:600'>FREE</div>
+            <div style='color:#d0e8ff;font-size:1.1rem;font-weight:700;margin:2px 0'>$0</div>
+            <div style='color:#3a5570;font-size:.68rem'>5 searches/month</div></div>
+          <div style='flex:1;background:rgba(0,229,255,.04);border:1px solid rgba(0,229,255,.2);border-radius:8px;padding:12px;text-align:center'>
+            <div style='color:#00e5ff;font-size:.68rem;font-weight:600'>PRO</div>
+            <div style='color:#d0e8ff;font-size:1.1rem;font-weight:700;margin:2px 0'>$49/mo</div>
+            <div style='color:#3a5570;font-size:.68rem'>200 searches</div></div>
+          <div style='flex:1;background:rgba(249,115,22,.04);border:1px solid rgba(249,115,22,.2);border-radius:8px;padding:12px;text-align:center'>
+            <div style='color:#f97316;font-size:.68rem;font-weight:600'>ENTERPRISE</div>
+            <div style='color:#d0e8ff;font-size:1.1rem;font-weight:700;margin:2px 0'>$299/mo</div>
+            <div style='color:#3a5570;font-size:.68rem'>Unlimited</div></div>
         </div>""", unsafe_allow_html=True)
     st.stop()
 
-# ── session ───────────────────────────────────────────────────────────────
-for k, v in {"workspace": [], "current_protein": None, "protein_data_cache": {}, "domain": None,
-             "research_goal": "Drug target identification", "anthropic_key": "", "sensitivity": 0.70,
-             "csv_data": None, "wet_lab_text": "", "_qval": "", "_dval": "",
-             "_trig": False, "_dtrig": False}.items():
+
+# ═══════════════════════════════════════════════════════════════════
+# SESSION STATE
+# ═══════════════════════════════════════════════════════════════════
+for k, v in {
+    "workspace": [], "current_protein": None, "protein_data_cache": {},
+    "domain": None, "research_goal": "Drug target identification",
+    "anthropic_key": "", "sensitivity": 0.70, "csv_data": None,
+    "wet_lab_text": "", "_qval": "", "_dval": "",
+    "_trig": False, "_dtrig": False, "show_tutorial": False,
+}.items():
     if k not in st.session_state: st.session_state[k] = v
 
-# ── databases ─────────────────────────────────────────────────────────────
-ARRB_GENES = {"ARRB1", "ARRB2"}
-NON_HUMAN = ["gelatin", "gfp", "luciferase", "ovalbumin", "bovine", "collagen extract"]
+
+# ═══════════════════════════════════════════════════════════════════
+# DATABASES
+# ═══════════════════════════════════════════════════════════════════
+NON_HUMAN = ["gelatin","gfp","luciferase","ovalbumin","bovine","collagen extract","beta keratin","algae"]
 DOMAIN_EXAMPLES = {
-    "Neuroscience":     ["APP","SNCA","MAPT","LRRK2","TARDBP","HTT","GBA"],
-    "Cancer Biology":   ["TP53","KRAS","BRCA1","EGFR","MYC","PTEN","APC"],
-    "Pharmaceuticals":  ["ADRB2","ADRB1","AGTR1","DRD2","HTR2A","FLNA","GRK2"],
+    "Neuroscience":     ["APP","SNCA","MAPT","LRRK2","TARDBP","HTT","GBA","FUS","SOD1","PINK1"],
+    "Cancer Biology":   ["TP53","KRAS","BRCA1","EGFR","MYC","PTEN","APC","BRAF","CDKN2A","RB1"],
+    "Pharmaceuticals":  ["ADRB2","ADRB1","AGTR1","DRD2","HTR2A","FLNA","GRK2","OPRM1","CHRM2","MAS1"],
     "Microbiome":       [],
-    "Molecular Biology":["FLNA","GRK2","MAPK1","AKT1","SRC","CDK2","EGFR"],
-}
-ARRB_COSTS = {"HTS screen": 2_500_000, "CRISPR knock-in": 150_000, "Cryo-EM": 500_000, "Mouse models": 800_000, "BRET screens": 100_000}
-ARRB_PAPERS = [
-    {"title": "ARRB1/2 DKO mice viable and fertile", "pmid": "11408584", "journal": "Science", "year": 2001, "finding": "Complete β-arrestin loss: no lethality — redundant pathway"},
-    {"title": "Beta-arrestin phospho code: signal vs noise", "pmid": "26124276", "journal": "J Biol Chem", "year": 2015, "finding": "Phospho sites are EGFR background noise — not disease-causing"},
-    {"title": "ClinVar: ARRB2 <5 confirmed Mendelian variants", "pmid": "25307466", "journal": "Nat Genet", "year": 2014, "finding": "No Mendelian disease via beta-arrestin LoF"},
-    {"title": "G protein vs arrestin bias: clinical evidence gap", "pmid": "29531875", "journal": "Annu Rev Pharmacol", "year": 2018, "finding": "Biased agonism toward arrestin: no clinical benefit demonstrated"},
-    {"title": "Redundant pathway masking in ARRB1/2 KOs", "pmid": "18765446", "journal": "J Cell Biol", "year": 2008, "finding": "Internalisation occurs via multiple arrestin-independent mechanisms"},
-    {"title": "EGFR transphosphorylation creates false arrestin code", "pmid": "30279173", "journal": "Cell", "year": 2019, "finding": "Background kinase activity explains all ARRB phospho codes"},
-]
-ARRB_ALTS = [
-    {"gene": "ADRB1", "reason": "β1-AR — 47 P/LP variants, cardiac disease"},
-    {"gene": "ADRB2", "reason": "β2-AR — GPCR with FBM, therapeutic relevance"},
-    {"gene": "AGTR1", "reason": "AT1R — hypertension, disease variants"},
-    {"gene": "MAS1",  "reason": "Mas receptor — ACE2 axis"},
-    {"gene": "FLNA",  "reason": "Filamin A — Ser2152 IP target"},
-]
-GPCR_PROTOCOL = [
-    {"step":1,"name":"Surface Expression","desc":"SNAP/CLIP-tag + confocal. Confirm plasma membrane localisation before proceeding.","cost":"$800–2K","time":"1w","ip":False},
-    {"step":2,"name":"G-protein Coupling","desc":"cAMP HTRF (Gs) or GTPγS/cAMP (Gi). Primary efficacy readout. WT vs each P/LP variant.","cost":"$500–1.5K","time":"1w","ip":False},
-    {"step":3,"name":"Filamin Ser2152-P ★ IP ASSAY","desc":"Agonist → FLNA IP → pSer2152 western. H8 dislodgement = receptor activation. More proximal than cAMP, IP3, or arrestin. Only FLNA (not B/C). ~300/800 Class A GPCRs carry H8 FBM.","cost":"$300–800","time":"3–5d","ip":True},
-    {"step":4,"name":"Beta-arrestin BRET (Secondary Only)","desc":"RLuc8-receptor + Venus-ARRB2. Characterise biased agonism ONLY. ARRB2 has <5 Mendelian variants — NOT a primary disease readout.","cost":"$1K–3K","time":"2w","ip":False,"warn":"ARRB2 disease evidence <5 variants. Do not use as primary triage assay."},
-    {"step":5,"name":"Receptor Internalisation","desc":"SNAP-surface before/after agonist. % internalised at 30 min + 2 h.","cost":"$500–1K","time":"1w","ip":False},
-    {"step":6,"name":"Variant Functional Panel","desc":"Run Steps 2+3 for each ClinVar P/LP variant. Kills cAMP not Filamin-P = G-protein defect. Kills Filamin-P not cAMP = cytoskeletal decoupling. Different biology → different target.","cost":"$2K–5K","time":"3–4w","ip":False},
-    {"step":7,"name":"TMAO Rattling Assay (Cardiac GPCRs)","desc":"TMAO 5–50µM + FlAsH-BRET. Conformational rattling → disrupts H8-Filamin coupling → arrhythmia. Patent-unoccupied axis.","cost":"$1K–2K","time":"2w","ip":False,"cardiac":True},
-]
-MICRO_ORGANISMS = {
-    "SARS-CoV-2": {"organism":"SARS-CoV-2 (all variants)","type":"Betacoronavirus","disease":"COVID-19","host_receptors":["ACE2","TMPRSS2","NRP1"],"mechanism":"Spike RBD binds ACE2; TMPRSS2 primes S2 fusion","approved_drugs":["Nirmatrelvir/ritonavir","Remdesivir","Molnupiravir"]},
-    "HIV-1":      {"organism":"HIV-1","type":"Lentivirus","disease":"AIDS","host_receptors":["CD4","CCR5","CXCR4"],"mechanism":"gp120→CD4→CCR5/CXCR4→gp41 fusion","approved_drugs":["Dolutegravir","Darunavir","Bictegravir"]},
-    "Hantavirus": {"organism":"Hantavirus (Sin Nombre/Hantaan/Seoul)","type":"Bunyavirus","disease":"HPS/HFRS","host_receptors":["ITGB3","ITGAV","DAG1"],"mechanism":"Gn/Gc glycoproteins bind β3-integrins on endothelial cells","approved_drugs":["Ribavirin (limited)","Supportive only"]},
-    "Ebola":      {"organism":"Ebola virus (Zaire/Sudan/Bundibugyo)","type":"Filovirus","disease":"EVD","host_receptors":["NPC1","AXL","TYRO3"],"mechanism":"GP binds NPC1 in late endosome after cathepsin cleavage","approved_drugs":["Atoltivimab/maftivimab/odesivimab","Ansuvimab"]},
-    "Helicobacter pylori": {"organism":"H. pylori CagA+ strains","type":"Gram-negative bacterium","disease":"Peptic ulcer / Gastric cancer","host_receptors":["EGFR","MET","CDH1"],"mechanism":"CagA via T4SS → SHP2/RAS/MAPK; VacA → mitochondria","approved_drugs":["Amoxicillin+clarithromycin+PPI","Bismuth quadruple"]},
+    "Molecular Biology":["FLNA","GRK2","MAPK1","AKT1","SRC","CDK2","EGFR","JAK2","STAT3","PIK3CA"],
 }
 DOMAIN_META = {
-    "Neuroscience":     {"icon":"🧠","color":"#818cf8","tags":["Alzheimer's","Parkinson's","ALS","Epilepsy","BBB Penetrance","Synaptic Biology","Neurodegeneration","Huntington's"],"desc":"Map neurological disease variants to drug targets. BBB penetrance, synaptic networks, brain GTEx expression."},
-    "Cancer Biology":   {"icon":"🎗","color":"#f43f5e","tags":["Oncogenes","Tumour Suppressors","Somatic Hotspots","Founder Mutations","COSMIC","cfDNA","CRC","Breast","Lung","Leukaemia"],"desc":"Founder mutation ID, somatic/germline classification, ClinVar triage for 14 cancer types."},
-    "Pharmaceuticals":  {"icon":"💊","color":"#00e5ff","tags":["GPCR Targets","Filamin Ser2152-P","Drug Tractability","BRET","Biased Agonism","Clinical Trials","TMAO Arrhythmia","cAMP HTRF"],"desc":"GPCR piggyback targets, Filamin Ser2152-P IP assay, tractability, drug prioritisation."},
-    "Microbiome":       {"icon":"🦠","color":"#4ade80","tags":["LLM Annotation","BGC","Taxonomy","Host–Microbe","Gut Ecology","SCFA","Pathobionts","Curli","NRP Synthetase","PKS"],"desc":"AI-powered vague→specific gene annotation, BGC prediction, pathogen host-receptor mapping."},
-    "Molecular Biology":{"icon":"⚛️","color":"#f97316","tags":["Phosphorylation","Kinase Signalling","AlphaFold","STRING","PTMs","Structural Domains","Variant Impact","Co-IP","SPR"],"desc":"Phosphorylation signal/noise, AlphaMissense, 3D structure, mutation impact, interaction networks."},
+    "Neuroscience":    {"icon":"🧠","color":"#818cf8","glow":"rgba(129,140,248,0.2)","tags":["Alzheimer's","Parkinson's","ALS","Epilepsy","BBB Penetrance","Synaptic Biology","Neurodegeneration","Huntington's","MS","Dementia"],"desc":"Neurological disease genetics, BBB penetrance, brain expression, synaptic networks."},
+    "Cancer Biology":  {"icon":"🎗","color":"#f43f5e","glow":"rgba(244,63,94,0.2)","tags":["Oncogenes","Tumour Suppressors","Somatic Hotspots","Founder Mutations","COSMIC","cfDNA","CRC","Breast","Lung","Leukaemia"],"desc":"Founder mutation identification, somatic/germline triage, 14 cancer type breakdown."},
+    "Pharmaceuticals": {"icon":"💊","color":"#00e5ff","glow":"rgba(0,229,255,0.2)","tags":["GPCR Targets","Filamin Ser2152-P","Drug Tractability","BRET Assays","Biased Agonism","Clinical Trials","TMAO Arrhythmia","cAMP HTRF","HTS","Phase III"],"desc":"GPCR piggyback analysis, Filamin Ser2152-P IP assay, drug tractability, clinical trials."},
+    "Microbiome":      {"icon":"🦠","color":"#4ade80","glow":"rgba(74,222,128,0.2)","tags":["LLM Annotation","BGC","Taxonomy","Host–Microbe","Gut Ecology","SCFA","Pathobionts","Curli","NRP Synthetase","PKS"],"desc":"AI gene annotation, biosynthetic gene clusters, pathogen host-receptor mapping."},
+    "Molecular Biology":{"icon":"⚛️","color":"#f97316","glow":"rgba(249,115,22,0.2)","tags":["Phosphorylation","Kinase Signalling","AlphaFold","STRING","PTMs","Structural Domains","Variant Impact","Co-IP","SPR","Proteomics"],"desc":"Phosphorylation signal/noise, AlphaMissense, 3D structure, interaction networks."},
 }
-VERDICT_COLORS = {"DISEASE-CRITICAL":"#ff2d55","DISEASE-ASSOCIATED":"#ff8c42","MODERATE":"#ffd60a","VERY LOW":"#4a7090","DEPRIORITISE":"#ef4444","NO DISEASE VARIANTS":"#334155"}
-ICONS = {"Neuroscience":"🧠","Cancer Biology":"🎗","Pharmaceuticals":"💊","Microbiome":"🦠","Molecular Biology":"⚛️"}
+VERDICT_COLORS = {
+    "DISEASE-CRITICAL":"#ff2d55","DISEASE-ASSOCIATED":"#ff8c42",
+    "MODERATE":"#ffd60a","VERY LOW":"#3a5570",
+    "DEPRIORITISE":"#ef4444","NO DISEASE VARIANTS":"#334155",
+}
+ICONS = {d: DOMAIN_META[d]["icon"] for d in DOMAIN_META}
 
-# ── API fetchers ──────────────────────────────────────────────────────────
-HDR = {"User-Agent": "Protellect/2.0"}
+# Common name → gene symbol map
+NAME_MAP = {
+    "filamin a":"FLNA","filamin-a":"FLNA","filamin":"FLNA","filamin b":"FLNB","filamin c":"FLNC",
+    "beta arrestin 2":"ARRB2","beta-arrestin-2":"ARRB2","arrestin 2":"ARRB2","beta arrestin2":"ARRB2",
+    "beta arrestin 1":"ARRB1","arrestin 1":"ARRB1",
+    "p53":"TP53","tumor protein p53":"TP53","p21":"CDKN1A",
+    "alpha synuclein":"SNCA","alpha-synuclein":"SNCA","synuclein":"SNCA",
+    "tau":"MAPT","tau protein":"MAPT","microtubule-associated protein tau":"MAPT",
+    "amyloid precursor":"APP","amyloid":"APP","amyloid beta precursor":"APP",
+    "beta 2 adrenergic":"ADRB2","beta-2 adrenergic":"ADRB2","b2ar":"ADRB2","beta2ar":"ADRB2",
+    "beta 1 adrenergic":"ADRB1","b1ar":"ADRB1",
+    "angiotensin":"AGTR1","at1r":"AGTR1","angiotensin ii type 1":"AGTR1",
+    "dopamine d2":"DRD2","d2 receptor":"DRD2",
+    "grk2":"GRK2","g protein-coupled receptor kinase 2":"GRK2",
+    "akt":"AKT1","akt1":"AKT1","pkb":"AKT1",
+    "brca":"BRCA1","kras":"KRAS","nras":"NRAS","hras":"HRAS",
+    "egfr":"EGFR","her1":"EGFR","epidermal growth factor receptor":"EGFR",
+    "huntingtin":"HTT","htt":"HTT",
+    "lrrk2 kinase":"LRRK2","leucine rich repeat kinase 2":"LRRK2",
+    "superoxide dismutase":"SOD1","sod1":"SOD1",
+    "fus protein":"FUS","tdp-43":"TARDBP","tdp43":"TARDBP",
+}
 
+HDR = {"User-Agent": "Protellect/3.0 (protellect@gmail.com)"}
+
+
+# ═══════════════════════════════════════════════════════════════════
+# API FETCHERS
+# ═══════════════════════════════════════════════════════════════════
 @st.cache_data(ttl=86400, show_spinner=False)
-def _uniprot(gene):
+def _uniprot(raw_query):
+    """Search UniProt: gene symbol → protein name → full text."""
+    q = re.sub(r"['\"\(\)]", "", raw_query).strip()
+    def _get(acc):
+        r = requests.get(f"https://rest.uniprot.org/uniprotkb/{acc}.json", headers=HDR, timeout=20)
+        r.raise_for_status(); return r.json()
     try:
-        r = requests.get("https://rest.uniprot.org/uniprotkb/search",
-            params={"query": f"gene:{gene} AND organism_id:9606 AND reviewed:true", "format": "json", "size": 1}, headers=HDR, timeout=15)
-        res = r.json().get("results", [])
-        if not res: return {}
-        acc = res[0]["primaryAccession"]
-        r2 = requests.get(f"https://rest.uniprot.org/uniprotkb/{acc}.json", headers=HDR, timeout=15); r2.raise_for_status()
-        return r2.json()
+        for query_str in [
+            f"gene:{q} AND organism_id:9606 AND reviewed:true",
+            f"protein_name:{q} AND organism_id:9606 AND reviewed:true",
+            f"({q}) AND organism_id:9606 AND reviewed:true",
+        ]:
+            r = requests.get("https://rest.uniprot.org/uniprotkb/search",
+                params={"query": query_str, "format": "json", "size": 1}, headers=HDR, timeout=15)
+            res = r.json().get("results", [])
+            if res: return _get(res[0]["primaryAccession"])
+        return {}
     except: return {}
 
+
 def _parse(e):
+    """Parse UniProt JSON entry. Uses 'name' field (new API) with 'diseaseName' fallback."""
     if not e: return {}
     seq = e.get("sequence", {}).get("value", "")
     genes = [g.get("geneName", {}).get("value", "") for g in e.get("genes", []) if g.get("geneName", {}).get("value")]
-    diseases, functions, subcell, domains_f = [], [], [], []
-    # Also extract variants from UniProt features (reliable fallback for ClinVar)
+    diseases, functions, subcell, domains_f, ptms, tissues = [], [], [], [], [], []
+    
+    # Extract UniProt natural variants (primary disease variant source, more reliable than ClinVar on cloud)
     uni_variants = []
     for f in e.get("features", []):
         if f.get("type") == "NATURAL_VARIANT":
             desc = f.get("description", "")
             loc = f.get("location", {}); pos = loc.get("start", {}).get("value", 0)
             orig = f.get("alternativeSequence", {}).get("originalSequence", "")
-            alt_list = f.get("alternativeSequence", {}).get("alternativeSequences", [])
-            alt = alt_list[0] if alt_list else "?"
-            conds = [a.get("name", "") for a in f.get("evidences", []) if a.get("name")]
-            is_path = any(k in desc.lower() for k in ["disease", "pathogenic", "associated"])
-            if is_path or "in " in desc.lower():
+            alts = f.get("alternativeSequence", {}).get("alternativeSequences", [])
+            alt = alts[0] if alts else "?"
+            is_disease = any(k in desc.lower() for k in ["disease", "in patient", "pathogenic", "associated with", "syndrome"])
+            if is_disease and pos:
                 cls = "CRITICAL" if "disease" in desc.lower() else "HIGH"
                 uni_variants.append({
                     "id": f.get("ftId", f"UNI{pos}"),
                     "title": f"{orig}{pos}{alt} — {desc[:60]}",
-                    "significance": "Pathogenic" if cls=="CRITICAL" else "Likely pathogenic",
-                    "ml_class": cls,
-                    "protein_change": f"{orig}{pos}{alt}",
-                    "position": pos,
-                    "conditions": [desc[:50]] if desc else [],
-                    "stars": 2,
-                    "url": f"https://www.uniprot.org/uniprotkb/{e.get('primaryAccession','')}/entry#disease_variants"
+                    "significance": "Pathogenic" if cls == "CRITICAL" else "Likely pathogenic",
+                    "ml_class": cls, "protein_change": f"{orig}{pos}{alt}",
+                    "position": pos, "conditions": [desc[:60]] if desc else [],
+                    "stars": 2, "source": "UniProt",
+                    "url": f"https://www.uniprot.org/uniprotkb/{e.get('primaryAccession','')}/entry",
                 })
+        elif f.get("type") in ("DOMAIN", "REGION", "MOTIF", "DNA_BIND", "ACT_SITE", "BINDING", "METAL", "CARBOHYD"):
+            loc = f.get("location", {}); s = loc.get("start", {}).get("value", "?"); en = loc.get("end", {}).get("value", "?")
+            domains_f.append({"type": f["type"], "name": f.get("description", f["type"]), "start": s, "end": en})
+    
     for c in e.get("comments", []):
         ct = c.get("commentType", "")
         if ct == "DISEASE":
             d = c.get("disease", {})
-            diseases.append({"name": d.get("name") or d.get("diseaseName") or "Unnamed disease", "desc": d.get("description", "")[:180]})
+            # UniProt API 2024: field is "name" not "diseaseName"
+            name = d.get("name") or d.get("diseaseName") or d.get("acronym") or "Unnamed disease"
+            desc_txt = d.get("description", "")[:200]
+            # Classify somatic vs germline from disease name and description
+            somatic = any(k in (name + desc_txt).lower() for k in ["cancer","tumor","tumour","carcinoma","sarcoma","lymphoma","leukaemia","leukemia","somatic"])
+            inheritance = "Somatic" if somatic else "Germline"
+            diseases.append({"name": name, "desc": desc_txt, "inheritance": inheritance, "omim": d.get("diseaseAccession", "")})
         elif ct == "FUNCTION":
-            for t in c.get("texts", []): functions.append(t.get("value", "")[:300])
+            for t in c.get("texts", []): functions.append(t.get("value", "")[:400])
         elif ct == "SUBCELLULAR LOCATION":
             for loc in c.get("subcellularLocations", []): subcell.append(loc.get("location", {}).get("value", ""))
-    for f in e.get("features", []):
-        ft = f.get("type", ""); loc = f.get("location", {})
-        s = loc.get("start", {}).get("value", "?"); en = loc.get("end", {}).get("value", "?")
-        if ft in ("DOMAIN","REGION","MOTIF","DNA_BIND","ACT_SITE","BINDING"):
-            domains_f.append({"type": ft, "name": f.get("description", ft), "start": s, "end": en})
+        elif ct == "PTM":
+            for t in c.get("texts", []): ptms.append(t.get("value", "")[:200])
+        elif ct == "TISSUE SPECIFICITY":
+            for t in c.get("texts", []): tissues.append(t.get("value", "")[:200])
+    
     kws = [k.get("name", "") for k in e.get("keywords", [])]; kl = " ".join(kws).lower()
-    is_gpcr = any(x in kl for x in ["g protein-coupled","gpcr","seven-transmembrane"])
+    is_gpcr = any(x in kl for x in ["g protein-coupled", "gpcr", "seven-transmembrane"])
+    is_kinase = any(x in kl for x in ["kinase", "phosphotransferase"])
+    is_phosphatase = any(x in kl for x in ["phosphatase"])
     org = e.get("organism", {}); taxid = org.get("taxonId", 0)
-    return {"uni_variants": uni_variants, "accession": e.get("primaryAccession",""), "gene": genes[0] if genes else "",
-            "protein_name": e.get("proteinDescription",{}).get("recommendedName",{}).get("fullName",{}).get("value",""),
-            "organism": org.get("scientificName",""), "taxon_id": taxid, "is_human": taxid == 9606,
-            "sequence": seq, "seq_len": len(seq), "diseases": diseases, "functions": functions,
-            "subcellular": list(set(subcell)), "domains": domains_f, "keywords": kws, "is_gpcr": is_gpcr,
-            "mw_kda": round(len(seq)*110/1000, 1)}
+    
+    # Binding sites from features
+    binding_sites = [f for f in domains_f if f["type"] in ("BINDING", "ACT_SITE", "METAL", "DNA_BIND")]
+    phospho_sites = []
+    for f in e.get("features", []):
+        if f.get("type") in ("MOD_RES",) and "phospho" in f.get("description", "").lower():
+            pos = f.get("location", {}).get("start", {}).get("value", 0)
+            phospho_sites.append({"position": pos, "name": f.get("description", "Phosphoserine")})
+    
+    return {
+        "accession": e.get("primaryAccession", ""), "gene": genes[0] if genes else "",
+        "protein_name": e.get("proteinDescription", {}).get("recommendedName", {}).get("fullName", {}).get("value", ""),
+        "organism": org.get("scientificName", ""), "taxon_id": taxid, "is_human": taxid == 9606,
+        "sequence": seq, "seq_len": len(seq), "diseases": diseases, "functions": functions,
+        "subcellular": list(set(subcell)), "domains": domains_f, "ptms": ptms, "tissues": tissues,
+        "keywords": kws, "is_gpcr": is_gpcr, "is_kinase": is_kinase, "is_phosphatase": is_phosphatase,
+        "mw_kda": round(len(seq) * 110 / 1000, 1), "uni_variants": uni_variants,
+        "binding_sites": binding_sites, "phospho_sites": phospho_sites,
+    }
+
 
 @st.cache_data(ttl=86400, show_spinner=False)
-def _clinvar(gene, mx=50):
+def _clinvar(gene, mx=80):
     try:
         r = requests.get("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi",
-            params={"db":"clinvar","term":f"{gene}[gene] AND homo sapiens[organism]","retmax":mx,"retmode":"json"}, headers=HDR, timeout=15)
+            params={"db": "clinvar", "term": f"{gene}[gene] AND homo sapiens[organism]",
+                    "retmax": mx, "retmode": "json"}, headers=HDR, timeout=20)
         ids = r.json().get("esearchresult", {}).get("idlist", [])
         if not ids: return []
-        time.sleep(0.35)
+        time.sleep(0.4)
         r2 = requests.get("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi",
-            params={"db":"clinvar","id":",".join(ids[:50]),"retmode":"json"}, headers=HDR, timeout=20)
+            params={"db": "clinvar", "id": ",".join(ids[:mx]), "retmode": "json"}, headers=HDR, timeout=25)
         res = r2.json().get("result", {}); out = []
         for uid in res.get("uids", []):
             v = res.get(uid, {}); sig = v.get("clinical_significance", {}).get("description", "Unknown"); sl = sig.lower()
@@ -243,12 +371,18 @@ def _clinvar(gene, mx=50):
             pc = v.get("protein_change", ""); pos = 0
             m = re.search(r'(\d+)', pc)
             if m: pos = int(m.group(1))
-            stars = {"no assertion":0,"criteria provided, single":1,"criteria provided, multiple":2,"reviewed by expert":4}.get((v.get("review_status","") or "").lower()[:30], 0)
-            out.append({"id":uid,"title":v.get("title",""),"significance":sig,"ml_class":cls,"protein_change":pc,
-                        "position":pos,"conditions":[c.get("trait_name","") for c in v.get("trait_set",[])],"stars":stars,
-                        "url":f"https://www.ncbi.nlm.nih.gov/clinvar/variation/{uid}/"})
+            stars = {"no assertion":0,"criteria provided, single":1,"criteria provided, multiple":2,"reviewed by expert":4}.get(
+                (v.get("review_status","") or "").lower()[:30], 0)
+            out.append({
+                "id": uid, "title": v.get("title", ""), "significance": sig, "ml_class": cls,
+                "protein_change": pc, "position": pos,
+                "conditions": [c.get("trait_name", "") for c in v.get("trait_set", [])],
+                "stars": stars, "source": "ClinVar",
+                "url": f"https://www.ncbi.nlm.nih.gov/clinvar/variation/{uid}/",
+            })
         return sorted(out, key=lambda x: x["ml_class"] == "CRITICAL", reverse=True)
     except: return []
+
 
 @st.cache_data(ttl=604800, show_spinner=False)
 def _alphafold(acc):
@@ -257,15 +391,17 @@ def _alphafold(acc):
         r.raise_for_status(); return r.text
     except: return ""
 
+
 def _plddt(pdb):
     d = {}
     for line in (pdb or "").splitlines():
         if line.startswith("ATOM"):
             try:
                 ri = int(line[22:26].strip()); b = float(line[60:66].strip())
-                if ri not in d: d[ri] = b
+                d.setdefault(ri, b)
             except: pass
     return d
+
 
 @st.cache_data(ttl=604800, show_spinner=False)
 def _alphamissense(acc):
@@ -281,47 +417,56 @@ def _alphamissense(acc):
         return out
     except: return []
 
+
 @st.cache_data(ttl=86400, show_spinner=False)
-def _pubmed(gene, n=20):
-    qs = [f"{gene}[gene] pathogenic variant clinical 2020:2025[pdat]",
-          f"{gene} functional assay CRISPR 2020:2025[pdat]",
-          f"{gene} therapy treatment 2020:2025[pdat]",
-          f"{gene} disease mechanism phenotype 2020:2025[pdat]"]
+def _pubmed(gene, n=25):
+    """Fetch highly cited papers with evidence tier classification."""
+    qs = [
+        f"{gene}[gene] pathogenic variant clinical 2020:2025[pdat]",
+        f"{gene} functional assay CRISPR 2019:2025[pdat]",
+        f"{gene} therapy treatment drug 2020:2025[pdat]",
+        f"{gene} disease mechanism phenotype 2018:2025[pdat]",
+        f"{gene} structure crystal cryo-em alphafold 2018:2025[pdat]",
+    ]
     all_p = []; seen = set()
-    TMAP = {1:"#00e5ff",2:"#4ade80",3:"#818cf8",4:"#f97316",5:"#fbbf24",8:"#475569"}
-    LMAP = {1:"RCT",2:"Cohort",3:"Functional",4:"Structural",5:"Animal",8:"Review"}
+    TMAP = {1:"#00e5ff",2:"#4ade80",3:"#818cf8",4:"#f97316",5:"#fbbf24",6:"#94a3b8",8:"#475569"}
+    LMAP = {1:"RCT",2:"Cohort",3:"Functional",4:"Structural",5:"Animal",6:"Computational",8:"Review"}
     def _tier(t):
         tl = t.lower()
-        if any(k in tl for k in ["randomised","randomized","placebo"]): return 1
-        if any(k in tl for k in ["cohort","prospective","retrospective"]): return 2
-        if any(k in tl for k in ["crispr","knock-in","western","functional"]): return 3
-        if any(k in tl for k in ["cryo-em","nmr","crystal","alphafold"]): return 4
-        if any(k in tl for k in ["mouse","zebrafish","xenograft"]): return 5
+        if any(k in tl for k in ["randomised","randomized","phase iii","placebo"]): return 1
+        if any(k in tl for k in ["cohort","prospective","retrospective","population"]): return 2
+        if any(k in tl for k in ["crispr","knock-in","western","functional","assay"]): return 3
+        if any(k in tl for k in ["cryo-em","nmr","crystal","x-ray","alphafold","structure"]): return 4
+        if any(k in tl for k in ["mouse","zebrafish","xenograft","animal"]): return 5
+        if any(k in tl for k in ["in silico","computational","machine learning","model"]): return 6
         return 8
     for q in qs:
         try:
             r = requests.get("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi",
-                params={"db":"pubmed","term":q,"retmax":6,"retmode":"json"}, headers=HDR, timeout=12)
+                params={"db":"pubmed","term":q,"retmax":6,"retmode":"json","sort":"relevance"}, headers=HDR, timeout=12)
             ids = [i for i in r.json().get("esearchresult",{}).get("idlist",[]) if i not in seen]
             seen.update(ids)
             if not ids: continue
-            time.sleep(0.35)
+            time.sleep(0.4)
             r2 = requests.get("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi",
                 params={"db":"pubmed","id":",".join(ids),"retmode":"json"}, headers=HDR, timeout=15)
-            res = r2.json().get("result", {})
+            res = r2.json().get("result",{})
             for pid in ids:
-                p = res.get(pid, {}); au = p.get("authors",[]); fa = au[0].get("name","") if au else ""; t = p.get("title",""); tier = _tier(t)
-                all_p.append({"pmid":pid,"title":t,"year":p.get("pubdate","")[:4],"authors":f"{fa} et al." if len(au)>1 else fa,
-                               "journal":p.get("source",""),"url":f"https://pubmed.ncbi.nlm.nih.gov/{pid}/",
-                               "tier":tier,"tier_label":LMAP.get(tier,"Study"),"tier_color":TMAP.get(tier,"#64748b")})
+                p = res.get(pid,{}); au = p.get("authors",[]); fa = au[0].get("name","") if au else ""; t = p.get("title",""); tier = _tier(t)
+                all_p.append({"pmid":pid,"title":t,"year":p.get("pubdate","")[:4],
+                    "authors":f"{fa} et al." if len(au)>1 else fa,
+                    "journal":p.get("source",""),"url":f"https://pubmed.ncbi.nlm.nih.gov/{pid}/",
+                    "tier":tier,"tier_label":LMAP.get(tier,"Study"),"tier_color":TMAP.get(tier,"#475569")})
         except: pass
     return sorted(all_p, key=lambda x: x["tier"])[:n]
+
 
 @st.cache_data(ttl=86400, show_spinner=False)
 def _gnomad(gene):
     q = 'query G($g:String!){gene(gene_symbol:$g,reference_genome:GRCh38){gnomad_constraint{pLI lof{oe}missense{oe}}}}'
     try:
-        r = requests.post("https://gnomad.broadinstitute.org/api", json={"query":q,"variables":{"g":gene}},
+        r = requests.post("https://gnomad.broadinstitute.org/api",
+            json={"query":q,"variables":{"g":gene}},
             headers={**HDR,"Content-Type":"application/json"}, timeout=20)
         c = (r.json().get("data",{}).get("gene",{}) or {}).get("gnomad_constraint",{}) or {}
         pLI = c.get("pLI"); loe = (c.get("lof",{}) or {}).get("oe"); moe = (c.get("missense",{}) or {}).get("oe")
@@ -329,8 +474,9 @@ def _gnomad(gene):
                 "missense_oe":round(float(moe),3) if moe else None,"essential":float(pLI)>0.9 if pLI else False}
     except: return {}
 
+
 @st.cache_data(ttl=86400, show_spinner=False)
-def _string(gene, lim=15):
+def _string(gene, lim=20):
     try:
         r = requests.get("https://string-db.org/api/json/get_string_ids",
             params={"identifiers":gene,"species":9606,"limit":1,"caller_identity":"protellect"}, headers=HDR, timeout=12)
@@ -339,8 +485,10 @@ def _string(gene, lim=15):
         sid = d[0].get("stringId","")
         r2 = requests.get("https://string-db.org/api/json/interaction_partners",
             params={"identifiers":sid,"species":9606,"limit":lim,"required_score":700,"caller_identity":"protellect"}, headers=HDR, timeout=15)
-        return [{"partner":i.get("preferredName_B",""),"score":round(i.get("score",0),3)} for i in r2.json()]
+        return [{"partner":i.get("preferredName_B",""),"score":round(i.get("score",0),3),
+                 "experimental":round(i.get("escore",0),3)} for i in r2.json()]
     except: return []
+
 
 @st.cache_data(ttl=86400, show_spinner=False)
 def _opentargets(gene):
@@ -354,11 +502,14 @@ def _opentargets(gene):
             json={"query":q,"variables":{"id":eid}}, headers={**HDR,"Content-Type":"application/json"}, timeout=20)
         tgt = (r2.json().get("data",{}).get("target",{}) or {})
         tr = tgt.get("tractability",{}) or {}; kd = tgt.get("knownDrugs",{}) or {}
-        return {"sm_tractable":any((t or {}).get("value") for t in (tr.get("smallMolecule") or [{}])),
-                "ab_tractable":any((t or {}).get("value") for t in (tr.get("antibody") or [{}])),
-                "known_drugs_count":kd.get("count",0),
-                "known_drugs":[(r.get("drug",{}) or {}).get("name","") for r in (kd.get("rows") or [])[:6]]}
+        return {
+            "sm_tractable":any((t or {}).get("value") for t in (tr.get("smallMolecule") or [{}])),
+            "ab_tractable":any((t or {}).get("value") for t in (tr.get("antibody") or [{}])),
+            "known_drugs_count":kd.get("count",0),
+            "known_drugs":[(r.get("drug",{}) or {}).get("name","") for r in (kd.get("rows") or [])[:8]],
+        }
     except: return {}
+
 
 @st.cache_data(ttl=86400, show_spinner=False)
 def _gtex(gene):
@@ -368,31 +519,21 @@ def _gtex(gene):
         return {i.get("tissueSiteDetailId","").replace("_"," "): i.get("median",0) for i in r.json().get("medianGeneExpression",[])}
     except: return {}
 
-@st.cache_data(ttl=86400, show_spinner=False)
-def _kegg(gene):
-    try:
-        r = requests.get(f"https://rest.kegg.jp/find/hsa/{gene}", headers=HDR, timeout=10)
-        ls = r.text.strip().splitlines()
-        if not ls: return []
-        gid = ls[0].split("\t")[0].strip()
-        r2 = requests.get(f"https://rest.kegg.jp/link/pathway/{gid}", headers=HDR, timeout=10)
-        pids = [l.split("\t")[1].strip() for l in r2.text.strip().splitlines() if "\t" in l][:6]
-        if not pids: return []
-        r3 = requests.get(f"https://rest.kegg.jp/list/{'+'.join(pids)}", headers=HDR, timeout=10)
-        return [{"id":l.split("\t")[0].strip(),"name":l.split("\t")[1].strip() if "\t" in l else "","url":f"https://www.kegg.jp/pathway/{l.split(chr(9))[0].strip()}"} for l in r3.text.strip().splitlines() if "\t" in l]
-    except: return []
 
 @st.cache_data(ttl=86400, show_spinner=False)
 def _trials(gene):
     try:
         r = requests.get("https://clinicaltrials.gov/api/v2/studies",
-            params={"query.term":gene,"filter.status":"RECRUITING","pageSize":6}, headers=HDR, timeout=15)
+            params={"query.term":gene,"filter.status":"RECRUITING","pageSize":8}, headers=HDR, timeout=15)
         out = []
         for s in r.json().get("studies",[]):
             mod = s.get("protocolSection",{}); im = mod.get("identificationModule",{}); dm = mod.get("designModule",{})
-            out.append({"nct_id":im.get("nctId",""),"title":im.get("briefTitle","")[:80],"phase":(dm.get("phases",["?"])[0] if dm.get("phases") else "?"),"url":f"https://clinicaltrials.gov/study/{im.get('nctId','')}"})
+            out.append({"nct_id":im.get("nctId",""),"title":im.get("briefTitle","")[:80],
+                "phase":(dm.get("phases",["?"])[0] if dm.get("phases") else "?"),
+                "url":f"https://clinicaltrials.gov/study/{im.get('nctId','')}"})
         return out
     except: return []
+
 
 @st.cache_data(ttl=86400, show_spinner=False)
 def _dgidb(gene):
@@ -400,213 +541,379 @@ def _dgidb(gene):
         r = requests.get("https://dgidb.org/api/v2/interactions.json", params={"genes":gene}, headers=HDR, timeout=12)
         out = []
         for m in r.json().get("matchedTerms",[]):
-            for i in m.get("interactions",[])[:6]:
+            for i in m.get("interactions",[])[:8]:
                 d = i.get("drugName","")
                 if d: out.append({"drug":d,"type":(i.get("interactionTypes",["?"])[0] if i.get("interactionTypes") else "?")})
-        return out[:8]
+        return out[:10]
     except: return []
 
-# ── GI scorer ─────────────────────────────────────────────────────────────
+
+# ═══════════════════════════════════════════════════════════════════
+# GI SCORER (no mandatory ARRB deprioritize — only if asked)
+# ═══════════════════════════════════════════════════════════════════
 def _gi(gene, cv, seq_len):
-    if gene.upper() in ARRB_GENES:
-        return {"verdict":"DEPRIORITISE","color":"#ef4444","n_pathogenic":0,"n_critical":0,"per100":0,"reasons":["ARRB override: <5 Mendelian disease variants","DKO mice viable/fertile"],"pursue":False}
     path = [v for v in cv if v.get("ml_class") in ("CRITICAL","HIGH")]
-    n_p = len(path); n_c = sum(1 for v in cv if v.get("ml_class")=="CRITICAL"); ms = sum(1 for v in path if v.get("stars",0)>=2)
-    per100 = (n_p/seq_len*100) if seq_len else 0; reasons = []
-    if n_p >= 5: reasons.append(f"{n_p} P/LP ClinVar variants")
-    if ms >= 2: reasons.append(f"{ms} multi-star reviewed")
-    if per100 >= 1: reasons.append(f"{per100:.2f} P/LP per 100 residues")
-    if per100>=1 and n_p>=5 and ms>=2: v2,p = "DISEASE-CRITICAL", True
-    elif per100>=0.5 or n_p>=3: v2,p = "DISEASE-ASSOCIATED", True
-    elif per100>=0.1 or n_p>=1: v2,p = "MODERATE", None
-    elif n_p == 0: v2,p = "NO DISEASE VARIANTS", False; reasons.append("No ClinVar P/LP — consider redundant pathway")
-    else: v2,p = "VERY LOW", False
-    return {"verdict":v2,"color":VERDICT_COLORS.get(v2,"#4a7090"),"n_pathogenic":n_p,"n_critical":n_c,"per100":round(per100,3),"multi_star":ms,"reasons":reasons or ["Insufficient variant density"],"pursue":p}
+    n_p = len(path); n_c = sum(1 for v in cv if v.get("ml_class")=="CRITICAL")
+    ms = sum(1 for v in path if v.get("stars",0)>=2)
+    per100 = (n_p / seq_len * 100) if seq_len else 0
+    reasons = []
+    if n_p >= 5: reasons.append(f"{n_p} P/LP variants")
+    if ms >= 2: reasons.append(f"{ms} multi-star expert reviewed")
+    if per100 >= 1: reasons.append(f"{per100:.2f} P/LP per 100 aa")
+    if per100 >= 1 and n_p >= 5 and ms >= 2: v2, p = "DISEASE-CRITICAL", True
+    elif per100 >= 0.5 or n_p >= 3: v2, p = "DISEASE-ASSOCIATED", True
+    elif per100 >= 0.1 or n_p >= 1: v2, p = "MODERATE", None
+    elif n_p == 0: v2, p = "NO DISEASE VARIANTS", False; reasons.append("No ClinVar P/LP — null mutant with no phenotype")
+    else: v2, p = "VERY LOW", False
+    return {"verdict":v2,"color":VERDICT_COLORS.get(v2,"#3a5570"),"n_pathogenic":n_p,"n_critical":n_c,
+            "per100":round(per100,3),"multi_star":ms,"reasons":reasons or ["Insufficient variant density"],"pursue":p}
 
-# ── experiment ROI ────────────────────────────────────────────────────────
-def _exps(gene, gi_s, pdata, cv, gnomad, string_d, ot, am):
-    if gene.upper() in ARRB_GENES:
-        return [{"name":n,"category":"AVOID","cost_usd":c,"time_weeks":0,"p_success":0,"value_score":0,"expected_value":0,"rationale":r,"do_first":False,"avoid":True}
-                for n,c,r in [("HTS screen",2_500_000,"No disease variant validates this target"),("CRISPR knock-in",150_000,"<5 Mendelian variants — premature"),("Cryo-EM",500_000,"Structure without genetic support is academic"),("Mouse models",800_000,"DKO mice normal — no animal model justification")]]
-    path = [v for v in cv if v.get("ml_class") in ("CRITICAL","HIGH")]
-    top_v = [v.get("protein_change","?") for v in path[:3]]; vstr = ", ".join(top_v) or "ClinVar variants"
-    partners = [p["partner"] for p in string_d[:3]] if string_d else ["interaction partners"]
-    kws = " ".join(pdata.get("keywords",[]) + pdata.get("functions",[])).lower()
-    is_gpcr = pdata.get("is_gpcr",False); is_kinase = any(k in kws for k in ["kinase","phosphotransferase"])
-    is_fil = any(k in kws for k in ["filamin","actin-binding protein 280"]); is_cardiac = gene.upper() in {"ADRB1","ADRB2","AGTR1","CHRM2"}
-    am_path = {a["position"] for a in (am or []) if a.get("class")=="pathogenic"}; path_pos = {v["position"] for v in path if v.get("position")}
-    concordant = len(path_pos & am_path); cell = "iPSC-cardiomyocytes" if is_cardiac else "iPSC-neurons" if any(x in " ".join([d.get("name","") for d in pdata.get("diseases",[])]).lower() for x in ["neuro","parkinson","alzheimer"]) else "HEK293T/patient cells"
-    out = []
-    out.append({"name":"AlphaFold-Multimer (in silico — free first step)","category":"Structural Prediction","cost_usd":0,"time_weeks":0.5,"p_success":0.80,"value_score":7,"expected_value":5.6,"rationale":f"Free via ColabFold. Model {gene}:{partners[0] if partners else 'STRING partner'} complex. ipTM>0.8 = high confidence. Map {vstr} onto interface before wet lab.","do_first":True})
-    if is_gpcr:
-        out.append({"name":f"Filamin Ser2152-P assay — {gene} (IP ASSAY ★)","category":"GPCR Activation","cost_usd":600,"time_weeks":1,"p_success":0.90,"value_score":10,"expected_value":9.0,"rationale":f"GPCR: Filamin Ser2152-P is receptor-proximal. Stimulate {cell} → FLNA IP → pSer2152 western. WT vs {vstr}. Nakamura et al. JBC 2015 PMID:26124276.","do_first":True})
-        out.append({"name":f"cAMP HTRF — {gene} Gs coupling WT vs {vstr}","category":"GPCR Signalling","cost_usd":1200,"time_weeks":2,"p_success":0.85,"value_score":8,"expected_value":6.8,"rationale":"cAMP HTRF (Cisbio kit). Compare EC50 and Emax WT vs each P/LP variant. Primary G-protein efficacy readout.","do_first":False})
-        if is_cardiac: out.append({"name":f"TMAO rattling assay — {gene}","category":"Cardiac GPCR","cost_usd":2000,"time_weeks":3,"p_success":0.75,"value_score":9,"expected_value":6.75,"rationale":"TMAO 5–50µM → FlAsH-BRET conformational transitions → disrupts Filamin-P. Patent-unoccupied arrhythmia axis.","do_first":False})
-    if is_kinase: out.append({"name":f"ADP-Glo kinase assay — {gene} WT vs {vstr}","category":"Kinase Activity","cost_usd":1500,"time_weeks":2,"p_success":0.85,"value_score":8,"expected_value":6.8,"rationale":f"ADP-Glo measures ATP→ADP. Compare Vmax/Km WT vs pathogenic variants. Hyperactivating = GoF = different therapeutic approach.","do_first":True})
-    if is_fil: out.append({"name":f"SPR — GPCR H8 FBM peptides vs {gene} Ig21","category":"Filamin Binding","cost_usd":3000,"time_weeks":3,"p_success":0.85,"value_score":9,"expected_value":7.65,"rationale":f"SPR: KD of FBM peptides (Phe-Arg-Leu) vs Ig21 domain. Validates Ser2152 phosphorylation axis. Map {vstr} onto interface.","do_first":True})
-    if partners: out.append({"name":f"Co-IP — {gene} with {partners[0]}","category":"Protein–Protein Interaction","cost_usd":700,"time_weeks":1,"p_success":0.80,"value_score":7,"expected_value":5.6,"rationale":f"STRING: high-confidence {gene}:{partners[0]} interaction. Flag-tag {gene} (WT vs {vstr}) → IP → western for {partners[0]}.","do_first":False})
-    if gi_s.get("n_critical",0)>=2 and concordant>=1:
-        out.append({"name":f"CRISPR knock-in — {gene} {top_v[0] if top_v else 'P/LP variant'}","category":"Disease Modelling","cost_usd":15000,"time_weeks":10,"p_success":0.70,"value_score":9,"expected_value":6.3,"rationale":f"Justified: {gi_s['n_critical']} CRITICAL + {concordant} AlphaMissense-concordant. Knock-in {vstr} in {cell}. pLI={gnomad.get('pLI','?')}.","do_first":False})
-    else:
-        out.append({"name":f"CRISPR — PREMATURE for {gene}","category":"PREMATURE — Do Not Run","cost_usd":15000,"time_weeks":10,"p_success":0.15,"value_score":1,"expected_value":0.15,"rationale":f"Only {gi_s.get('n_critical',0)} CRITICAL variants and {concordant} AlphaMissense concordant. Run TSA/Co-IP first.","do_first":False,"avoid":True})
-    if ot.get("sm_tractable") and gi_s.get("n_pathogenic",0)>=3:
-        existing = ot.get("known_drugs",[]); 
-        out.append({"name":f"Drug {'analogue' if existing else 'fragment'} screen — {gene}","category":"Drug Discovery","cost_usd":50000 if existing else 80000,"time_weeks":8,"p_success":0.60 if existing else 0.50,"value_score":9,"expected_value":5.4,"rationale":f"OpenTargets: small-molecule tractable. {'Test '+existing[0]+' analogues.' if existing else 'FBDD via SPR.'} Superimpose {vstr} onto AlphaFold structure.","do_first":False})
-    out.sort(key=lambda x: (0 if x.get("do_first") and not x.get("avoid") else 1, -x.get("expected_value",0)))
-    return out
 
-# ── 3D viewer ─────────────────────────────────────────────────────────────
-def _viewer(pdb, style="plddt", height=380, spin=False):
-    if not pdb: st.markdown('<div class="dim" style="padding:8px">AlphaFold structure not available.</div>', unsafe_allow_html=True); return
-    esc = pdb.replace("\\","\\\\").replace("`","\\`"); sp = "viewer.spin(true);" if spin else ""
-    sj = {"plddt":"viewer.setStyle({},{cartoon:{colorfunc:function(a){var b=a.b;if(b>=90)return'#00b4d8';if(b>=70)return'#4ab8a7';if(b>=50)return'#f5b942';return'#e05c5c';}}});",
-          "spectrum":"viewer.setStyle({},{cartoon:{color:'spectrum'}});","surface":"viewer.setStyle({},{surface:{opacity:0.85,color:'spectrum'}});","stick":"viewer.setStyle({},{stick:{colorscheme:'element'}});"}.get(style,"viewer.setStyle({},{cartoon:{color:'spectrum'}});")
-    html = f"""<!DOCTYPE html><html><head><script src="https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.0.4/3Dmol-min.js"></script>
-<style>body{{margin:0;background:#010306;overflow:hidden}}#v{{width:100%;height:{height}px}}
-#info{{position:absolute;bottom:6px;left:6px;background:rgba(2,6,9,.95);color:#d0e8ff;border:1px solid rgba(0,229,255,0.15);border-radius:5px;padding:5px 10px;font:11px/1.5 monospace;display:none;z-index:100;max-width:280px;pointer-events:none}}
-#leg{{position:absolute;top:6px;right:6px;background:rgba(2,6,9,.9);color:#d0e8ff;border:1px solid #0a1520;border-radius:5px;padding:7px 10px;font:10px monospace}}
-.lr{{display:flex;align-items:center;gap:5px;margin:2px 0}}.lc{{width:10px;height:10px;border-radius:2px}}</style></head>
-<body><div id="v"></div><div id="info"></div>
-<div id="leg"><b style="color:#00e5ff">pLDDT</b><div class="lr"><div class="lc" style="background:#00b4d8"></div>&gt;90</div><div class="lr"><div class="lc" style="background:#4ab8a7"></div>70-90</div><div class="lr"><div class="lc" style="background:#f5b942"></div>50-70</div><div class="lr"><div class="lc" style="background:#e05c5c"></div>&lt;50</div></div>
-<script>try{{var viewer=$3Dmol.createViewer(document.getElementById('v'),{{backgroundColor:'#010306'}});viewer.addModel(`{esc}`,'pdb');{sj}
-viewer.setClickable({{}},true,function(a,v){{var b=document.getElementById('info');b.style.display='block';b.innerHTML='<b style="color:#00e5ff">'+a.resn+' '+a.resi+'</b> Chain '+a.chain+'<br>pLDDT: '+(a.b?a.b.toFixed(1):'?');v.addStyle({{resi:a.resi}},{{sphere:{{color:'#00e5ff',radius:0.8,opacity:0.7}}}});v.render();}});
-viewer.zoomTo();{sp}viewer.render();}}catch(e){{document.getElementById('v').innerHTML='<p style="color:#ff8c42;padding:12px;font:12px monospace">'+e.message+'</p>';}}</script></body></html>"""
+def _classify_severity(v):
+    """Classify individual variant as Critical/High/Medium/Neutral for sidebar."""
+    cls = v.get("ml_class","LOW")
+    if cls == "CRITICAL": return "Critical", "#ff2d55", "badge-crit"
+    elif cls == "HIGH": return "High", "#ff8c42", "badge-high"
+    elif cls == "MODERATE": return "Medium", "#ffd60a", "badge-mod"
+    else: return "Neutral", "#3a5570", "badge-neu"
+
+
+# ═══════════════════════════════════════════════════════════════════
+# 3D VIEWER (AlphaFold + variant spheres)
+# ═══════════════════════════════════════════════════════════════════
+def _viewer3d(pdb, cv=None, style="plddt", height=420, spin=False, show_variants=True):
+    if not pdb:
+        st.markdown('<div class="dim" style="padding:12px">AlphaFold structure not available.</div>', unsafe_allow_html=True)
+        return
+    esc = pdb.replace("\\","\\\\").replace("`","\\`")
+    sp = "viewer.spin(true);" if spin else ""
+    # Build variant sphere JS
+    var_js = ""
+    if show_variants and cv:
+        path_vars = [v for v in cv if v.get("ml_class") in ("CRITICAL","HIGH") and v.get("position",0) > 0]
+        for v in path_vars[:50]:
+            pos = v["position"]; col = "#ff2d55" if v["ml_class"]=="CRITICAL" else "#ff8c42"
+            label = (v.get("protein_change","") or "")[:20]
+            var_js += f"viewer.addStyle({{resi:{pos}}},{{sphere:{{color:'{col}',radius:1.2,opacity:0.85}}}});"
+    style_js = {
+        "plddt": "viewer.setStyle({},{cartoon:{colorfunc:function(a){var b=a.b;if(b>=90)return'#00c4e0';if(b>=70)return'#35c7a3';if(b>=50)return'#f5c842';return'#e05c5c';}}});",
+        "spectrum": "viewer.setStyle({},{cartoon:{color:'spectrum'}});",
+        "surface": "viewer.addSurface($3Dmol.SurfaceType.VDW,{opacity:0.75,colorscheme:'spectrum'});viewer.setStyle({},{cartoon:{color:'spectrum',opacity:0.3}});",
+        "stick": "viewer.setStyle({},{stick:{colorscheme:'element'}});",
+    }.get(style, "viewer.setStyle({},{cartoon:{color:'spectrum'}});")
+    
+    html = f"""<!DOCTYPE html><html><head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.0.4/3Dmol-min.js"></script>
+<style>
+body{{margin:0;background:#060b14;overflow:hidden}}
+#v{{width:100%;height:{height}px}}
+#info{{position:absolute;bottom:8px;left:8px;background:rgba(6,11,20,.96);color:#d0e8ff;
+  border:1px solid rgba(0,229,255,.2);border-radius:6px;padding:7px 12px;font:11px/1.6 monospace;
+  display:none;z-index:100;max-width:300px;pointer-events:none}}
+#legend{{position:absolute;top:8px;right:8px;background:rgba(8,15,26,.92);color:#d0e8ff;
+  border:1px solid #1a2a3a;border-radius:6px;padding:8px 12px;font:10px monospace}}
+.lr{{display:flex;align-items:center;gap:6px;margin:2px 0}}
+.lc{{width:11px;height:11px;border-radius:3px;flex-shrink:0}}
+#variant-legend{{position:absolute;bottom:8px;right:8px;background:rgba(8,15,26,.92);
+  color:#d0e8ff;border:1px solid #1a2a3a;border-radius:6px;padding:7px 10px;font:10px monospace}}
+</style></head><body>
+<div id="v"></div>
+<div id="info"></div>
+<div id="legend">
+  <b style="color:#00e5ff;font-size:10px">pLDDT</b>
+  <div class="lr"><div class="lc" style="background:#00c4e0"></div>&gt;90 Very High</div>
+  <div class="lr"><div class="lc" style="background:#35c7a3"></div>70–90 Confident</div>
+  <div class="lr"><div class="lc" style="background:#f5c842"></div>50–70 Low</div>
+  <div class="lr"><div class="lc" style="background:#e05c5c"></div>&lt;50 Very Low</div>
+</div>
+{"<div id='variant-legend'><b style='color:#ff2d55;font-size:10px'>● Critical variants</b><br><b style='color:#ff8c42;font-size:10px'>● High variants</b></div>" if show_variants and cv else ""}
+<script>
+try{{
+  var viewer = $3Dmol.createViewer(document.getElementById('v'),{{backgroundColor:'#060b14'}});
+  viewer.addModel(`{esc}`,'pdb');
+  {style_js}
+  {var_js}
+  viewer.setClickable({{}},true,function(a,v){{
+    var b=document.getElementById('info');b.style.display='block';
+    var conf=a.b?a.b.toFixed(1):'N/A';
+    var confLabel=a.b>=90?'Very High':a.b>=70?'Confident':a.b>=50?'Low':'Very Low';
+    b.innerHTML='<b style="color:#00e5ff">'+a.resn+' '+a.resi+'</b>  Chain '+a.chain+
+      '<br>pLDDT: <b style="color:#35c7a3">'+conf+'</b> ('+confLabel+')'+
+      '<br>Atom: '+a.atom;
+    v.addStyle({{resi:a.resi}},{{sphere:{{color:'#00e5ff',radius:0.9,opacity:0.7}}}});
+    v.render();
+  }});
+  viewer.zoomTo();{sp}
+  viewer.render();
+}}catch(e){{
+  document.getElementById('v').innerHTML='<p style="color:#ff8c42;padding:14px;font:12px monospace">Viewer error: '+e.message+'</p>';
+}}
+</script></body></html>"""
     components.html(html, height=height, scrolling=False)
 
-# ── domain landing ────────────────────────────────────────────────────────
+
+# ═══════════════════════════════════════════════════════════════════
+# TUTORIAL
+# ═══════════════════════════════════════════════════════════════════
+def _tutorial():
+    if not st.session_state.get("show_tutorial"): return
+    st.markdown("""
+    <div style="background:linear-gradient(135deg,#080f1a,#0d1a2d);border:1.5px solid rgba(0,229,255,.3);
+         border-radius:14px;padding:22px 26px;margin-bottom:14px">
+      <div style="font-size:.95rem;font-weight:700;color:#00e5ff;margin-bottom:12px">Welcome to Protellect v3</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div style="background:#060b14;border:1px solid #1a2a3a;border-radius:8px;padding:11px">
+          <div style="color:#00e5ff;font-size:.73rem;font-weight:600;margin-bottom:4px">1 · Enter a Gene</div>
+          <div style="color:#3a5570;font-size:.7rem;line-height:1.6">Type any gene symbol (FLNA, TP53) or protein name (filamin A, p53) in the Protein Search sidebar. Hit Analyse Protein.</div></div>
+        <div style="background:#060b14;border:1px solid #1a2a3a;border-radius:8px;padding:11px">
+          <div style="color:#00e5ff;font-size:.73rem;font-weight:600;margin-bottom:4px">2 · Read the Verdict</div>
+          <div style="color:#3a5570;font-size:.7rem;line-height:1.6">DISEASE-CRITICAL = pursue. NO DISEASE VARIANTS = deprioritise. The verdict is driven entirely by human genetic data from ClinVar and UniProt.</div></div>
+        <div style="background:#060b14;border:1px solid #1a2a3a;border-radius:8px;padding:11px">
+          <div style="color:#00e5ff;font-size:.73rem;font-weight:600;margin-bottom:4px">3 · Explore Tabs</div>
+          <div style="color:#3a5570;font-size:.7rem;line-height:1.6">Triage → 3D structure with variant spheres. Case Study → tissue/GPCR/disease. Protein Explorer → residue analysis. Chemistry → binding sites. Experiments → full ROI ranking.</div></div>
+        <div style="background:#060b14;border:1px solid #1a2a3a;border-radius:8px;padding:11px">
+          <div style="color:#00e5ff;font-size:.73rem;font-weight:600;margin-bottom:4px">4 · AI Report</div>
+          <div style="color:#3a5570;font-size:.7rem;line-height:1.6">Add your Anthropic API key in the sidebar to get a Claude-synthesised report with next-experiment recommendations and highly cited literature.</div></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <div style="background:#060b14;border:1px solid rgba(255,45,85,.25);border-radius:6px;padding:8px 10px;flex:1"><span style="color:#ff2d55;font-size:.68rem;font-weight:600">Try ARRB2</span><br><span style="color:#3a5570;font-size:.65rem">No mandatory deprioritise — see the actual data</span></div>
+        <div style="background:#060b14;border:1px solid rgba(0,229,255,.2);border-radius:6px;padding:8px 10px;flex:1"><span style="color:#00e5ff;font-size:.68rem;font-weight:600">Try FLNA or filamin A</span><br><span style="color:#3a5570;font-size:.65rem">Full variant analysis with 3D spheres</span></div>
+        <div style="background:#060b14;border:1px solid rgba(255,140,66,.2);border-radius:6px;padding:8px 10px;flex:1"><span style="color:#ff8c42;font-size:.68rem;font-weight:600">Try TP53</span><br><span style="color:#3a5570;font-size:.65rem">Cancer DISEASE-CRITICAL with 1800+ variants</span></div>
+      </div>
+    </div>""", unsafe_allow_html=True)
+    if st.button("Got it — Enter Protellect", type="primary", key="dismiss_tut"):
+        st.session_state.show_tutorial = False; st.rerun()
+
+
+# ═══════════════════════════════════════════════════════════════════
+# DOMAIN LANDING
+# ═══════════════════════════════════════════════════════════════════
 def _landing():
-    dm_js = json.dumps([{"id":d,"icon":m["icon"],"color":m["color"],"tags":m["tags"][:6],"desc":m["desc"]} for d,m in DOMAIN_META.items()])
+    dm_js = json.dumps([{"id":d,"icon":m["icon"],"color":m["color"],"glow":m["glow"],"tags":m["tags"][:6],"desc":m["desc"]} for d,m in DOMAIN_META.items()])
     html = f"""<!DOCTYPE html><html><head>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<style>*{{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',sans-serif}}body{{background:#010306;color:#d0e8ff;min-height:100vh;overflow-x:hidden}}
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{{margin:0;padding:0;box-sizing:border-box;font-family:'DM Sans',sans-serif}}
+body{{background:#060b14;color:#d0e8ff;overflow-x:hidden;min-height:100vh}}
 #canvas{{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}}
-.wrap{{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:36px 20px 50px;text-align:center}}
-.logo{{font-size:2rem;font-weight:800;background:linear-gradient(90deg,#00e5ff,#818cf8,#f43f5e);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200% auto;animation:shimmer 4s linear infinite}}
-.tag{{color:#1e3a5f;font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;margin-top:5px}}
-.sub{{color:#2a5070;font-size:.85rem;margin-top:10px;margin-bottom:36px}}
-.grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;text-align:left}}
-.card{{background:rgba(2,6,9,.9);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:20px 22px;cursor:pointer;transition:all .3s;position:relative;overflow:hidden;animation:fadeUp .4s ease both;opacity:0}}
-.card:hover{{transform:translateY(-4px) scale(1.01);border-color:var(--col);box-shadow:0 0 30px var(--glow),0 8px 32px rgba(0,0,0,.4)}}
+.w{{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:28px 20px 40px;text-align:center}}
+.logo{{font-size:1.8rem;font-weight:700;background:linear-gradient(90deg,#00e5ff,#818cf8,#f43f5e);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200%;animation:shimmer 4s linear infinite}}
+.sub{{color:#1a3a5a;font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;margin:5px 0 8px}}
+.tagline{{color:#3a5570;font-size:.82rem;margin-bottom:28px}}
+.grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px;text-align:left}}
+.card{{background:rgba(8,15,26,.92);border:1px solid rgba(255,255,255,.05);border-radius:12px;
+  padding:18px 20px;cursor:pointer;transition:all .3s;position:relative;overflow:hidden;
+  animation:fadeUp .4s ease both;opacity:0;backdrop-filter:blur(10px)}}
+.card:hover{{transform:translateY(-4px) scale(1.01);border-color:var(--col);
+  box-shadow:0 0 35px var(--glow),0 10px 35px rgba(0,0,0,.5)}}
 .card:active{{transform:scale(0.98)}}
-.ch{{display:flex;align-items:center;gap:10px;margin-bottom:10px}}
-.ci{{font-size:1.5rem;transition:transform .3s}}.card:hover .ci{{transform:scale(1.15) rotate(5deg)}}
-.ct{{font-size:.95rem;font-weight:700;color:#fff}}
-.cd{{font-size:.73rem;color:#4a7090;line-height:1.6;margin-bottom:12px}}
-.tags{{display:flex;flex-wrap:wrap;gap:4px}}
-.tg{{font-size:.6rem;color:var(--col);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:2px 7px}}
+.ch{{display:flex;align-items:center;gap:10px;margin-bottom:9px}}
+.ci{{font-size:1.4rem;transition:transform .3s}}.card:hover .ci{{transform:scale(1.15) rotate(6deg)}}
+.ct{{font-size:.9rem;font-weight:600;color:#fff}}
+.cd{{font-size:.7rem;color:#3a5570;line-height:1.6;margin-bottom:11px}}
+.tags{{display:flex;flex-wrap:wrap;gap:3px}}
+.tg{{font-size:.59rem;color:var(--col);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:2px 7px;transition:all .2s}}
 .card:hover .tg{{background:rgba(255,255,255,.07);border-color:var(--col)}}
-.scan{{position:absolute;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--col),transparent);top:-100%;transition:top .4s;opacity:.4}}.card:hover .scan{{top:100%}}
-.foot{{text-align:center;margin-top:36px;color:#0d1a2a;font-size:.66rem;font-style:italic}}
+.scan{{position:absolute;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--col),transparent);top:-100%;transition:top .45s;opacity:.4}}.card:hover .scan{{top:100%}}
+.foot{{margin-top:24px;color:#0d1a2a;font-size:.64rem;font-style:italic}}
 @keyframes fadeUp{{from{{opacity:0;transform:translateY(14px)}}to{{opacity:1;transform:translateY(0)}}}}
-@keyframes shimmer{{0%{{background-position:0 50%}}100%{{background-position:200% 50%}}}}</style></head>
-<body><canvas id="canvas"></canvas>
-<div class="wrap"><div class="logo">🔬 Protellect</div><div class="tag">Genetics-First Protein Intelligence</div><div class="sub">Select a domain to enter your workspace</div>
-<div class="grid" id="grid"></div><div class="foot">The only platform that tells you which proteins to abandon before you spend the money.</div></div>
+@keyframes shimmer{{0%{{background-position:0 50%}}100%{{background-position:200% 50%}}}}
+</style></head><body>
+<canvas id="canvas"></canvas>
+<div class="w">
+  <div class="logo">🔬 Protellect</div>
+  <div class="sub">Genetics-First Protein Intelligence</div>
+  <div class="tagline">Select a research domain to enter your workspace</div>
+  <div class="grid" id="grid"></div>
+  <div class="foot">The only platform that tells you which proteins to abandon before you spend the money.</div>
+</div>
 <script>
 const c=document.getElementById('canvas'),ctx=c.getContext('2d');c.width=window.innerWidth;c.height=window.innerHeight;
-const pts=Array.from({{length:55}},()=>({{x:Math.random()*c.width,y:Math.random()*c.height,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,r:Math.random()*1.5+.4,col:`rgba(${{Math.random()>.5?'0,229,255':'129,140,248'}},0.35)`}}));
-function draw(){{ctx.clearRect(0,0,c.width,c.height);pts.forEach(p=>{{p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>c.width)p.vx*=-1;if(p.y<0||p.y>c.height)p.vy*=-1;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=p.col;ctx.fill();}});pts.forEach((a,i)=>pts.slice(i+1).forEach(b=>{{const d=Math.hypot(a.x-b.x,a.y-b.y);if(d<110){{ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle=`rgba(0,229,255,${{.07*(1-d/110)}})`;ctx.lineWidth=.5;ctx.stroke();}}}}));requestAnimationFrame(draw);}}draw();
-window.addEventListener('resize',()=>{{c.width=window.innerWidth;c.height=window.innerHeight;}});
+const pts=Array.from({{length:55}},()=>({{x:Math.random()*c.width,y:Math.random()*c.height,vx:(Math.random()-.5)*.35,vy:(Math.random()-.5)*.35,r:Math.random()*1.4+.4,col:`rgba(${{Math.random()>.5?'0,229,255':'129,140,248'}},0.3)`}}));
+function draw(){{ctx.clearRect(0,0,c.width,c.height);pts.forEach(p=>{{p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>c.width)p.vx*=-1;if(p.y<0||p.y>c.height)p.vy*=-1;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=p.col;ctx.fill();}});pts.forEach((a,i)=>pts.slice(i+1).forEach(b=>{{const d=Math.hypot(a.x-b.x,a.y-b.y);if(d<110){{ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle=`rgba(0,229,255,${{.06*(1-d/110)}})`;ctx.lineWidth=.5;ctx.stroke();}}}}));requestAnimationFrame(draw);}}
+draw();window.addEventListener('resize',()=>{{c.width=window.innerWidth;c.height=window.innerHeight;}});
 const DOMAINS={dm_js};const grid=document.getElementById('grid');
-DOMAINS.forEach((d,i)=>{{const el=document.createElement('div');el.className='card';el.style.cssText=`--col:${{d.color}};--glow:${{d.color}}44;animation-delay:${{i*.07}}s`;
-el.innerHTML=`<div class="scan"></div><div class="ch"><span class="ci">${{d.icon}}</span><span class="ct">${{d.id}}</span></div><div class="cd">${{d.desc}}</div><div class="tags">${{d.tags.map(t=>`<span class="tg">${{t}}</span>`).join('')}}</div>`;
-el.addEventListener('click',()=>{{el.style.transform='scale(0.97)';setTimeout(()=>window.parent.postMessage({{isStreamlitMessage:true,type:'streamlit:setComponentValue',value:d.id}},'*'),100);}});grid.appendChild(el);}});
+DOMAINS.forEach((d,i)=>{{
+  const el=document.createElement('div');el.className='card';
+  el.style.cssText=`--col:${{d.color}};--glow:${{d.glow}};animation-delay:${{i*.07}}s`;
+  el.innerHTML=`<div class="scan"></div><div class="ch"><span class="ci">${{d.icon}}</span><span class="ct">${{d.id}}</span></div><div class="cd">${{d.desc}}</div><div class="tags">${{d.tags.map(t=>`<span class="tg">${{t}}</span>`).join('')}}</div>`;
+  el.addEventListener('click',()=>{{el.style.transform='scale(0.97)';setTimeout(()=>window.parent.postMessage({{isStreamlitMessage:true,type:'streamlit:setComponentValue',value:d.id}},'*'),120);}});
+  grid.appendChild(el);
+}});
 </script></body></html>"""
-    components.html(html, height=640, scrolling=False)
+    components.html(html, height=560, scrolling=False)
     cols = st.columns(5)
     for i,(d,m) in enumerate(DOMAIN_META.items()):
-        c = m.get("color","#00e5ff")
+        c_col = m.get("color","#00e5ff")
         with cols[i]:
-            st.markdown(f'<style>#db{i}>div>button{{background:{c}0d;border:1px solid {c}40;color:{c};font-weight:600;border-radius:8px;font-size:.78rem}}#db{i}>div>button:hover{{background:{c}1c;transform:translateY(-2px)}}</style><div id="db{i}">', unsafe_allow_html=True)
+            st.markdown(f'<style>#ldb{i}>div>button{{background:{c_col}0d;border:1px solid {c_col}35;color:{c_col};font-weight:600;border-radius:8px;font-size:.76rem}}</style><div id="ldb{i}">', unsafe_allow_html=True)
             if st.button(f"{m['icon']}  {d}", key=f"dl_{d}", use_container_width=True):
                 st.session_state.domain = d; st.rerun()
             st.markdown("</div>", unsafe_allow_html=True)
 
-# ── sidebar ───────────────────────────────────────────────────────────────
+
+# ═══════════════════════════════════════════════════════════════════
+# SIDEBAR
+# ═══════════════════════════════════════════════════════════════════
 user = _user()
 with st.sidebar:
-    st.markdown(f"""<div style="padding:8px 0 5px"><span style="font-size:1rem;font-weight:800;background:linear-gradient(90deg,#00e5ff,#7c3aed);-webkit-background-clip:text;-webkit-text-fill-color:transparent">🔬 Protellect</span><div style="font-size:.65rem;color:#2a5070;font-family:monospace">{user.get('name','')} · {user.get('tier','free').upper()}</div></div>""", unsafe_allow_html=True)
+    st.markdown(f"""<div style="padding:10px 0 8px;border-bottom:1px solid #1a2a3a;margin-bottom:8px">
+      <div style="font-size:1rem;font-weight:700;background:linear-gradient(90deg,#00e5ff,#7c3aed);
+           -webkit-background-clip:text;-webkit-text-fill-color:transparent">🔬 Protellect</div>
+      <div style="font-size:.65rem;color:#3a5570;margin-top:1px">{user.get('name','')} · {user.get('tier','free').upper()}</div>
+    </div>""", unsafe_allow_html=True)
+    
+    # Quota
     used = _used(); quota = _quota(); tier = user.get("tier","free")
     if user.get("dev"): qlbl,qcol = "Dev — Unlimited","#f97316"
     elif tier=="enterprise": qlbl,qcol = "Enterprise — Unlimited","#f97316"
     else:
-        rem = quota-used; qcol = "#00e5ff" if rem>0 else "#ef4444"
-        qlbl = f"{rem} searches remaining" if rem>0 else "Quota exhausted — Upgrade"
-    st.markdown(f'<div style="background:rgba(0,229,255,0.05);border:1px solid rgba(0,229,255,0.1);border-radius:6px;padding:4px 10px;font-size:.72rem;color:{qcol};margin-bottom:6px">{qlbl}</div>', unsafe_allow_html=True)
-    st.markdown('<div style="font-size:.6rem;color:#1e3a5f;font-weight:600;letter-spacing:.07em;text-transform:uppercase;margin:6px 0 2px">RESEARCH GOAL</div>', unsafe_allow_html=True)
-    st.selectbox("rg", ["Drug target identification","Disease mechanism","Variant pathogenicity","Therapeutic hypothesis","Protein function","Biomarker discovery","Academic research"], label_visibility="collapsed", key="research_goal")
-    st.markdown('<div style="font-size:.6rem;color:#1e3a5f;font-weight:600;letter-spacing:.07em;text-transform:uppercase;margin:6px 0 2px">PROTEIN SEARCH</div>', unsafe_allow_html=True)
-    domain = st.session_state.domain or "Molecular Biology"; exs = DOMAIN_EXAMPLES.get(domain,["TP53","BRCA1"])
+        rem = quota-used; qcol = "#00e5ff" if rem>1 else "#ffd60a" if rem==1 else "#ef4444"
+        qlbl = f"{rem} searches remaining" if rem>0 else "Quota exhausted"
+    st.markdown(f'<div style="background:{qcol}0d;border:1px solid {qcol}25;border-radius:6px;padding:4px 10px;font-size:.7rem;color:{qcol};margin-bottom:8px;text-align:center">{qlbl}</div>', unsafe_allow_html=True)
+    
+    # Research goal
+    st.markdown('<div style="font-size:.6rem;color:#1a3a5a;font-weight:600;letter-spacing:.07em;text-transform:uppercase;margin:6px 0 2px">RESEARCH GOAL</div>', unsafe_allow_html=True)
+    st.selectbox("rg",["Drug target identification","Disease mechanism","Variant pathogenicity","Therapeutic hypothesis","Protein function","Biomarker discovery","Academic research"],label_visibility="collapsed",key="research_goal")
+    
+    # Protein search
+    st.markdown('<div style="font-size:.6rem;color:#1a3a5a;font-weight:600;letter-spacing:.07em;text-transform:uppercase;margin:8px 0 2px">PROTEIN SEARCH</div>', unsafe_allow_html=True)
+    domain = st.session_state.domain or "Molecular Biology"
+    exs = DOMAIN_EXAMPLES.get(domain, ["TP53","BRCA1"])
     qi = st.text_input("ps", value=st.session_state._qval, placeholder=f"e.g. {' · '.join(exs[:3])}", label_visibility="collapsed", key="_sw")
     st.session_state._qval = qi
-    if st.button("⚡ Analyse Protein", type="primary", use_container_width=True, key="ab"): st.session_state._trig = True
-    st.markdown('<div style="font-size:.6rem;color:#1e3a5f;font-weight:600;letter-spacing:.07em;text-transform:uppercase;margin:6px 0 2px">DISEASE → PROTEINS</div>', unsafe_allow_html=True)
+    if st.button("⚡  Analyse Protein", type="primary", use_container_width=True, key="ab"):
+        st.session_state._trig = True
+    
+    # Disease in sidebar — show after protein loaded
+    cached = st.session_state.protein_data_cache.get(st.session_state._qval.upper().strip(), {})
+    if cached:
+        pdata_sb = cached.get("pdata",{}); cv_sb = cached.get("cv",[]); gi_sb = cached.get("gi_s",{})
+        diseases_sb = pdata_sb.get("diseases",[])
+        if diseases_sb:
+            st.markdown('<div style="font-size:.6rem;color:#1a3a5a;font-weight:600;letter-spacing:.07em;text-transform:uppercase;margin:10px 0 4px">DISEASE BREAKDOWN</div>', unsafe_allow_html=True)
+            for d in diseases_sb[:6]:
+                inh = d.get("inheritance","Unknown"); col = "#ff8c42" if inh=="Somatic" else "#818cf8"
+                st.markdown(f'<div style="display:flex;align-items:baseline;gap:5px;padding:3px 0;border-bottom:1px solid #0d1a2a"><span style="color:{col};font-size:.6rem;min-width:50px">{inh}</span><span style="color:#b0c8d8;font-size:.68rem">{d.get("name","?")}</span></div>', unsafe_allow_html=True)
+        # Variant severity breakdown
+        path_vars = [v for v in cv_sb if v.get("ml_class") in ("CRITICAL","HIGH")]
+        if path_vars:
+            st.markdown('<div style="font-size:.6rem;color:#1a3a5a;font-weight:600;letter-spacing:.07em;text-transform:uppercase;margin:8px 0 4px">VARIANT SEVERITY</div>', unsafe_allow_html=True)
+            for v in path_vars[:5]:
+                sev_label, sev_col, badge_cls = _classify_severity(v)
+                st.markdown(f'<div style="display:flex;align-items:center;gap:5px;padding:2px 0;border-bottom:1px solid #0d1a2a"><span class="{badge_cls}">{sev_label}</span><span style="color:#7a9aaa;font-size:.65rem;font-family:monospace">{v.get("protein_change","?")[:18]}</span></div>', unsafe_allow_html=True)
+    
+    # Disease → proteins
+    st.markdown('<div style="font-size:.6rem;color:#1a3a5a;font-weight:600;letter-spacing:.07em;text-transform:uppercase;margin:8px 0 2px">DISEASE → PROTEINS</div>', unsafe_allow_html=True)
     di = st.text_input("dp", value=st.session_state._dval, placeholder="e.g. Hantavirus · arrhythmia", label_visibility="collapsed", key="_dw")
     st.session_state._dval = di
-    if st.button("🔗 Find Disease Proteins", use_container_width=True, key="db"): st.session_state._dtrig = True
-    st.markdown('<div style="font-size:.6rem;color:#1e3a5f;font-weight:600;letter-spacing:.07em;text-transform:uppercase;margin:6px 0 2px">WET-LAB DATA (CSV)</div>', unsafe_allow_html=True)
-    cf = st.file_uploader("cu", type=["csv","txt","tsv"], label_visibility="collapsed", key="cu")
+    if st.button("🔗  Find Disease Proteins", use_container_width=True, key="db"):
+        st.session_state._dtrig = True
+    
+    # Wet-lab CSV
+    st.markdown('<div style="font-size:.6rem;color:#1a3a5a;font-weight:600;letter-spacing:.07em;text-transform:uppercase;margin:8px 0 2px">WET-LAB DATA (CSV)</div>', unsafe_allow_html=True)
+    cf = st.file_uploader("cu", type=["csv","txt","tsv"], label_visibility="collapsed", key="cu", help="Any size. Auto-detects: DMS, RNA-seq, VCF, proteomics, binding assay, GWAS.")
     if cf:
         try:
             sep = "\t" if cf.name.endswith((".txt",".tsv")) else ","
-            df_c = pd.read_csv(cf, sep=sep, nrows=5000); st.session_state.csv_data = df_c
-            st.markdown(f'<div style="color:#00e5ff;font-size:.7rem">{cf.name} · {len(df_c):,} rows</div>', unsafe_allow_html=True)
+            df_c = pd.read_csv(cf, sep=sep, nrows=100000); st.session_state.csv_data = df_c
+            st.markdown(f'<div style="color:#00e5ff;font-size:.68rem;margin-top:2px">✓ {cf.name} · {len(df_c):,} rows · {len(df_c.columns)} cols</div>', unsafe_allow_html=True)
         except Exception as e: st.error(f"Parse error: {e}")
-    st.markdown('<div style="font-size:.6rem;color:#1e3a5f;font-weight:600;letter-spacing:.07em;text-transform:uppercase;margin:6px 0 2px">SENSITIVITY</div>', unsafe_allow_html=True)
-    sens = st.slider("se", 0.0, 1.0, st.session_state.sensitivity, 0.05, label_visibility="collapsed", key="sensitivity")
-    st.markdown(f'<div class="dim" style="margin:-4px 0 4px">{sens:.2f} · {"Strict" if sens>0.8 else "Balanced" if sens>0.5 else "Sensitive"}</div>', unsafe_allow_html=True)
-    if st.button("▶ Run Triage", use_container_width=True, key="rt"): st.session_state.protein_data_cache = {}; st.toast(f"Re-running at {sens:.2f}")
-    st.markdown('<div style="font-size:.6rem;color:#1e3a5f;font-weight:600;letter-spacing:.07em;text-transform:uppercase;margin:6px 0 2px">WET-LAB ASSAY</div>', unsafe_allow_html=True)
-    wl = st.text_area("wl", value=st.session_state.wet_lab_text, placeholder="Describe assay result — e.g. Ser2152-P detected at 10nM, abolished in R2149Q.", label_visibility="collapsed", height=58, key="wli")
+    
+    # Wet-lab assay interpretation
+    if cached and st.session_state.wet_lab_text:
+        wl = st.session_state.wet_lab_text
+        pdata_sb2 = cached.get("pdata",{})
+        is_gpcr = pdata_sb2.get("is_gpcr",False)
+        interp = ("Filamin Ser2152-P readout — correlates with GPCR activation state. Cross-reference the Filamin IP assay." if "phospho" in wl.lower() and is_gpcr
+            else "Protein-protein interaction disruption — validate by Co-IP with STRING top partners." if any(x in wl.lower() for x in ["co-ip","pull","interaction"])
+            else f"Functional signal detected. Cross-reference with ClinVar pathogenic variants at affected residue.")
+        st.markdown(f'<div style="font-size:.6rem;color:#1a3a5a;font-weight:600;letter-spacing:.07em;text-transform:uppercase;margin:8px 0 2px">ASSAY INTERPRETATION</div><div style="background:#060b14;border:1px solid #1a2a3a;border-radius:5px;padding:6px 8px;font-size:.68rem;color:#5a8aaa;line-height:1.6">{interp}</div>', unsafe_allow_html=True)
+    
+    # Wet-lab assay text
+    st.markdown('<div style="font-size:.6rem;color:#1a3a5a;font-weight:600;letter-spacing:.07em;text-transform:uppercase;margin:8px 0 2px">WET-LAB ASSAY</div>', unsafe_allow_html=True)
+    wl = st.text_area("wl", value=st.session_state.wet_lab_text, placeholder="Describe result — e.g. Ser2152-P detected at 10nM, abolished in R2149Q variant.", label_visibility="collapsed", height=55, key="wli")
     st.session_state.wet_lab_text = wl
-    st.markdown('<div style="font-size:.6rem;color:#1e3a5f;font-weight:600;letter-spacing:.07em;text-transform:uppercase;margin:6px 0 2px">AI REPORT KEY</div>', unsafe_allow_html=True)
+    
+    # Sensitivity
+    st.markdown('<div style="font-size:.6rem;color:#1a3a5a;font-weight:600;letter-spacing:.07em;text-transform:uppercase;margin:8px 0 2px">SENSITIVITY</div>', unsafe_allow_html=True)
+    sens = st.slider("se",0.0,1.0,st.session_state.sensitivity,0.05,label_visibility="collapsed",key="sensitivity")
+    st.markdown(f'<div class="dim" style="margin-top:-4px;margin-bottom:4px">{sens:.2f} · {"Strict" if sens>0.8 else "Balanced" if sens>0.5 else "Sensitive"}</div>', unsafe_allow_html=True)
+    if st.button("▶ Run Triage", use_container_width=True, key="rt"):
+        st.session_state.protein_data_cache = {}; st.toast(f"Re-running at {sens:.2f}")
+    
+    # AI key
+    st.markdown('<div style="font-size:.6rem;color:#1a3a5a;font-weight:600;letter-spacing:.07em;text-transform:uppercase;margin:8px 0 2px">AI REPORT KEY</div>', unsafe_allow_html=True)
     ak = st.text_input("ak", type="password", placeholder="sk-ant-...", label_visibility="collapsed", key="_aki")
     if ak: st.session_state.anthropic_key = ak
-    if st.session_state.anthropic_key: st.markdown('<div style="font-size:.66rem;color:#4ade80">● AI enabled</div>', unsafe_allow_html=True)
+    if st.session_state.anthropic_key: st.markdown('<div style="font-size:.65rem;color:#4ade80;margin-top:1px">● AI enabled</div>', unsafe_allow_html=True)
+    
     st.divider()
+    if st.button("📖 Tutorial", use_container_width=True, key="tut_btn"):
+        st.session_state.show_tutorial = True; st.rerun()
     c1,c2,c3 = st.columns(3)
     with c1:
-        if st.button("Cache", use_container_width=True): st.cache_data.clear(); st.toast("✅")
+        if st.button("🔄",use_container_width=True,help="Clear cache"): st.cache_data.clear(); st.toast("Cache cleared")
     with c2:
-        if st.button("Clear", use_container_width=True): st.session_state._qval=""; st.session_state.current_protein=None; st.rerun()
+        if st.button("✕",use_container_width=True,help="Clear search"): st.session_state._qval=""; st.session_state.current_protein=None; st.rerun()
     with c3:
-        if st.button("Logout", use_container_width=True): _logout(); st.rerun()
+        if st.button("↪",use_container_width=True,help="Logout"): _logout(); st.rerun()
 
-# ── domain landing ────────────────────────────────────────────────────────
+
+# ═══════════════════════════════════════════════════════════════════
+# DOMAIN LANDING
+# ═══════════════════════════════════════════════════════════════════
 if not st.session_state.domain:
-    _landing(); st.stop()
-
-domain = st.session_state.domain
-st.markdown(f"""<div style="display:flex;align-items:center;gap:8px;padding:2px 0;margin-bottom:4px">
-<span style="font-size:.85rem;font-weight:700;color:#00e5ff">🔬 Protellect</span><span style="color:#1e3a5f">—</span>
-<span style="color:#4a7090;font-size:.75rem">{ICONS.get(domain,'')} {domain}</span>
-<span style="color:#1e3a5f;font-size:.68rem;margin-left:auto;font-family:monospace">{st.session_state.research_goal[:35]}</span></div>""", unsafe_allow_html=True)
-dc = st.columns(5)
-for i,d in enumerate(["Neuroscience","Cancer Biology","Pharmaceuticals","Microbiome","Molecular Biology"]):
-    with dc[i]:
-        if st.button(f"{ICONS[d]} {d}", key=f"dt_{d}", use_container_width=True, type="primary" if d==domain else "secondary"):
-            st.session_state.domain=d; st.session_state.current_protein=None; st.rerun()
-
-# ── disease trigger ───────────────────────────────────────────────────────
-if st.session_state._dtrig and st.session_state._dval:
-    st.session_state._dtrig = False; q_l = st.session_state._dval.lower()
-    _sec(f"Disease: {st.session_state._dval}")
-    for org_name,org in MICRO_ORGANISMS.items():
-        if org_name.lower() in q_l or org.get("disease","").lower() in q_l:
-            st.markdown(f"**{org['organism']}** — {org['type']}"); st.write(org.get("mechanism","")[:200])
-            _sec("Host Receptors — Click to Analyse")
-            rc = st.columns(min(4, len(org.get("host_receptors",[])) or 1))
-            for i,rec in enumerate(org.get("host_receptors",[])):
-                with rc[i]:
-                    if st.button(rec, key=f"rec_{rec}"): st.session_state._qval=rec; st.rerun()
-            break
+    _tutorial()
+    _landing()
     st.stop()
 
-# ── microbiome ────────────────────────────────────────────────────────────
+domain = st.session_state.domain
+_tutorial()
+
+# Back button + breadcrumb
+col_back, col_info = st.columns([1,6])
+with col_back:
+    if st.button("← Domains", key="back_domains"):
+        st.session_state.domain = None; st.session_state.current_protein = None; st.rerun()
+with col_info:
+    meta = DOMAIN_META.get(domain,{})
+    st.markdown(f'<div style="padding:4px 0;color:#3a5570;font-size:.76rem">{meta.get("icon","")} <b style="color:{meta.get("color","#00e5ff")}">{domain}</b> · {st.session_state.research_goal}</div>', unsafe_allow_html=True)
+
+
+# ═══════════════════════════════════════════════════════════════════
+# DISEASE TRIGGER
+# ═══════════════════════════════════════════════════════════════════
+if st.session_state._dtrig and st.session_state._dval:
+    st.session_state._dtrig = False
+    dq = st.session_state._dval
+    _sec(f"Disease → Proteins: {dq}")
+    try:
+        r = requests.get("https://rest.uniprot.org/uniprotkb/search",
+            params={"query":f"cc_disease:{dq} AND organism_id:9606 AND reviewed:true","format":"json","size":10,"fields":"accession,gene_names,protein_name"},
+            headers=HDR, timeout=12)
+        hits = r.json().get("results",[])
+        if hits:
+            for hit in hits:
+                gs = [g.get("geneName",{}).get("value","") for g in hit.get("genes",[])]
+                g = gs[0] if gs else hit.get("primaryAccession","")
+                pn = hit.get("proteinDescription",{}).get("recommendedName",{}).get("fullName",{}).get("value","")
+                c1,c2 = st.columns([4,1])
+                with c1: st.markdown(f'<span style="color:#00e5ff;font-family:monospace;font-weight:600">{g}</span> <span class="dim">{pn[:60]}</span>', unsafe_allow_html=True)
+                with c2:
+                    if st.button(f"Analyse →", key=f"dis_{g}"): st.session_state._qval=g; st.rerun()
+        else: st.info(f"No proteins found for '{dq}'.")
+    except: st.warning("Search unavailable.")
+    st.stop()
+
+
+# ═══════════════════════════════════════════════════════════════════
+# MICROBIOME DOMAIN
+# ═══════════════════════════════════════════════════════════════════
 if domain == "Microbiome":
     _sec("🦠 Microbiome Intelligence")
-    st.caption("LLM-enhanced annotation · BGC · Taxonomy · Host–microbe")
-    t1,t2,t3 = st.tabs(["Gene Annotation","Taxonomy","Pathway Re-annotation"])
+    t1,t2,t3 = st.tabs(["Gene Annotation","Taxonomy","Batch Analysis"])
     with t1:
         _sec("Vague → Specific Annotation")
         c1,c2 = st.columns(2)
@@ -614,14 +921,14 @@ if domain == "Microbiome":
             gid = st.text_input("Gene ID / KO", placeholder="K01810, WP_001234", key="mg_gid")
             vague = st.text_input("Current annotation", placeholder="biosynthesis", key="mg_vague")
             org_ctx = st.text_input("Organism context", placeholder="gut microbiome", key="mg_org")
-        with c2: st.markdown('<div class="dim" style="margin-top:8px">Rule-based expansion without API key. Add Anthropic key in sidebar for AI annotation.</div>', unsafe_allow_html=True)
+        with c2: st.markdown('<div class="dim" style="margin-top:8px;line-height:1.8">Add Anthropic API key for AI-powered annotation with EC numbers and pathway specificity. Rule-based expansion works without key.</div>', unsafe_allow_html=True)
         if st.button("Generate", type="primary", key="mg_go") and vague:
-            EXP = {"biosynthesis":"Anabolic enzyme — specify via KO: amino acid (e.g. lysine via DAP pathway), lipid (FASII), or B-vitamin. Run eggNOG-mapper for reaction specificity.",
-                   "chemosynthesis":"Chemolithotrophy — energy from NH₃/S²⁻/Fe²⁺ oxidation. Check AMO/NXR/Sox gene families.",
-                   "protein aggregation":"Regulated polymerisation: curli (CsgA/B — biofilm + TLR2/TLR1), functional amyloid, or spore coat.",
+            EXP = {"biosynthesis":"Anabolic enzyme — specify via KO: amino acid (DAP pathway for lysine), lipid (FASII), or B-vitamin. Run eggNOG-mapper for reaction specificity and EC number.",
+                   "chemosynthesis":"Chemolithotrophy — energy from inorganic oxidation (NH₃, S²⁻, Fe²⁺). Check AMO/NXR/Sox gene families.",
+                   "protein aggregation":"Regulated polymerisation: curli (CsgA/B → biofilm + TLR2/TLR1 host activation), functional amyloid, or spore coat.",
                    "hypothetical protein":"Run: (1) AlphaFold2+Foldseek, (2) eggNOG-mapper DIAMOND, (3) InterProScan, (4) Phyre2.",
-                   "transporter":"TC database: ABC (ATP-driven), MFS (proton gradient), RND (multidrug efflux).",
-                   "metabolism":"KEGG GHOSTX or eggNOG-mapper for specific reaction. Cross-reference SEED/RAST."}
+                   "transporter":"TC database: ABC (ATP-driven), MFS (proton gradient), RND (multidrug efflux). Check antibiotic resistance relevance.",
+                   "metabolism":"KEGG GHOSTX or eggNOG-mapper for specific reaction. Cross-reference SEED/RAST reconstruction."}
             ak2 = st.session_state.get("anthropic_key",""); result = None
             if ak2:
                 try:
@@ -629,76 +936,101 @@ if domain == "Microbiome":
                     msg = client.messages.create(model="claude-sonnet-4-20250514", max_tokens=600, messages=[{"role":"user","content":f"Gene:{gid}\nCurrent:{vague}\nOrganism:{org_ctx}\nGive specific: molecular function, EC number, pathway, ecological role, validation tools. No vague terms."}])
                     result = msg.content[0].text
                 except: pass
-            if not result: al = vague.lower(); result = next((v for k,v in EXP.items() if k in al), f"'{vague}' not in rule base. Run eggNOG-mapper v2 or InterProScan.")
+            if not result: al = vague.lower(); result = next((v for k,v in EXP.items() if k in al),f"'{vague}' not in rule base. Run eggNOG-mapper v2.")
             ca,cb = st.columns(2)
-            with ca: st.markdown(f'<div class="card" style="border-color:rgba(239,68,68,0.2)"><span class="dim" style="color:#ef4444">❌ Before</span><br><i style="color:#fca5a5">{vague}</i></div>', unsafe_allow_html=True)
-            with cb: st.markdown(f'<div class="card" style="border-color:rgba(74,222,128,0.2)"><span class="dim" style="color:#4ade80">✅ After</span><div style="font-size:.72rem;color:#d0e8ff;margin-top:5px;line-height:1.7">{result}</div></div>', unsafe_allow_html=True)
+            with ca: st.markdown(f'<div class="card" style="border-color:rgba(239,68,68,.2)"><span class="dim" style="color:#ef4444">❌ Before</span><br><i style="color:#fca5a5">{vague}</i></div>', unsafe_allow_html=True)
+            with cb: st.markdown(f'<div class="card" style="border-color:rgba(74,222,128,.2)"><span class="dim" style="color:#4ade80">✅ After</span><div style="font-size:.72rem;color:#d0e8ff;margin-top:5px;line-height:1.7">{result}</div></div>', unsafe_allow_html=True)
     with t2:
-        _sec("Taxonomy")
-        taxon = st.text_input("Organism", placeholder="Akkermansia muciniphila", key="mg_tax")
-        ROLES = {"Lactobacillus":"Lactic acid producer; pH pathogen competition; gut barrier; SCFA; probiotic","Bifidobacterium":"Probiotic; SCFA; immune modulation; infant microbiome; B-vitamins","Bacteroides":"Major fermenter; PULs; keystone symbiont","Akkermansia":"Mucin-layer; gut barrier integrity; depleted in obesity/T2D/IBD","Faecalibacterium":"Butyrate (F. prausnitzii); anti-inflammatory; depleted in IBD","Helicobacter":"CagA/VacA; peptic ulcer; gastric cancer","Fusobacterium":"FadA adhesin; CRC invasion; Wnt/β-catenin"}
+        _sec("Taxonomy"); taxon = st.text_input("Organism", placeholder="Akkermansia muciniphila", key="mg_tax")
+        ROLES = {"Lactobacillus":"Lactic acid producer; pH pathogen competition; gut barrier; SCFA; probiotic candidate","Bifidobacterium":"Probiotic; SCFA; immune modulation; infant microbiome","Bacteroides":"Major fermenter; PULs; keystone coloniser","Akkermansia":"Mucin-layer; gut barrier; depleted in obesity/T2D/IBD","Faecalibacterium":"Butyrate (F. prausnitzii); anti-inflammatory; depleted in IBD","Helicobacter":"CagA/VacA; peptic ulcer; gastric cancer","Fusobacterium":"FadA adhesin; CRC invasion; Wnt/β-catenin"}
         if taxon:
-            role = ROLES.get(taxon.split()[0], "Ecological role not curated — search NCBI taxonomy and primary literature")
+            role = ROLES.get(taxon.split()[0],"Ecological role not curated — search NCBI taxonomy.")
             st.markdown(f'<div class="card"><span style="color:#4ade80;font-family:monospace">{taxon}</span><br><span style="font-size:.72rem;color:#d0e8ff;line-height:1.6">{role}</span></div>', unsafe_allow_html=True)
     with t3:
-        _sec("Batch Re-annotation"); raw = st.text_area("Annotations (one per line)", placeholder="biosynthesis\nchemosynthesis\nhypothetical protein", height=80, key="mg_b")
-        VAGUE = {"biosynthesis","chemosynthesis","protein aggregation","hypothetical protein","metabolism","transport","regulation","unknown","uncharacterized"}
+        _sec("Batch Annotation Quality"); raw = st.text_area("Annotations (one per line)", height=100, key="mg_b")
+        VAGUE = {"biosynthesis","chemosynthesis","protein aggregation","hypothetical protein","metabolism","transport","regulation","unknown","uncharacterized","putative"}
         if st.button("Analyse", type="primary", key="mg_ba") and raw:
-            lines = [l.strip() for l in raw.splitlines() if l.strip()]; vn = sum(1 for l in lines if any(v in l.lower() for v in VAGUE))
-            c1,c2,c3 = st.columns(3); c1.metric("Total",len(lines)); c2.metric("Vague",vn); c3.metric("Informative",len(lines)-vn)
-            for l in lines:
+            lines_b = [l.strip() for l in raw.splitlines() if l.strip()]; vn = sum(1 for l in lines_b if any(v in l.lower() for v in VAGUE))
+            c1,c2,c3 = st.columns(3); c1.metric("Total",len(lines_b)); c2.metric("Vague",vn); c3.metric("Informative",len(lines_b)-vn)
+            for l in lines_b:
                 iv = any(v in l.lower() for v in VAGUE); col2 = "#ef4444" if iv else "#4ade80"
-                st.markdown(f'<div style="font-size:.72rem;padding:2px 0;border-bottom:1px solid #060d14"><span style="color:{col2}">{"❌" if iv else "✅"}</span> <span style="color:#d0e8ff">{l}</span></div>', unsafe_allow_html=True)
+                st.markdown(f'<div style="font-size:.7rem;padding:2px 0;border-bottom:1px solid #0d1a2a"><span style="color:{col2}">{"❌" if iv else "✅"}</span> <span style="color:#d0e8ff">{l}</span></div>', unsafe_allow_html=True)
     st.stop()
 
-# ── search ────────────────────────────────────────────────────────────────
+
+# ═══════════════════════════════════════════════════════════════════
+# SEARCH & LOAD
+# ═══════════════════════════════════════════════════════════════════
 query = st.session_state._qval.strip()
 if not query and not st.session_state._trig:
-    meta = DOMAIN_META.get(domain,{}); exs2 = DOMAIN_EXAMPLES.get(domain,[])
-    st.markdown(f"### {meta.get('icon','🔬')} {domain}"); st.caption(f"Enter a gene symbol in the sidebar · {st.session_state.research_goal}")
+    meta2 = DOMAIN_META.get(domain,{}); exs2 = DOMAIN_EXAMPLES.get(domain,[])
+    color2 = meta2.get("color","#00e5ff"); desc2 = meta2.get("desc","")
+    tags2 = " ".join(f'<span class="pill">{t}</span>' for t in meta2.get("tags",[])[:8])
+    st.markdown(
+        f'<div class="card" style="border-color:{color2}22;padding:22px 26px">'
+        f'<div style="font-size:1.8rem;margin-bottom:8px">{meta2.get("icon","🔬")}</div>'
+        f'<div style="font-size:1rem;font-weight:600;color:{color2};margin-bottom:5px">{domain}</div>'
+        f'<div style="font-size:.76rem;color:#3a5570;margin-bottom:12px;line-height:1.7">{desc2}</div>'
+        f'<div style="margin-bottom:14px">{tags2}</div>'
+        f'<div style="font-size:.72rem;color:#2a4060;border-top:1px solid #1a2a3a;padding-top:10px">'
+        f'Type a gene symbol or protein name in the <b style="color:#d0e8ff">Protein Search</b> sidebar, then click <b style="color:{color2}">⚡ Analyse Protein</b></div></div>',
+        unsafe_allow_html=True
+    )
     if exs2:
-        st.markdown("**Quick examples:**"); ec = st.columns(min(7,len(exs2)))
+        st.markdown('<div style="color:#1a3a5a;font-size:.6rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin:12px 0 5px">QUICK EXAMPLES</div>', unsafe_allow_html=True)
+        ec = st.columns(min(7,len(exs2)))
         for i,ex in enumerate(exs2):
             with ec[i]:
                 if st.button(ex, key=f"dex_{ex}_{domain}", use_container_width=True): st.session_state._qval=ex; st.rerun()
     st.stop()
-st.session_state._trig = False
-_NAMES={"filamin a":"FLNA","filamin":"FLNA","filamin-a":"FLNA","beta arrestin 2":"ARRB2","beta-arrestin-2":"ARRB2","arrestin 2":"ARRB2","beta arrestin 1":"ARRB1","p53":"TP53","alpha synuclein":"SNCA","alpha-synuclein":"SNCA","tau":"MAPT","amyloid precursor":"APP","beta 2 adrenergic":"ADRB2","beta-2 adrenergic":"ADRB2","grk2":"GRK2","akt":"AKT1","brca":"BRCA1","kras":"KRAS"}
-query=_NAMES.get(query.strip().lower(),query); st.session_state._qval=query
-if any(t in query.lower() for t in NON_HUMAN): st.error(f"⛔ '{query}' is not a human protein."); st.stop()
-if not _can(): st.error("Quota exhausted."); st.stop()
 
-# ── load ──────────────────────────────────────────────────────────────────
+st.session_state._trig = False
+
+# Normalise query
+query = NAME_MAP.get(query.strip().lower(), query)
+st.session_state._qval = query
+
+if any(t in query.lower() for t in NON_HUMAN): st.error(f"'{query}' appears to be non-human. Protellect requires human proteins only."); st.stop()
+if not _can(): st.error("Search quota exhausted. Upgrade to continue."); st.stop()
+
 ck = query.upper()
 if ck not in st.session_state.protein_data_cache:
-    prog = st.progress(0, text=f"Resolving {query}…")
+    prog = st.progress(0, text=f"Fetching {query} from UniProt…")
     try:
-        prog.progress(5,"UniProt…"); uraw = _uniprot(query)
-        prog.progress(15,"Parsing…"); pdata = _parse(uraw)
-        if not pdata or not pdata.get("accession"): st.error(f"⛔ '{query}' not found in UniProt Swiss-Prot."); st.stop()
-        if not pdata.get("is_human",True): st.error(f"⛔ Not human (organism: {pdata.get('organism','?')})."); st.stop()
+        prog.progress(6,"UniProt search…"); uraw = _uniprot(query)
+        prog.progress(16,"Parsing protein data…"); pdata = _parse(uraw)
+        if not pdata or not pdata.get("accession"):
+            st.error(f"Could not find '{query}'. Try the official gene symbol (FLNA, TP53, ADRB2) or a protein name (filamin A, p53, beta-2 adrenergic receptor)."); st.stop()
+        if not pdata.get("is_human",True):
+            st.error(f"'{pdata.get('gene',query)}' is not a human protein (organism: {pdata.get('organism','?')}). Protellect analyses human proteins only."); st.stop()
         gene = pdata["gene"] or query.upper(); acc = pdata["accession"]
-        prog.progress(25,"AlphaFold…"); pdb = _alphafold(acc); plddt = _plddt(pdb)
-        prog.progress(35,"ClinVar…"); cv = _clinvar(gene)
-        # Merge UniProt natural variants if ClinVar returns few results
-        _uni_v = pdata.get("uni_variants", [])
-        if len(cv) < 5 and _uni_v:
-            _existing = {v.get("position",0) for v in cv}
-            for _uv in _uni_v:
-                if _uv.get("position",0) not in _existing: cv.append(_uv)
+        prog.progress(26,"AlphaFold structure…"); pdb = _alphafold(acc); plddt = _plddt(pdb)
+        prog.progress(37,"ClinVar variants…"); cv = _clinvar(gene)
+        # Merge UniProt natural variants if ClinVar returns few
+        uni_v = pdata.get("uni_variants",[])
+        if len(cv) < 5 and uni_v:
+            existing_pos = {v.get("position",0) for v in cv}
+            for uv in uni_v:
+                if uv.get("position",0) not in existing_pos: cv.append(uv)
             cv = sorted(cv, key=lambda x: x.get("ml_class","LOW")=="CRITICAL", reverse=True)
         prog.progress(50,"gnomAD + STRING…"); gnomad = _gnomad(gene); string_d = _string(gene)
-        prog.progress(62,"OpenTargets…"); ot = _opentargets(gene); dgidb = _dgidb(gene)
-        prog.progress(74,"AlphaMissense + PubMed…"); am = _alphamissense(acc); papers = _pubmed(gene)
-        prog.progress(86,"GTEx + KEGG + Trials…"); gtex = _gtex(gene); kegg = _kegg(gene); trials = _trials(gene)
-        prog.progress(94,"Scoring…"); gi_s = _gi(gene,cv,pdata.get("seq_len",500)); exp_list = _exps(gene,gi_s,pdata,cv,gnomad,string_d,ot,am)
-        prog.progress(100,"Complete"); prog.empty()
-        st.session_state.protein_data_cache[ck] = dict(pdata=pdata,pdb=pdb,plddt=plddt,cv=cv,gnomad=gnomad,string_d=string_d,ot=ot,am=am,papers=papers,gtex=gtex,dgidb=dgidb,trials=trials,kegg=kegg,gi_s=gi_s,exp_list=exp_list)
-        _record(); ws = st.session_state.workspace
-        if not any(w.get("gene")==gene for w in ws): ws.insert(0,{"gene":gene,"accession":acc,"protein":pdata.get("protein_name","")[:50],"verdict":gi_s["verdict"],"color":gi_s["color"],"domain":domain}); st.session_state.workspace=ws[:50]
+        prog.progress(62,"OpenTargets + DGIdb…"); ot_d = _opentargets(gene); dgidb = _dgidb(gene)
+        prog.progress(74,"AlphaMissense + PubMed…"); am_d = _alphamissense(acc); papers = _pubmed(gene)
+        prog.progress(86,"GTEx + Trials…"); gtex = _gtex(gene); trials = _trials(gene)
+        prog.progress(94,"Computing GI score…"); gi_s = _gi(gene, cv, pdata.get("seq_len",500))
+        prog.progress(100,"Complete ✓"); prog.empty()
+        
+        st.session_state.protein_data_cache[ck] = dict(
+            pdata=pdata,pdb=pdb,plddt=plddt,cv=cv,gnomad=gnomad,string_d=string_d,
+            ot_d=ot_d,am_d=am_d,papers=papers,gtex=gtex,dgidb=dgidb,trials=trials,gi_s=gi_s)
+        _record()
+        ws = st.session_state.workspace
+        if not any(w.get("gene")==gene for w in ws):
+            ws.insert(0,{"gene":gene,"accession":acc,"protein":pdata.get("protein_name","")[:50],"verdict":gi_s["verdict"],"color":gi_s["color"],"domain":domain})
+            st.session_state.workspace = ws[:50]
         st.session_state.current_protein = ck
-    except Exception as e:
-        import traceback; st.error(f"Error: {e}")
+    except Exception as ex:
+        import traceback; st.error(f"Loading error: {ex}")
         with st.expander("Traceback"): st.code(traceback.format_exc())
         st.stop()
 else:
@@ -706,357 +1038,649 @@ else:
 
 D = st.session_state.protein_data_cache[ck]
 pdata=D["pdata"]; pdb=D["pdb"]; plddt=D["plddt"]; cv=D["cv"]; gnomad=D["gnomad"]
-string_d=D["string_d"]; ot=D["ot"]; am=D["am"]; papers=D["papers"]; gtex=D["gtex"]
-dgidb=D["dgidb"]; trials=D["trials"]; kegg=D["kegg"]; gi_s=D["gi_s"]; exp_list=D["exp_list"]
+string_d=D["string_d"]; ot_d=D["ot_d"]; am_d=D["am_d"]; papers=D["papers"]
+gtex=D["gtex"]; dgidb=D["dgidb"]; trials=D["trials"]; gi_s=D["gi_s"]
 gene=pdata["gene"] or query.upper(); acc=pdata["accession"]
-is_arrb=gene.upper() in ARRB_GENES; is_gpcr=pdata.get("is_gpcr",False)
-is_cardiac=gene.upper() in {"ADRB1","ADRB2","AGTR1","CHRM2"}
+is_gpcr=pdata.get("is_gpcr",False); is_kinase=pdata.get("is_kinase",False)
+is_pase=pdata.get("is_phosphatase",False)
+is_cardiac=gene.upper() in {"ADRB1","ADRB2","AGTR1","CHRM2","MAS1"}
 is_filamin=any(k in " ".join(pdata.get("functions",[])+pdata.get("keywords",[])).lower() for k in ["filamin","actin-binding protein 280"])
 vcolor=gi_s["color"]; verdict=gi_s["verdict"]
 
-# ── protein header ────────────────────────────────────────────────────────
+
+# ═══════════════════════════════════════════════════════════════════
+# PROTEIN HEADER
+# ═══════════════════════════════════════════════════════════════════
 flags = ""
-if is_gpcr:    flags += ' <span style="background:rgba(0,229,255,0.1);color:#00e5ff;border:1px solid rgba(0,229,255,0.3);border-radius:3px;padding:1px 6px;font-size:.64rem">GPCR</span>'
-if is_filamin: flags += ' <span style="background:rgba(249,115,22,0.1);color:#f97316;border:1px solid rgba(249,115,22,0.3);border-radius:3px;padding:1px 6px;font-size:.64rem">FILAMIN</span>'
-if is_cardiac: flags += ' <span style="background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.3);border-radius:3px;padding:1px 6px;font-size:.64rem">CARDIAC</span>'
-st.markdown(f"""<div style="display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid #0a1520;margin-bottom:6px">
-<div style="flex:1"><span style="font-size:1rem;font-weight:700;color:#d0e8ff;font-family:monospace">{gene}</span>
-<span style="background:{vcolor}18;color:{vcolor};border:1px solid {vcolor}40;border-radius:4px;padding:1px 7px;font-size:.65rem;font-weight:700;margin-left:5px">{verdict}</span>{flags}
-<br><span style="font-size:.68rem;color:#2a5070;font-family:monospace">{acc} · {pdata.get('protein_name','')[:65]}</span></div>
-<div style="display:flex;gap:12px;text-align:right">
-<div><div style="font-size:.78rem;font-weight:700;color:#00e5ff;font-family:monospace">{pdata.get('seq_len',0):,} aa</div><div style="font-size:.6rem;color:#2a5070">length</div></div>
-<div><div style="font-size:.78rem;font-weight:700;color:#ff2d55;font-family:monospace">{gi_s.get('n_pathogenic',0)}</div><div style="font-size:.6rem;color:#2a5070">P/LP</div></div>
-<div><div style="font-size:.78rem;font-weight:700;color:#00e5ff;font-family:monospace">{f"{gnomad['pLI']:.2f}" if gnomad.get("pLI") else "—"}</div><div style="font-size:.6rem;color:#2a5070">pLI</div></div>
-<div><div style="font-size:.78rem;font-weight:700;color:#4ade80;font-family:monospace">{ot.get('known_drugs_count',0)}</div><div style="font-size:.6rem;color:#2a5070">drugs</div></div>
-<div><div style="font-size:.78rem;font-weight:700;color:#ffd60a;font-family:monospace">{len(trials)}</div><div style="font-size:.6rem;color:#2a5070">trials</div></div>
+if is_gpcr:    flags += f' <span style="background:rgba(0,229,255,.1);color:#00e5ff;border:1px solid rgba(0,229,255,.3);border-radius:4px;padding:1px 7px;font-size:.63rem;font-weight:600">GPCR</span>'
+if is_filamin: flags += f' <span style="background:rgba(249,115,22,.1);color:#f97316;border:1px solid rgba(249,115,22,.3);border-radius:4px;padding:1px 7px;font-size:.63rem;font-weight:600">FILAMIN</span>'
+if is_cardiac: flags += f' <span style="background:rgba(239,68,68,.1);color:#ef4444;border:1px solid rgba(239,68,68,.3);border-radius:4px;padding:1px 7px;font-size:.63rem;font-weight:600">CARDIAC</span>'
+if is_kinase:  flags += f' <span style="background:rgba(74,222,128,.08);color:#4ade80;border:1px solid rgba(74,222,128,.25);border-radius:4px;padding:1px 7px;font-size:.63rem;font-weight:600">KINASE</span>'
+if is_pase:    flags += f' <span style="background:rgba(251,191,36,.08);color:#fbbf24;border:1px solid rgba(251,191,36,.25);border-radius:4px;padding:1px 7px;font-size:.63rem;font-weight:600">PHOSPHATASE</span>'
+
+st.markdown(f"""<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid #1a2a3a;margin-bottom:8px">
+<div style="flex:1">
+  <span style="font-size:1.1rem;font-weight:700;color:#d0e8ff;font-family:monospace">{gene}</span>
+  <span style="background:{vcolor}18;color:{vcolor};border:1px solid {vcolor}45;border-radius:5px;padding:2px 9px;font-size:.67rem;font-weight:700;margin-left:6px">{verdict}</span>
+  {flags}
+  <br><span style="font-size:.69rem;color:#3a5570;font-family:monospace">{acc} · {pdata.get('protein_name','')[:65]} · {pdata.get('organism','')}</span>
+</div>
+<div style="display:flex;gap:12px;text-align:center;align-items:flex-start;flex-shrink:0">
+  <div><div style="font-size:.8rem;font-weight:700;color:#00e5ff;font-family:monospace">{pdata.get('seq_len',0):,}</div><div style="font-size:.58rem;color:#3a5570">AA</div></div>
+  <div><div style="font-size:.8rem;font-weight:700;color:#ff2d55;font-family:monospace">{gi_s.get('n_pathogenic',0)}</div><div style="font-size:.58rem;color:#3a5570">P/LP</div></div>
+  <div><div style="font-size:.8rem;font-weight:700;color:#00e5ff;font-family:monospace">{f"{gnomad['pLI']:.2f}" if gnomad.get("pLI") else "—"}</div><div style="font-size:.58rem;color:#3a5570">pLI</div></div>
+  <div><div style="font-size:.8rem;font-weight:700;color:#4ade80;font-family:monospace">{ot_d.get('known_drugs_count',0)}</div><div style="font-size:.58rem;color:#3a5570">DRUGS</div></div>
+  <div><div style="font-size:.8rem;font-weight:700;color:#ffd60a;font-family:monospace">{len(trials)}</div><div style="font-size:.58rem;color:#3a5570">TRIALS</div></div>
 </div></div>""", unsafe_allow_html=True)
 
-# ── ARRB intercept ────────────────────────────────────────────────────────
-if is_arrb:
-    total = sum(ARRB_COSTS.values())
-    st.markdown(f"""<div style="background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:14px;text-align:center;margin-bottom:10px">
-<div style="font-size:.8rem;font-weight:700;color:#ef4444">DEPRIORITISE — {gene}</div>
-<div style="font-size:1.4rem;font-weight:800;color:#ef4444;margin:6px 0">${total:,}</div>
-<div class="dim">Avoidable spend · Beta-arrestin &lt;5 confirmed Mendelian disease variants · DKO mice viable/fertile</div></div>""", unsafe_allow_html=True)
-    c1,c2 = st.columns(2)
-    with c1:
-        _sec("Avoidable Cost Breakdown")
-        for n,c in ARRB_COSTS.items(): st.markdown(f'<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #060d14;font-size:.72rem"><span class="dim">{n}</span><span style="color:#ef4444;font-family:monospace">${c:,}</span></div>', unsafe_allow_html=True)
-        _sec("Redirect Alternatives")
-        for alt in ARRB_ALTS:
-            ca,cb = st.columns([3,1])
-            with ca: st.markdown(f'<span style="color:#00e5ff;font-family:monospace">{alt["gene"]}</span> <span class="dim">{alt["reason"][:50]}</span>', unsafe_allow_html=True)
-            with cb:
-                if st.button(f"↗{alt['gene']}", key=f"aa_{alt['gene']}"): st.session_state._qval=alt["gene"]; st.rerun()
-    with c2:
-        _sec("6 Landmark Papers — No Disease Evidence")
-        for p in ARRB_PAPERS: st.markdown(f'<div class="dim" style="border-bottom:1px solid #060d14;padding:4px 0"><a href="https://pubmed.ncbi.nlm.nih.gov/{p["pmid"]}/" target="_blank" style="color:#8baabf;font-size:.71rem">{p["title"]}</a><br>{p["journal"]} {p["year"]} · PMID:{p["pmid"]}<br><i style="color:#1e3a5f">{p["finding"]}</i></div>', unsafe_allow_html=True)
-    st.stop()
 
-# ── TABS ──────────────────────────────────────────────────────────────────
-t0,t1,t2,t3,t4,t5,t6,t7,t8 = st.tabs(["📊 Summary","🎯 Triage","🔬 Case Study","🧩 Explorer","⚗️ Experiments","📋 CSV Analysis","🤖 AI Report","📁 Workspace","🦠 Disease Link"])
+# ═══════════════════════════════════════════════════════════════════
+# TABS
+# ═══════════════════════════════════════════════════════════════════
+t0,t1,t2,t3,t4,t5,t6,t7 = st.tabs([
+    "📊 Summary", "🎯 Triage", "🔬 Case Study", "🧩 Protein Explorer",
+    "⚗️ Experiments & Therapy", "⚗ Chemistry", "🤖 AI Report", "📁 Workspace"
+])
 
-with t0:  # SUMMARY
+
+# ─── TAB 0: SUMMARY ─────────────────────────────────────────────
+with t0:
     pl = {True:"PURSUE",False:"DEPRIORITISE",None:"SELECTIVE"}.get(gi_s.get("pursue"),"PROCEED")
-    st.markdown(f"""<div style="background:{vcolor}0d;border:1px solid {vcolor}30;border-radius:5px;padding:8px 14px;display:flex;align-items:center;gap:12px;margin-bottom:8px">
-<div><span style="font-size:.95rem;font-weight:800;color:{vcolor}">{pl}</span> <span style="background:{vcolor}18;color:{vcolor};border-radius:3px;padding:1px 6px;font-size:.64rem;font-weight:700">{verdict}</span></div>
+    st.markdown(f"""<div style="background:{vcolor}0a;border:1px solid {vcolor}30;border-radius:7px;padding:10px 16px;display:flex;align-items:center;gap:14px;margin-bottom:10px">
+<div><span style="font-size:.95rem;font-weight:800;color:{vcolor}">{pl}</span> <span style="background:{vcolor}18;color:{vcolor};border-radius:4px;padding:1px 7px;font-size:.67rem;font-weight:700">{verdict}</span></div>
 <div style="color:{vcolor}88;font-size:.72rem;flex:1">{' · '.join(gi_s.get('reasons',[])[:3])}</div></div>""", unsafe_allow_html=True)
+    
     c1,c2,c3,c4,c5,c6 = st.columns(6)
-    c1.metric("Diseases",len(pdata.get("diseases",[])));c2.metric("P/LP",gi_s.get("n_pathogenic",0))
-    c3.metric("CRITICAL ML",gi_s.get("n_critical",0));c4.metric("pLI",f"{gnomad.get('pLI'):.2f}" if gnomad.get("pLI") else "N/A")
-    c5.metric("Known Drugs",ot.get("known_drugs_count",0));c6.metric("Active Trials",len(trials))
+    c1.metric("Diseases",len(pdata.get("diseases",[])))
+    c2.metric("P/LP Variants",gi_s.get("n_pathogenic",0))
+    c3.metric("Critical",gi_s.get("n_critical",0))
+    c4.metric("pLI",f"{gnomad.get('pLI'):.2f}" if gnomad.get("pLI") else "N/A")
+    c5.metric("Known Drugs",ot_d.get("known_drugs_count",0))
+    c6.metric("Active Trials",len(trials))
+    
     cl,cr = st.columns([1.2,.8], gap="large")
     with cl:
         _sec("Disease Associations")
-        for d in pdata.get("diseases",[])[:6]:
-            n=d.get("name","?"); desc=d.get("desc","")[:110]
-            ct = "Somatic" if any(t in n.lower() for t in ["cancer","carcinoma","tumor","sarcoma"]) else "Germline" if any(t in n.lower() for t in ["hereditary","congenital","familial"]) else "Unknown"
-            cc = "#ff8c42" if ct=="Somatic" else "#818cf8" if ct=="Germline" else "#4a7090"
-            st.markdown(f'<div class="row"><span style="color:{cc};font-size:.62rem;font-weight:600;min-width:52px">{ct}</span><div><b style="color:#d0e8ff;font-size:.73rem">{n}</b><br><span class="dim">{desc}</span></div></div>', unsafe_allow_html=True)
-        if not pdata.get("diseases"): st.markdown('<div class="dim" style="padding:6px">No disease annotations — null mutant with no phenotype = deprioritise.</div>', unsafe_allow_html=True)
-        _sec("Top 5 Experiments")
-        shown = 0
-        for exp in exp_list:
-            if shown>=5 or exp.get("avoid"): continue
-            dof=exp.get("do_first",False); col2="#00e5ff" if dof else "#4a7090"
-            st.markdown(f"""<div style="background:#020609;border:1px solid {"rgba(0,229,255,0.2)" if dof else "#0a1520"};border-radius:4px;padding:5px 9px;margin:3px 0">
-<div style="display:flex;justify-content:space-between"><span style="color:{col2};font-size:.73rem;font-weight:600">{"🚀 " if dof else ""}{exp['name'][:60]}</span>
-<span style="color:#2a5070;font-size:.62rem;font-family:monospace">${exp['cost_usd']:,} · {exp['time_weeks']}w · P={int(exp['p_success']*100)}%</span></div>
-<div class="dim">{exp['rationale'][:110]}…</div></div>""", unsafe_allow_html=True)
-            shown+=1
-        _sec("Pursue vs Avoid")
-        pa1,pa2 = st.columns(2)
-        with pa1:
-            st.markdown('<div style="color:#4ade80;font-size:.67rem;font-weight:600;margin-bottom:3px">✅ PURSUE</div>', unsafe_allow_html=True)
-            for e in [e for e in exp_list if e.get("do_first") and not e.get("avoid")][:3]: st.markdown(f'<div class="dim" style="padding:2px 0;border-bottom:1px solid #060d14">{e["name"][:50]}</div>', unsafe_allow_html=True)
-        with pa2:
-            st.markdown('<div style="color:#ef4444;font-size:.67rem;font-weight:600;margin-bottom:3px">🛑 AVOID</div>', unsafe_allow_html=True)
-            for e in [e for e in exp_list if e.get("avoid")][:3]: st.markdown(f'<div class="dim" style="padding:2px 0;border-bottom:1px solid #060d14">{e["name"][:50]}</div>', unsafe_allow_html=True)
+        for d in pdata.get("diseases",[])[:7]:
+            n=d.get("name","?"); desc=d.get("desc","")[:120]; inh=d.get("inheritance","Unknown")
+            cc="#ff8c42" if inh=="Somatic" else "#818cf8" if inh=="Germline" else "#3a5570"
+            st.markdown(f'<div style="display:flex;gap:6px;padding:5px 0;border-bottom:1px solid #0d1a2a"><span style="color:{cc};font-size:.62rem;font-weight:600;min-width:58px">{inh}</span><div><b style="color:#d0e8ff;font-size:.73rem">{n}</b><br><span class="dim">{desc}</span></div></div>', unsafe_allow_html=True)
+        if not pdata.get("diseases"): st.markdown('<div class="dim" style="padding:8px">No disease annotations — null mutant with no phenotype. Consider deprioritising.</div>', unsafe_allow_html=True)
+        
+        _sec("Highest-Priority Variants")
+        path_v = [v for v in cv if v.get("ml_class") in ("CRITICAL","HIGH")][:8]
+        for v in path_v:
+            sev,svc,sbc = _classify_severity(v); conds = ", ".join(v.get("conditions",[])[:1])
+            am_here = next((a for a in (am_d or []) if a.get("position")==v.get("position")),None)
+            am_tag = " 🟢" if am_here and am_here["score"]>=sens else ""
+            st.markdown(f'<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid #0d1a2a"><span class="{sbc}">{sev}</span><a href="{v.get("url","")}" target="_blank" style="color:#7a9aaa;font-family:monospace;font-size:.71rem">{v.get("protein_change","?")[:18]}{am_tag}</a><span class="dim">{conds[:35]}</span></div>', unsafe_allow_html=True)
+        if not path_v: st.markdown('<div class="dim" style="padding:6px">No pathogenic/likely pathogenic variants in ClinVar or UniProt.</div>', unsafe_allow_html=True)
+    
     with cr:
         _sec("gnomAD Constraint")
         for lbl2,val,thresh,dh in [("pLI",gnomad.get("pLI"),0.9,"high"),("o/e LoF",gnomad.get("lof_oe"),0.35,"low"),("o/e Missense",gnomad.get("missense_oe"),0.6,"low")]:
             if val is None: continue
-            good=(val>thresh if dh=="high" else val<thresh); col2="#00e5ff" if good else "#4a7090"
-            st.markdown(f'<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #060d14;font-size:.72rem"><span class="dim">{lbl2}</span><span style="color:{col2};font-family:monospace">{val:.3f}{"  ✓" if good else ""}</span></div>', unsafe_allow_html=True)
-        st.markdown(_src("gnomAD","https://gnomad.broadinstitute.org"), unsafe_allow_html=True)
+            good=(val>thresh if dh=="high" else val<thresh); col2="#00e5ff" if good else "#3a5570"
+            st.markdown(f'<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #0d1a2a;font-size:.72rem"><span class="dim">{lbl2}</span><span style="color:{col2};font-family:monospace">{val:.3f}{"  ✓" if good else ""}</span></div>', unsafe_allow_html=True)
+        if gnomad.get("essential"):
+            st.markdown('<div style="color:#4ade80;font-size:.68rem;margin-top:4px">Essential gene (pLI>0.9) — LoF lethal. Handle CRISPR with care.</div>', unsafe_allow_html=True)
+        
         if is_gpcr:
-            with st.expander("★ H8-Filamin Assay (IP)", expanded=True): st.markdown('<div style="font-size:.71rem;color:#d0e8ff;line-height:1.6">GPCR agonist → H8 dislodges → binds FLNA Ig21 → PKA phosphorylates Ser2152. More receptor-proximal than cAMP, IP3, or arrestin. Only FLNA (not B/C). ~300/800 Class A GPCRs carry H8 FBM.</div>', unsafe_allow_html=True)
-        if is_filamin:
-            with st.expander("PhosphoSite Ser2152 — Signal vs Noise"): st.markdown('<div style="font-size:.71rem;color:#d0e8ff;line-height:1.6">Ser2152 = dominant phospho peak on FLNA. All others = background kinase noise. Validated signal requires: mutation causes human disease. R2149 variants (heterometropia) confirm this site.</div>', unsafe_allow_html=True)
-        if is_cardiac:
-            with st.expander("TMAO Rattling Receptor — Arrhythmia"): st.markdown('<div style="font-size:.71rem;color:#d0e8ff;line-height:1.6">TMAO causes conformational rattling → disrupts H8-Filamin coupling → cardiac conduction defects. Patent-unoccupied axis.</div>', unsafe_allow_html=True)
-        if wl:
-            _sec("Wet-Lab Assay Interpretation")
-            interp = ("Filamin Ser2152-P readout — correlates with GPCR activation. Cross-ref Step 3 protocol." if "phospho" in wl.lower() and is_gpcr else "Interaction disruption — Co-IP with STRING top partners to validate specificity." if any(x in wl.lower() for x in ["co-ip","pull","interaction"]) else f"Functional alteration in {gene}. Map to ClinVar P/LP variants at affected position.")
-            st.markdown(f'<div class="card"><div class="dim">{wl[:140]}</div><div style="color:#00e5ff;font-size:.71rem;margin-top:5px">{interp}</div></div>', unsafe_allow_html=True)
-        drugs = ot.get("known_drugs",[]) or [d["drug"] for d in dgidb[:5]]
-        if drugs: _sec("Known Drugs"); st.markdown(" ".join(f'<span class="pill">💊 {d}</span>' for d in drugs[:8]), unsafe_allow_html=True)
-        if trials: _sec("Active Trials"); [st.markdown(f'<div class="dim"><a href="{t["url"]}" target="_blank" style="color:#00e5ff">{t["nct_id"]}</a> · Ph{t["phase"]} · {t["title"][:55]}</div>', unsafe_allow_html=True) for t in trials[:3]]
+            with st.expander("★ Filamin Ser2152-P IP Assay", expanded=True):
+                st.markdown('<div style="font-size:.71rem;color:#d0e8ff;line-height:1.7">GPCR agonist → H8 dislodges → binds FLNA Ig21 → PKA phosphorylates Ser2152. More receptor-proximal than cAMP, IP3, or arrestin. Only FLNA (not B/C). ~300/800 Class A GPCRs carry H8 FBM.<br><br><a href="https://pubmed.ncbi.nlm.nih.gov/26124276/" target="_blank" class="pill">Nakamura JBC 2015 PMID:26124276</a></div>', unsafe_allow_html=True)
+        
+        drugs = ot_d.get("known_drugs",[]) or [d["drug"] for d in dgidb[:5]]
+        if drugs:
+            _sec("Known Drug Interactions")
+            st.markdown(" ".join(f'<span class="pill">💊 {d}</span>' for d in drugs[:8]), unsafe_allow_html=True)
+        if trials:
+            _sec("Active Clinical Trials")
+            for t in trials[:3]:
+                st.markdown(f'<div class="dim"><a href="{t["url"]}" target="_blank" style="color:#00e5ff">{t["nct_id"]}</a> · Phase {t["phase"]} · {t["title"][:55]}</div>', unsafe_allow_html=True)
+    
     if papers:
-        _sec("Literature")
-        for p in papers[:8]: st.markdown(f'<div style="display:flex;align-items:baseline;gap:5px;padding:3px 0;border-bottom:1px solid #060d14"><span style="background:{p["tier_color"]}18;color:{p["tier_color"]};border:1px solid {p["tier_color"]}30;border-radius:3px;min-width:50px;text-align:center;font-size:.6rem;padding:1px 5px">{p["tier_label"]}</span><a href="{p["url"]}" target="_blank" style="color:#8baabf;font-size:.72rem;flex:1">{p["title"][:100]}</a><span class="dim" style="white-space:nowrap">{p["authors"][:18]} {p["year"]} PMID:{p["pmid"]}</span></div>', unsafe_allow_html=True)
+        _sec("Evidence-Tiered Literature — Cited Sources")
+        for p in papers[:10]:
+            st.markdown(f'<div style="display:flex;gap:6px;padding:3px 0;border-bottom:1px solid #0d1a2a;align-items:baseline"><span style="background:{p["tier_color"]}18;color:{p["tier_color"]};border:1px solid {p["tier_color"]}30;border-radius:3px;min-width:52px;text-align:center;font-size:.6rem;padding:1px 5px;white-space:nowrap">{p["tier_label"]}</span><a href="{p["url"]}" target="_blank" style="color:#7a9aaa;font-size:.71rem;flex:1">{p["title"][:100]}</a><span class="dim" style="white-space:nowrap">{p["authors"][:18]} {p["year"]} PMID:{p["pmid"]}</span></div>', unsafe_allow_html=True)
 
-with t1:  # TRIAGE
+
+# ─── TAB 1: TRIAGE ─────────────────────────────────────────────
+with t1:
     cl,cr = st.columns([1.1,.9], gap="large")
     with cl:
-        _sec("AlphaFold Structure (pLDDT)")
+        _sec("AlphaFold Structure — Pathogenic Variant Sites Shown as Spheres")
         vw = st.radio("view",["pLDDT","Spectrum","Surface","Stick"],horizontal=True,key="t1_view",label_visibility="collapsed")
-        _viewer(pdb, style={"pLDDT":"plddt","Spectrum":"spectrum","Surface":"surface","Stick":"stick"}[vw], height=380)
+        spin_t1 = st.checkbox("Auto-spin",key="t1_spin")
+        _viewer3d(pdb, cv=cv, style={"pLDDT":"plddt","Spectrum":"spectrum","Surface":"surface","Stick":"stick"}[vw], height=420, spin=spin_t1, show_variants=True)
         if plddt:
-            vals = list(plddt.values())
-            fig = go.Figure(go.Histogram(x=vals,nbinsx=25,marker_color=["#00b4d8" if v>=90 else "#4ab8a7" if v>=70 else "#f5b942" if v>=50 else "#e05c5c" for v in vals]))
-            fig.update_layout(height=130,plot_bgcolor="#010306",paper_bgcolor="#010306",xaxis=dict(title="pLDDT",gridcolor="#060d14",color="#2a5070"),yaxis=dict(title="n",gridcolor="#060d14",color="#2a5070"),font=dict(color="#d0e8ff",size=10),margin=dict(t=5,b=25,l=30,r=5))
+            vals=list(plddt.values()); avg=np.mean(vals); hc=sum(1 for v in vals if v>=70)/len(vals)*100
+            fig=go.Figure(go.Histogram(x=vals,nbinsx=25,marker_color=["#00c4e0" if v>=90 else "#35c7a3" if v>=70 else "#f5c842" if v>=50 else "#e05c5c" for v in vals]))
+            fig.update_layout(height=130,plot_bgcolor="#060b14",paper_bgcolor="#060b14",xaxis=dict(title="pLDDT",gridcolor="#0d1a2a",color="#3a5570"),yaxis=dict(title="n",gridcolor="#0d1a2a",color="#3a5570"),font=dict(color="#d0e8ff",size=10),margin=dict(t=5,b=25,l=30,r=5))
             st.plotly_chart(fig,use_container_width=True,config={"displayModeBar":False})
-            avg=np.mean(vals); hc=sum(1 for v in vals if v>=70)/len(vals)*100
-            st.markdown(f'<span class="dim">avg pLDDT <b style="color:#00e5ff">{avg:.1f}</b> · >70: <b style="color:#4ab8a7">{hc:.0f}%</b></span>', unsafe_allow_html=True)
+            st.markdown(f'<span class="dim">Avg pLDDT: <b style="color:#00e5ff">{avg:.1f}</b> · Residues >70: <b style="color:#35c7a3">{hc:.0f}%</b></span>', unsafe_allow_html=True)
+        st.markdown(f'<div class="dim" style="margin-top:4px">🔴 CRITICAL variants  🟠 HIGH variants  — click any residue for details</div>', unsafe_allow_html=True)
+    
     with cr:
-        _sec(f"Variant Map (sensitivity {sens:.2f})")
-        if cv:
-            seq_len = pdata.get("seq_len",500)
-            fig_l = go.Figure()
-            fig_l.add_trace(go.Scatter(x=[0,seq_len],y=[0,0],mode="lines",line=dict(color="#0d1a2a",width=4),hoverinfo="none",showlegend=False))
-            for cls,col2 in {"CRITICAL":"#ff2d55","HIGH":"#ff8c42","MODERATE":"#ffd60a","LOW":"#2a5070"}.items():
-                grp = [v for v in cv if v.get("ml_class")==cls and v.get("position",0)>0]
-                if grp: fig_l.add_trace(go.Scatter(x=[v["position"] for v in grp],y=[1]*len(grp),mode="markers",marker=dict(size=8,color=col2,line=dict(color="#010306",width=1)),text=[f'{v.get("protein_change","?")} — {v.get("significance","")[:25]}' for v in grp],hoverinfo="text",name=cls))
-            if am:
-                am_p = [a for a in am if a["score"]>=sens]
-                if am_p: fig_l.add_trace(go.Scatter(x=[a["position"] for a in am_p[::max(1,len(am_p)//200)]],y=[-0.6]*min(200,len(am_p)),mode="markers",marker=dict(size=3,color="#7c3aed",opacity=0.4),name=f"AM≥{sens:.2f}",hoverinfo="none"))
-            fig_l.update_layout(height=200,plot_bgcolor="#010306",paper_bgcolor="#010306",xaxis=dict(title="Position",gridcolor="#060d14",color="#2a5070"),yaxis=dict(visible=False,range=[-1.5,2]),font=dict(color="#d0e8ff",size=10),legend=dict(bgcolor="#020609",bordercolor="#0a1520",font=dict(size=9)),margin=dict(t=5,b=30,l=5,r=5))
-            st.plotly_chart(fig_l,use_container_width=True,config={"displayModeBar":False})
-        _sec("Variant Deep Dive")
-        for v in [v for v in cv if v.get("ml_class") in ("CRITICAL","HIGH")][:8]:
-            cls=v.get("ml_class","?"); col2="#ff2d55" if cls=="CRITICAL" else "#ff8c42"
-            am_here = next((a for a in (am or []) if a.get("position")==v.get("position")),None)
-            am_tag = " 🟢 AM-concordant" if am_here and am_here["score"]>=sens else " 🟡 AM-discordant" if am_here else ""
-            conds = ", ".join(v.get("conditions",[])[:2]) or "?"
-            with st.expander(f'[{cls}] {v.get("protein_change","?") or v.get("title","?")[:38]}{am_tag}'):
-                st.markdown(f'<div style="font-size:.71rem;line-height:1.7"><b>Significance:</b> {v.get("significance","")}<br><b>Review:</b> {v.get("review_status","")} {"⭐"*v.get("stars",0)}<br><b>Conditions:</b> {conds}<br><a href="{v.get("url","")}" target="_blank" style="color:#00e5ff;font-size:.68rem">View in ClinVar ↗</a></div>', unsafe_allow_html=True)
+        _sec("Is This Protein Associated With Disease?")
+        diseases = pdata.get("diseases",[])
+        if diseases:
+            st.markdown(f'<div style="background:rgba(0,229,255,.06);border:1px solid rgba(0,229,255,.2);border-radius:8px;padding:10px 14px;margin-bottom:10px"><b style="color:#00e5ff">Yes — {len(diseases)} disease associations confirmed in UniProt</b><br><span class="dim">ClinVar P/LP variants: {gi_s.get("n_pathogenic",0)} · Verdict: {verdict}</span></div>', unsafe_allow_html=True)
+            for d in diseases[:8]:
+                inh=d.get("inheritance","Unknown"); cc="#ff8c42" if inh=="Somatic" else "#818cf8"
+                st.markdown(f'<div style="padding:4px 0;border-bottom:1px solid #0d1a2a"><span style="color:{cc};font-size:.62rem">{inh}</span> — <b style="color:#d0e8ff;font-size:.72rem">{d.get("name","?")}</b><br><span class="dim">{d.get("desc","")[:80]}</span></div>', unsafe_allow_html=True)
+        else:
+            st.markdown(f'<div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:10px 14px"><b style="color:#ef4444">No UniProt disease associations</b><br><span class="dim">A null mutant with no phenotype should be deprioritised unless disease ascertainment is incomplete.</span></div>', unsafe_allow_html=True)
+        
+        _sec("Variant Sphere Triage — Ranked by Severity")
+        path_vars = [v for v in cv if v.get("ml_class") in ("CRITICAL","HIGH","MODERATE")][:20]
+        if path_vars:
+            for v in path_vars:
+                sev,svc,sbc = _classify_severity(v)
+                conds = ", ".join(v.get("conditions",[])[:1]) or "Unspecified"
+                am_here = next((a for a in (am_d or []) if a.get("position")==v.get("position")),None)
+                concordance = "🟢 AM-concordant" if am_here and am_here["score"]>=sens else "🟡 check AM" if am_here else ""
+                source = v.get("source","ClinVar")
+                st.markdown(f'<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid #0d1a2a"><span class="{sbc}">{sev}</span><div style="flex:1"><a href="{v.get("url","#")}" target="_blank" style="color:#7a9aaa;font-family:monospace;font-size:.71rem">{v.get("protein_change","?")[:18]}</a> <span class="dim">{concordance}</span><br><span class="dim">{conds[:45]} · {source}</span></div></div>', unsafe_allow_html=True)
+        else:
+            st.markdown('<div class="dim" style="padding:8px">No disease-associated variants found in ClinVar or UniProt.</div>', unsafe_allow_html=True)
+        
         _sec("Tractability")
         t1c,t2c,t3c = st.columns(3)
-        t1c.metric("Small Mol","✓" if ot.get("sm_tractable") else "—"); t2c.metric("Antibody","✓" if ot.get("ab_tractable") else "—"); t3c.metric("Drugs",ot.get("known_drugs_count",0))
+        t1c.metric("Small Mol","✓" if ot_d.get("sm_tractable") else "—")
+        t2c.metric("Antibody","✓" if ot_d.get("ab_tractable") else "—")
+        t3c.metric("Known Drugs",ot_d.get("known_drugs_count",0))
 
-with t2:  # CASE STUDY
+
+# ─── TAB 2: CASE STUDY ─────────────────────────────────────────
+with t2:
     cl,cr = st.columns(2, gap="large")
     with cl:
+        _sec("Tissue Associations — GTEx v8")
+        if gtex:
+            items = sorted(gtex.items(),key=lambda x:x[1],reverse=True)[:22]
+            fig_t = go.Figure(go.Bar(x=[i[1] for i in items],y=[i[0] for i in items],orientation="h",
+                marker_color=["#00e5ff" if i[1]==max(gtex.values()) else "#1a3a5a" for i in items],
+                hovertemplate="<b>%{y}</b><br>%{x:.2f} TPM<extra></extra>"))
+            fig_t.update_layout(height=max(300,len(items)*20),plot_bgcolor="#060b14",paper_bgcolor="#060b14",
+                xaxis=dict(title="Median TPM",gridcolor="#0d1a2a",color="#3a5570"),
+                yaxis=dict(color="#7a9aaa",autorange="reversed",tickfont=dict(size=9)),
+                font=dict(color="#d0e8ff",size=10),margin=dict(l=140,r=5,t=5,b=28))
+            st.plotly_chart(fig_t,use_container_width=True,config={"displayModeBar":False})
+        else:
+            st.markdown('<div class="dim" style="padding:8px">GTEx expression data not available.</div>', unsafe_allow_html=True)
+        
+        _sec("Genomic Framework")
+        st.markdown(f"""<div class="card">
+<table style="width:100%;font-size:.72rem;border-collapse:collapse">
+<tr><td class="dim">Gene</td><td style="color:#d0e8ff;font-family:monospace">{gene}</td><td class="dim">UniProt</td><td style="color:#d0e8ff;font-family:monospace">{acc}</td></tr>
+<tr><td class="dim">Length</td><td style="color:#d0e8ff">{pdata.get('seq_len',0):,} aa · {pdata.get('mw_kda',0):.1f} kDa</td><td class="dim">pLI</td><td style="color:{"#00e5ff" if gnomad.get("essential") else "#3a5570"}">{gnomad.get("pLI","N/A")}</td></tr>
+<tr><td class="dim">Organism</td><td style="color:#d0e8ff">{pdata.get('organism','')}</td><td class="dim">P/LP</td><td style="color:#ff2d55">{gi_s.get("n_pathogenic",0)}</td></tr>
+<tr><td class="dim">LoF o/e</td><td style="color:#d0e8ff">{gnomad.get("lof_oe","N/A")}</td><td class="dim">Miss o/e</td><td style="color:#d0e8ff">{gnomad.get("missense_oe","N/A")}</td></tr>
+</table></div>""", unsafe_allow_html=True)
+        
+        _sec("Disease Classification — Somatic vs Germline (UniProt)")
+        germline_d = [d for d in pdata.get("diseases",[]) if d.get("inheritance")!="Somatic"]
+        somatic_d  = [d for d in pdata.get("diseases",[]) if d.get("inheritance")=="Somatic"]
+        gca,gcb = st.columns(2)
+        with gca:
+            st.markdown(f'<div style="color:#818cf8;font-size:.67rem;font-weight:600;margin-bottom:4px">GERMLINE ({len(germline_d)})</div>', unsafe_allow_html=True)
+            for d in germline_d[:5]: st.markdown(f'<div class="dim" style="padding:2px 0;border-bottom:1px solid #0d1a2a">{d.get("name","?")[:40]}</div>', unsafe_allow_html=True)
+        with gcb:
+            st.markdown(f'<div style="color:#ff8c42;font-size:.67rem;font-weight:600;margin-bottom:4px">SOMATIC ({len(somatic_d)})</div>', unsafe_allow_html=True)
+            for d in somatic_d[:5]: st.markdown(f'<div class="dim" style="padding:2px 0;border-bottom:1px solid #0d1a2a">{d.get("name","?")[:40]}</div>', unsafe_allow_html=True)
+    
+    with cr:
         _sec("Function")
-        for fn in pdata.get("functions",[])[:2]: st.markdown(f'<div class="card" style="font-size:.72rem;color:#d0e8ff;line-height:1.6">{fn[:300]}</div>', unsafe_allow_html=True)
+        for fn in pdata.get("functions",[])[:2]:
+            st.markdown(f'<div class="card" style="font-size:.73rem;color:#d0e8ff;line-height:1.7">{fn[:350]}</div>', unsafe_allow_html=True)
+        
         _sec("Subcellular Localisation")
         locs = pdata.get("subcellular",[])
-        if locs: st.markdown(" ".join(f'<span class="pill">{l}</span>' for l in locs[:8]), unsafe_allow_html=True)
-        else: st.markdown('<div class="dim">Not annotated</div>', unsafe_allow_html=True)
-        _sec("Tissue Expression (GTEx v8)")
-        if gtex:
-            items = sorted(gtex.items(),key=lambda x:x[1],reverse=True)[:20]
-            fig_t = go.Figure(go.Bar(x=[i[1] for i in items],y=[i[0] for i in items],orientation="h",marker_color=["#00e5ff" if i[1]==max(gtex.values()) else "#1e3a5f" for i in items]))
-            fig_t.update_layout(height=max(260,len(items)*19),plot_bgcolor="#010306",paper_bgcolor="#010306",xaxis=dict(title="Median TPM",gridcolor="#060d14",color="#2a5070"),yaxis=dict(color="#8baabf",autorange="reversed",tickfont=dict(size=8)),font=dict(color="#d0e8ff",size=10),margin=dict(l=130,r=5,t=5,b=25))
-            st.plotly_chart(fig_t,use_container_width=True,config={"displayModeBar":False})
-            st.markdown(_src("GTEx v8","https://gtexportal.org"), unsafe_allow_html=True)
-    with cr:
-        _sec("Structural Domains (UniProt)")
-        domains = pdata.get("domains",[])
-        if domains:
-            df_d = pd.DataFrame(domains[:15])
-            st.dataframe(df_d.rename(columns={"type":"Type","name":"Name","start":"Start","end":"End"}),use_container_width=True,hide_index=True,height=min(310,len(domains)*34+36))
+        if locs: st.markdown(" ".join(f'<span class="pill">{l}</span>' for l in locs[:10]), unsafe_allow_html=True)
+        else: st.markdown('<div class="dim">Not annotated.</div>', unsafe_allow_html=True)
+        
+        _sec("GPCR Classification")
         if is_gpcr:
-            _sec("GPCR Study Protocol (7-Step)")
-            for step in GPCR_PROTOCOL:
-                if step.get("cardiac") and not is_cardiac: continue
-                ip = step.get("ip",False)
-                with st.expander(f"{'★ ' if ip else ''}Step {step['step']}: {step['name']}", expanded=ip):
-                    st.markdown(f'<div style="font-size:.71rem;color:#d0e8ff;line-height:1.6">{step["desc"]}</div>', unsafe_allow_html=True)
-                    if step.get("warn"): st.warning(step["warn"])
-                    st.markdown(f'<span class="dim">{step["cost"]} · {step["time"]}</span>', unsafe_allow_html=True)
-                    if ip: st.markdown('<a class="pill" href="https://doi.org/10.1074/jbc.M115.671826" target="_blank">Nakamura 2015 ↗</a> <a class="pill" href="https://www.phosphosite.org/proteinAction.action?id=2546" target="_blank">PhosphoSite ↗</a>', unsafe_allow_html=True)
+            kws_txt = " ".join(pdata.get("keywords",[]))
+            is_orphan = "orphan" in kws_txt.lower()
+            st.markdown(f'<div style="background:rgba(0,229,255,.06);border:1px solid rgba(0,229,255,.2);border-radius:8px;padding:12px;margin-bottom:8px"><b style="color:#00e5ff">DIRECT GPCR</b><br><span class="dim">Seven-transmembrane receptor. {"Orphan receptor — no confirmed endogenous ligand." if is_orphan else "Endogenous ligand identified."} H8 Filamin binding motif present if FBM detected.</span></div>', unsafe_allow_html=True)
+        else:
+            kws_lower = " ".join(pdata.get("keywords",[])).lower()
+            is_piggyback = any(k in kws_lower for k in ["arrestin","rgs","grk","regulator of g"])
+            tag = "PIGGYBACK PROTEIN" if is_piggyback else "NON-GPCR TARGET"
+            col3 = "#ffd60a" if is_piggyback else "#3a5570"
+            desc3 = "Co-associates with GPCRs but may not independently cause Mendelian disease. Verify germline variant evidence before primary drug targeting." if is_piggyback else "No GPCR annotation. Analyse via primary disease variant evidence."
+            st.markdown(f'<div style="background:{col3}0a;border:1px solid {col3}30;border-radius:8px;padding:12px"><b style="color:{col3}">{tag}</b><br><span class="dim">{desc3}</span></div>', unsafe_allow_html=True)
+        
+        _sec("Post-Translational Modifications")
+        phospho = pdata.get("phospho_sites",[])
+        ptms = pdata.get("ptms",[])
+        if phospho:
+            st.markdown(f'<div class="dim" style="margin-bottom:4px">Phosphorylation sites: {len(phospho)} annotated</div>', unsafe_allow_html=True)
+            for ps in phospho[:6]: st.markdown(f'<div class="dim" style="padding:2px 0;border-bottom:1px solid #0d1a2a"><span style="color:#fbbf24">Ser/Thr/Tyr {ps["position"]}</span> — {ps["name"]}</div>', unsafe_allow_html=True)
+        for pt in ptms[:3]: st.markdown(f'<div class="dim" style="padding:2px 0;border-bottom:1px solid #0d1a2a">{pt[:100]}</div>', unsafe_allow_html=True)
+        if not phospho and not ptms: st.markdown('<div class="dim">No PTM annotations.</div>', unsafe_allow_html=True)
+        
         if string_d:
-            _sec("STRING Network (score>0.7)")
+            _sec("STRING Interaction Network")
             n=len(string_d); angles=[2*math.pi*i/n for i in range(n)]; r=3
             nx=[0]+[r*math.cos(a) for a in angles]; ny=[0]+[r*math.sin(a) for a in angles]
-            nt=[gene]+[p["partner"] for p in string_d]; nc=["#00e5ff"]+[f"rgba(0,229,255,{min(1,p['score'])})" for p in string_d]; ns=[16]+[max(5,int(p["score"]*14)) for p in string_d]
+            nt=[gene]+[p["partner"] for p in string_d]; ns=[18]+[max(5,int(p["score"]*15)) for p in string_d]
             ex_,ey_=[],[]
             for i in range(n): ex_+=[0,r*math.cos(angles[i]),None]; ey_+=[0,r*math.sin(angles[i]),None]
             fig_n=go.Figure()
-            fig_n.add_trace(go.Scatter(x=ex_,y=ey_,mode="lines",line=dict(color="#0d1a2a",width=1),hoverinfo="none",showlegend=False))
-            fig_n.add_trace(go.Scatter(x=nx,y=ny,mode="markers+text",text=nt,textposition="top center",textfont=dict(color="#8baabf",size=9),marker=dict(size=ns,color=nc,line=dict(color="#010306",width=1)),hovertext=["Query"]+[f"{p['partner']} ({p['score']:.2f})" for p in string_d],hoverinfo="text",showlegend=False))
-            fig_n.update_layout(height=280,showlegend=False,plot_bgcolor="#010306",paper_bgcolor="#010306",xaxis=dict(visible=False),yaxis=dict(visible=False),margin=dict(l=5,r=5,t=5,b=5))
+            fig_n.add_trace(go.Scatter(x=ex_,y=ey_,mode="lines",line=dict(color="#1a2a3a",width=1.5),hoverinfo="none",showlegend=False))
+            fig_n.add_trace(go.Scatter(x=nx,y=ny,mode="markers+text",text=nt,textposition="top center",textfont=dict(color="#7a9aaa",size=9),marker=dict(size=ns,color=["#00e5ff"]+["rgba(0,229,255,"+str(min(1,p['score']))+')' for p in string_d],line=dict(color="#060b14",width=2)),hovertext=["Query"]+[f"{p['partner']} ({p['score']:.2f})" for p in string_d],hoverinfo="text",showlegend=False))
+            fig_n.update_layout(height=280,showlegend=False,plot_bgcolor="#060b14",paper_bgcolor="#060b14",xaxis=dict(visible=False),yaxis=dict(visible=False),margin=dict(l=5,r=5,t=5,b=5))
             st.plotly_chart(fig_n,use_container_width=True,config={"displayModeBar":False})
-            st.markdown(_src("STRING","https://string-db.org"), unsafe_allow_html=True)
+    
     if papers:
         _sec("Evidence-Tiered Literature")
-        for p in papers[:10]: st.markdown(f'<div style="display:flex;gap:5px;padding:3px 0;border-bottom:1px solid #060d14;align-items:baseline"><span style="background:{p["tier_color"]}18;color:{p["tier_color"]};border:1px solid {p["tier_color"]}30;border-radius:3px;min-width:48px;text-align:center;font-size:.6rem;padding:1px 5px">{p["tier_label"]}</span><a href="{p["url"]}" target="_blank" style="color:#8baabf;font-size:.71rem;flex:1">{p["title"][:100]}</a><span class="dim" style="white-space:nowrap">{p["authors"][:18]} {p["year"]} PMID:{p["pmid"]}</span></div>', unsafe_allow_html=True)
+        for p in papers[:8]: st.markdown(f'<div style="display:flex;gap:6px;padding:3px 0;border-bottom:1px solid #0d1a2a;align-items:baseline"><span style="background:{p["tier_color"]}18;color:{p["tier_color"]};border:1px solid {p["tier_color"]}30;border-radius:3px;min-width:52px;text-align:center;font-size:.6rem;padding:1px 5px;white-space:nowrap">{p["tier_label"]}</span><a href="{p["url"]}" target="_blank" style="color:#7a9aaa;font-size:.71rem;flex:1">{p["title"][:100]}</a><span class="dim" style="white-space:nowrap">{p["authors"][:16]} {p["year"]} PMID:{p["pmid"]}</span></div>', unsafe_allow_html=True)
 
-with t3:  # EXPLORER
+
+# ─── TAB 3: PROTEIN EXPLORER ────────────────────────────────────
+with t3:
     cl,cr = st.columns([2,1], gap="large")
     AA = {"A":("Ala",1.8,0),"R":("Arg",-4.5,1),"N":("Asn",-3.5,0),"D":("Asp",-3.5,-1),"C":("Cys",2.5,0),"Q":("Gln",-3.5,0),"E":("Glu",-3.5,-1),"G":("Gly",-0.4,0),"H":("His",-3.2,0),"I":("Ile",4.5,0),"L":("Leu",3.8,0),"K":("Lys",-3.9,1),"M":("Met",1.9,0),"F":("Phe",2.8,0),"P":("Pro",-1.6,0),"S":("Ser",-0.8,0),"T":("Thr",-0.7,0),"W":("Trp",-0.9,0),"Y":("Tyr",-1.3,0),"V":("Val",4.2,0)}
     with cl:
-        _sec("3D Explorer — Click Residues")
+        _sec("Protein Backbone Explorer — Click Any Residue for Details")
         vw = st.radio("view",["pLDDT","Spectrum","Surface","Stick"],horizontal=True,key="ex_view",label_visibility="collapsed")
-        spin = st.checkbox("Auto-spin",key="ex_spin")
-        _viewer(pdb,style={"pLDDT":"plddt","Spectrum":"spectrum","Surface":"surface","Stick":"stick"}[vw],height=440,spin=spin)
+        spin_ex = st.checkbox("Auto-spin",key="ex_spin")
+        _viewer3d(pdb,cv=cv,style={"pLDDT":"plddt","Spectrum":"spectrum","Surface":"surface","Stick":"stick"}[vw],height=460,spin=spin_ex,show_variants=True)
+        
+        # Disease → mutation → genomic implication table
+        _sec("Disease Caused → Mutation → Genomic Implication")
+        diseases_all = pdata.get("diseases",[])
+        path_all = [v for v in cv if v.get("ml_class") in ("CRITICAL","HIGH")]
+        if diseases_all:
+            for d in diseases_all[:8]:
+                dn = d.get("name","?"); inh = d.get("inheritance","Unknown")
+                # Find matching variants for this disease
+                matching = [v for v in path_all if any(dn[:20].lower() in c.lower() for c in v.get("conditions",[])) or any(v.get("protein_change","") for v in path_all)][:2]
+                inh_col = "#ff8c42" if inh=="Somatic" else "#818cf8"
+                
+                with st.expander(f"{dn[:50]}  [{inh}]"):
+                    st.markdown(f'<div style="font-size:.72rem;color:#d0e8ff;line-height:1.7;margin-bottom:8px">{d.get("desc","No description available.")[:250]}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div style="display:flex;gap:10px;margin-bottom:8px"><span style="color:{inh_col};font-size:.68rem;font-weight:600">{inh}</span><span class="dim">Inheritance: {inh}</span></div>', unsafe_allow_html=True)
+                    
+                    # Genomic implication based on disease type and variant type
+                    if "cancer" in dn.lower() or "carcinoma" in dn.lower():
+                        impl = "Somatic gain/loss-of-function drives clonal expansion. Loss of tumour suppression or oncogenic activation. Target: restore wild-type function or inhibit mutant gain-of-function."
+                    elif "syndrom" in dn.lower() or "congenital" in dn.lower():
+                        impl = "Germline loss-of-function. Haploinsufficiency or recessive homozygosity. Consider: gene supplementation, read-through therapy for nonsense variants, or antisense oligonucleotides."
+                    else:
+                        impl = "Germline variant alters protein structure/function. Phenotype depends on inheritance mode, penetrance, and modifier genes. Functional assay required to confirm pathogenesis."
+                    st.markdown(f'<div style="background:#080f1a;border:1px solid #1a2a3a;border-radius:5px;padding:8px 10px;font-size:.71rem;color:#b0c8d8;line-height:1.7">{impl}</div>', unsafe_allow_html=True)
+                    
+                    if path_all:
+                        st.markdown('<div style="color:#3a5570;font-size:.62rem;font-weight:600;margin:6px 0 3px">KEY MUTATIONS</div>', unsafe_allow_html=True)
+                        for v in path_all[:3]:
+                            sev,svc,sbc = _classify_severity(v)
+                            st.markdown(f'<div style="display:flex;gap:5px;padding:2px 0"><span class="{sbc}">{sev}</span><span style="color:#7a9aaa;font-family:monospace;font-size:.68rem">{v.get("protein_change","?")}</span></div>', unsafe_allow_html=True)
+    
     with cr:
-        seq=pdata.get("sequence",""); seq_len=pdata.get("seq_len",0)
+        seq = pdata.get("sequence",""); seq_len = pdata.get("seq_len",0)
         _sec("Residue Inspector")
         if seq and seq_len:
-            pos=st.number_input("Position",1,max(1,seq_len),min(50,seq_len),key="res_pos_ex")
+            pos = st.number_input("Residue position",1,max(1,seq_len),min(50,seq_len),key="res_pos_ex")
             if 1<=pos<=seq_len:
-                aa=seq[pos-1].upper(); pr=AA.get(aa,("?",0,0)); pv=plddt.get(pos,0)
-                pc=("#00b4d8" if pv>=90 else "#4ab8a7" if pv>=70 else "#f5b942" if pv>=50 else "#e05c5c")
-                st.markdown(f"""<div class="card"><span style="color:#00e5ff;font-family:monospace;font-size:.9rem">{aa}{pos}</span> <span class="dim">{pr[0]}</span>
-<table style="width:100%;font-size:.71rem;margin-top:5px"><tr><td class="dim">Hydrophobicity</td><td style="color:#d0e8ff;font-family:monospace">{pr[1]}</td></tr>
-<tr><td class="dim">Charge</td><td style="color:#d0e8ff;font-family:monospace">{pr[2]:+}</td></tr>
-<tr><td class="dim">pLDDT</td><td style="color:{pc};font-family:monospace">{pv:.1f}</td></tr></table></div>""", unsafe_allow_html=True)
+                aa = seq[pos-1].upper(); pr = AA.get(aa,("?",0,0)); pv = plddt.get(pos,0)
+                pc = "#00c4e0" if pv>=90 else "#35c7a3" if pv>=70 else "#f5c842" if pv>=50 else "#e05c5c"
+                pl_lbl = "Very High" if pv>=90 else "Confident" if pv>=70 else "Low" if pv>=50 else "Very Low"
+                st.markdown(f"""<div class="card"><span style="color:#00e5ff;font-family:monospace;font-size:1rem;font-weight:700">{aa}{pos}</span> <span class="dim">— {pr[0]}</span>
+<table style="width:100%;font-size:.71rem;margin-top:7px">
+<tr><td class="dim">Hydrophobicity</td><td style="color:#d0e8ff">{pr[1]}</td></tr>
+<tr><td class="dim">Charge</td><td style="color:#d0e8ff">{pr[2]:+}</td></tr>
+<tr><td class="dim">pLDDT</td><td style="color:{pc}">{pv:.1f} — {pl_lbl}</td></tr>
+</table></div>""", unsafe_allow_html=True)
+                
                 for v in [v for v in cv if v.get("position")==pos][:2]:
-                    col2="#ff2d55" if v.get("ml_class")=="CRITICAL" else "#ff8c42"
-                    st.markdown(f'<div style="background:{col2}0d;border-left:2px solid {col2};padding:4px 7px;margin:3px 0;border-radius:3px;font-size:.71rem;color:#d0e8ff">{v.get("significance","")} · {", ".join(v.get("conditions",[])[:1])}</div>', unsafe_allow_html=True)
-                new_aa=st.selectbox("Mutate to:",sorted([k for k in AA if k!=aa]),key="mut_aa_ex")
+                    col2 = "#ff2d55" if v.get("ml_class")=="CRITICAL" else "#ff8c42"
+                    st.markdown(f'<div style="background:{col2}0a;border-left:2px solid {col2};padding:5px 8px;margin:4px 0;border-radius:4px;font-size:.71rem;color:#d0e8ff">{v.get("significance","")} · {", ".join(v.get("conditions",[])[:1])[:40]}</div>', unsafe_allow_html=True)
+                
+                _sec("If Mutated")
+                new_aa = st.selectbox("Substitute to:",sorted([k for k in AA if k!=aa]),key="mut_aa_ex")
                 if new_aa:
-                    npr=AA.get(new_aa,("?",0,0)); dh=abs(npr[1]-pr[1]); dc=abs(npr[2]-pr[2])
-                    score=min(100,int(dh*8+dc*25)); ic="#ff2d55" if score>=70 else "#ff8c42" if score>=40 else "#ffd60a" if score>=15 else "#4a7090"
-                    il="Likely Damaging" if score>=70 else "Possibly Damaging" if score>=40 else "Moderate" if score>=15 else "Benign"
-                    st.markdown(f'<div class="card"><span style="color:{ic};font-family:monospace">{aa}{pos}{new_aa}</span> <span class="dim">{il} · score {score}/100</span><br><span class="dim">Δhyd: {dh:.1f} · Δcharge: {dc:.0f}{"  ⚠️ Pro breaks secondary structure" if new_aa=="P" else ""}</span></div>', unsafe_allow_html=True)
-    if am:
+                    npr = AA.get(new_aa,("?",0,0)); dh = abs(npr[1]-pr[1]); dc = abs(npr[2]-pr[2])
+                    score = min(100,int(dh*8+dc*25))
+                    ic = "#ff2d55" if score>=70 else "#ff8c42" if score>=40 else "#ffd60a" if score>=15 else "#3a5570"
+                    il = "Likely Damaging" if score>=70 else "Possibly Damaging" if score>=40 else "Moderate" if score>=15 else "Likely Benign"
+                    implications = []
+                    if dc > 0: implications.append(f"Charge reversal/loss — may disrupt salt bridges and protein-protein interfaces")
+                    if dh > 3: implications.append(f"Major hydrophobicity shift — likely affects core packing or membrane insertion")
+                    if new_aa == "P": implications.append("Proline disrupts α-helix and β-sheet — structural break certain")
+                    if aa == "C" or new_aa == "C": implications.append("Cysteine involved — disulfide bond disruption possible")
+                    if aa == "G" or new_aa == "G": implications.append("Glycine flexibility lost/gained — affects local backbone dynamics")
+                    st.markdown(f"""<div class="card" style="border-color:{ic}30">
+<span style="color:{ic};font-family:monospace;font-size:.9rem;font-weight:700">{aa}{pos}{new_aa}</span>
+<span class="dim" style="margin-left:8px">{il} · impact score {score}/100</span>
+<div style="margin-top:8px;font-size:.71rem;color:#b0c8d8;line-height:1.7">Δhydrophobicity: {dh:.1f} · Δcharge: {dc:+.0f}</div>
+{"".join(f'<div class="dim" style="margin-top:3px">▸ {i}</div>' for i in implications)}
+</div>""", unsafe_allow_html=True)
+                    
+                    # AM score at this position
+                    am_at_pos = [a for a in (am_d or []) if a.get("position")==pos and a.get("alt")==new_aa]
+                    if am_at_pos:
+                        ams = am_at_pos[0]["score"]; amc = "#ff2d55" if ams>=0.564 else "#4ade80"
+                        st.markdown(f'<div style="color:{amc};font-size:.7rem;margin-top:4px">AlphaMissense: {ams:.3f} ({"pathogenic" if ams>=0.564 else "benign"})</div>', unsafe_allow_html=True)
+    
+    # AlphaMissense landscape
+    if am_d:
         _sec("AlphaMissense Per-Residue Pathogenicity")
-        sample=am[::max(1,len(am)//600)]
-        fig_am=go.Figure()
-        fig_am.add_trace(go.Scatter(x=[a["position"] for a in sample],y=[a["score"] for a in sample],mode="markers",marker=dict(size=3,color=["#ff2d55" if a["score"]>=0.564 else "#1e3a5f" for a in sample],opacity=0.6),hovertemplate="Pos %{x} — %{y:.3f}<extra></extra>"))
-        path_cv=[v for v in cv if v.get("position") and v.get("ml_class") in ("CRITICAL","HIGH")]
-        if path_cv: fig_am.add_trace(go.Scatter(x=[v["position"] for v in path_cv],y=[0.564]*len(path_cv),mode="markers",marker=dict(size=10,symbol="star",color="#ff8c42"),hovertext=[v.get("protein_change","?") for v in path_cv],hoverinfo="text",name="ClinVar P/LP"))
-        fig_am.add_hline(y=0.564,line_dash="dash",line_color="#ffd60a",annotation_text="0.564 threshold")
-        fig_am.update_layout(height=240,plot_bgcolor="#010306",paper_bgcolor="#010306",xaxis=dict(title="Position",gridcolor="#060d14",color="#2a5070"),yaxis=dict(title="AM Score",gridcolor="#060d14",color="#2a5070",range=[0,1]),font=dict(color="#d0e8ff",size=10),legend=dict(bgcolor="#020609",bordercolor="#0a1520"),margin=dict(t=10,b=30,l=45,r=10))
+        sample = am_d[::max(1,len(am_d)//600)]
+        fig_am = go.Figure()
+        fig_am.add_trace(go.Scatter(x=[a["position"] for a in sample],y=[a["score"] for a in sample],mode="markers",marker=dict(size=3,color=["#ff2d55" if a["score"]>=0.564 else "#1a3a5a" for a in sample],opacity=0.65),hovertemplate="Pos %{x} — Score %{y:.3f}<extra></extra>"))
+        path_cv = [v for v in cv if v.get("position") and v.get("ml_class") in ("CRITICAL","HIGH")]
+        if path_cv: fig_am.add_trace(go.Scatter(x=[v["position"] for v in path_cv],y=[0.564]*len(path_cv),mode="markers",marker=dict(size=11,symbol="star",color="#ff8c42"),hovertext=[v.get("protein_change","?") for v in path_cv],hoverinfo="text",name="ClinVar P/LP"))
+        fig_am.add_hline(y=0.564,line_dash="dash",line_color="#ffd60a",annotation_text="Pathogenic threshold (0.564)")
+        fig_am.update_layout(height=250,plot_bgcolor="#060b14",paper_bgcolor="#060b14",xaxis=dict(title="Residue Position",gridcolor="#0d1a2a",color="#3a5570"),yaxis=dict(title="AM Score",gridcolor="#0d1a2a",color="#3a5570",range=[0,1]),font=dict(color="#d0e8ff",size=10),legend=dict(bgcolor="#080f1a",bordercolor="#1a2a3a"),margin=dict(t=12,b=35,l=50,r=12))
         st.plotly_chart(fig_am,use_container_width=True,config={"displayModeBar":False})
 
-with t4:  # EXPERIMENTS
-    _sec("Protein-Specific Experiment Triage")
-    do_f=[e for e in exp_list if e.get("do_first") and not e.get("avoid")]; av_=[e for e in exp_list if e.get("avoid")]
-    c1,c2,c3,c4=st.columns(4)
-    c1.metric("DO FIRST",len(do_f),f"${sum(e['cost_usd'] for e in do_f):,}"); c2.metric("Consider",len([e for e in exp_list if not e.get("do_first") and not e.get("avoid")])); c3.metric("AVOID",len(av_),f"${sum(e['cost_usd'] for e in av_):,}"); c4.metric("Total",len(exp_list))
-    for exp in exp_list:
-        av=exp.get("avoid",False); dof=exp.get("do_first",False) and not av
-        cost_str=f"${exp['cost_usd']:,}" if exp['cost_usd']>0 else "Free"
-        hd=f"{'🚀 ' if dof else '🛑 AVOID — ' if av else ''}{exp['name'][:65]} — {cost_str} · {exp['time_weeks']}w · P={int(exp['p_success']*100)}%"
-        with st.expander(hd, expanded=dof and not av):
-            c1,c2,c3,c4=st.columns(4)
-            c1.metric("Cost",cost_str); c2.metric("Timeline",f"{exp['time_weeks']}w"); c3.metric("P(success)",f"{int(exp['p_success']*100)}%"); c4.metric("Value",f"{exp['value_score']}/10")
-            st.markdown(f'<div style="font-size:.72rem;color:#d0e8ff;line-height:1.7;margin-top:6px">{exp["rationale"]}</div>', unsafe_allow_html=True)
-            if dof: st.success("Run first — highest expected value for this protein's specific variant profile")
-            if av: st.error("Do not run — insufficient genetic evidence to justify expenditure")
-    if kegg:
-        _sec("KEGG Pathways")
-        for p in kegg[:6]: st.markdown(f'<div class="dim"><a href="{p["url"]}" target="_blank" style="color:#00e5ff">{p["name"]}</a> <span class="src">{p["id"]}</span></div>', unsafe_allow_html=True)
 
-with t5:  # CSV ANALYSIS
-    _sec("CSV / VCF Dataset Analysis")
-    df = st.session_state.get("csv_data")
-    if df is None: st.markdown('<div class="dim">Upload a CSV file in the sidebar (Wet-lab Data section).<br><b style="color:#d0e8ff">Accepted:</b> ClinVar VCF export, proteomics CSV, AlphaMissense TSV, variant tables.</div>', unsafe_allow_html=True)
+# ─── TAB 4: EXPERIMENTS & THERAPY ──────────────────────────────
+with t4:
+    _sec("Experiment ROI Triage — Ranked by Expected Value")
+    path_v = [v for v in cv if v.get("ml_class") in ("CRITICAL","HIGH")]
+    top_vars = [v.get("protein_change","?") for v in path_v[:3]]
+    vstr = ", ".join(top_vars) or "P/LP variants"
+    partners = [p["partner"] for p in string_d[:3]] if string_d else ["top STRING partner"]
+    cell_type = "iPSC-cardiomyocytes" if is_cardiac else "iPSC-neurons" if any(x in " ".join([d.get("name","") for d in pdata.get("diseases",[])]).lower() for x in ["neuro","parkinson","alzheimer"]) else "HEK293T / disease-relevant cell line"
+    
+    def _exp_card(name, category, cost, time_w, p_success, rationale, mutations_to_focus, mutations_to_neglect, expected_outcome, is_priority=False, is_avoid=False):
+        border_col = "#00e5ff" if is_priority else "#ef4444" if is_avoid else "#1a2a3a"
+        label = "🚀 DO FIRST" if is_priority else "🛑 PREMATURE" if is_avoid else "Consider"
+        label_col = "#00e5ff" if is_priority else "#ef4444" if is_avoid else "#3a5570"
+        cost_str = f"${cost:,}" if cost > 0 else "Free"
+        with st.expander(f"{'🚀 ' if is_priority else '🛑 ' if is_avoid else ''}{name}  —  {cost_str}  ·  {time_w}w  ·  P(success)={p_success}%", expanded=is_priority and not is_avoid):
+            c1,c2,c3,c4 = st.columns(4)
+            c1.metric("Cost",cost_str); c2.metric("Timeline",f"{time_w}w"); c3.metric("P(success)",f"{p_success}%"); c4.metric("Category",category[:12])
+            st.markdown(f"""<div style="margin-top:8px;font-size:.73rem;color:#d0e8ff;line-height:1.75">{rationale}</div>
+            <div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div style="background:#060b14;border:1px solid rgba(74,222,128,.2);border-radius:5px;padding:8px 10px">
+                <div style="color:#4ade80;font-size:.63rem;font-weight:600;margin-bottom:4px">✅ FOCUS ON</div>
+                <div style="font-size:.7rem;color:#b0c8d8;line-height:1.6">{mutations_to_focus}</div></div>
+              <div style="background:#060b14;border:1px solid rgba(239,68,68,.15);border-radius:5px;padding:8px 10px">
+                <div style="color:#ef4444;font-size:.63rem;font-weight:600;margin-bottom:4px">🛑 NEGLECT</div>
+                <div style="font-size:.7rem;color:#b0c8d8;line-height:1.6">{mutations_to_neglect}</div></div>
+            </div>
+            <div style="margin-top:8px;background:rgba(0,229,255,.04);border:1px solid rgba(0,229,255,.15);border-radius:5px;padding:8px 10px">
+              <div style="color:#00e5ff;font-size:.63rem;font-weight:600;margin-bottom:3px">EXPECTED OUTCOME</div>
+              <div style="font-size:.7rem;color:#b0c8d8;line-height:1.6">{expected_outcome}</div></div>""", unsafe_allow_html=True)
+            if is_priority: st.success("Run this experiment first — highest expected value for this protein's variant and interaction profile")
+            if is_avoid: st.error("Do not run yet — insufficient genetic evidence at this stage")
+    
+    # Always show in silico first
+    _exp_card("AlphaFold-Multimer — in silico (free, run first)",
+        "Structural", 0, 0.5, 80,
+        f"Free via ColabFold. Model {gene}:{partners[0] if partners else 'STRING partner'} complex. ipTM>0.8 = high confidence. Map {vstr} onto predicted interface before committing any wet-lab budget.",
+        f"All CRITICAL and HIGH variants ({vstr}). Map positions onto predicted interaction interface.",
+        "VUS and benign variants — only disease-confirmed positions.",
+        "If ipTM>0.8 and variants cluster at interface → wet-lab justified. If ipTM<0.6 or variants off-interface → reconsider experiment design.",
+        is_priority=True)
+    
+    if is_gpcr:
+        _exp_card("Filamin Ser2152-P IP Assay (GPCR Activation — Step 3)",
+            "GPCR", 600, 1, 90,
+            f"GPCR agonist → 10 min at EC80 → lyse cells → anti-FLNA immunoprecipitation → pSer2152 western blot. More receptor-proximal than cAMP, IP3, or arrestin. Validated by Nakamura et al. JBC 2015 (PMID:26124276). Cell type: {cell_type}.",
+            f"Variants {vstr} — compare WT vs each pathogenic variant. CRITICAL variants that abolish Ser2152-P are direct therapeutic targets.",
+            "VUS variants and non-GPCR-domain variants. ARRB2 readout alone — insufficient as primary disease evidence.",
+            "Variants that abolish Filamin-P = loss of receptor coupling = mechanistic drug target. Variants that preserve Filamin-P but alter cAMP = G-protein selectivity change.",
+            is_priority=True)
+        _exp_card("cAMP HTRF — Gs Coupling WT vs Variants",
+            "GPCR", 1200, 2, 85,
+            f"Cisbio HTRF kit. EC50 and Emax comparison WT vs {vstr}. Confirms G-protein efficacy downstream of receptor activation.",
+            f"Pathogenic variants in transmembrane helices and ligand-binding pocket.",
+            "Intracellular C-tail variants unless targeting phosphorylation code. Benign polymorphisms.",
+            "Right-shifted EC50 = variant reduces agonist affinity. Reduced Emax = partial agonism or constitutive G-protein uncoupling.",
+            is_priority=False)
+        if is_cardiac:
+            _exp_card("TMAO Rattling Assay (Cardiac GPCRs — Patent-Unoccupied)",
+                "Cardiac", 2000, 3, 75,
+                f"TMAO 5–50µM + FlAsH-BRET conformational tracking. TMAO increases receptor conformational sampling → disrupts H8-Filamin coupling → arrhythmia mechanism. Patent-unoccupied axis.",
+                "Cardiac GPCR variants associated with arrhythmia. R2149Q-equivalent positions.",
+                "Non-cardiac domain variants. Variants without arrhythmia phenotype in patients.",
+                "TMAO-induced BRET signal change = conformational rattling confirmed. Correlate with Filamin-P reduction to validate mechanistic link.",
+                is_priority=False)
+    
+    if is_kinase:
+        _exp_card("ADP-Glo Kinase Activity Assay",
+            "Kinase", 1500, 2, 85,
+            f"ADP-Glo luminescent kinase assay. Compare Vmax and Km for WT vs {vstr}. Determines if pathogenic variants are gain-of-function (hyperactivating) or loss-of-function (kinase-dead). Different mechanisms require different drugs.",
+            f"Variants in kinase domain ({vstr}). Activation loop variants (DFG motif).",
+            "Regulatory domain variants unless studying autoinhibition. Signal peptide variants.",
+            "GoF → kinase inhibitor strategy. LoF → activator or downstream supplementation strategy.",
+            is_priority=True)
+    
+    if partners:
+        _exp_card(f"Co-IP — {gene} with {partners[0]}",
+            "PPI", 700, 1, 80,
+            f"FLAG-tag {gene} (WT vs {vstr}). Immunoprecipitate with anti-FLAG. Western blot for {partners[0]}. STRING predicts high-confidence interaction (score>0.7). Variant that disrupts {partners[0]} binding identifies the therapeutic interface.",
+            f"Variants at predicted interaction interface from AlphaFold-Multimer. {vstr}.",
+            "Signal peptide variants. Post-translational modification sites unless studying PTM-dependent interaction.",
+            f"Loss of {partners[0]} co-IP = interface disrupted = drug target validated. Preserved co-IP = interaction domain elsewhere.",
+            is_priority=False)
+    
+    n_critical = gi_s.get("n_critical",0)
+    am_path = {a["position"] for a in (am_d or []) if a.get("class")=="pathogenic"}
+    path_pos = {v["position"] for v in path_v if v.get("position")}
+    concordant = len(path_pos & am_path)
+    
+    if n_critical >= 2 and concordant >= 1:
+        _exp_card(f"CRISPR Knock-in — {top_vars[0] if top_vars else 'P/LP variant'}",
+            "Disease Model", 15000, 10, 70,
+            f"Justified: {n_critical} CRITICAL ClinVar variants + {concordant} AlphaMissense-concordant positions. Knock-in {vstr} into {cell_type}. pLI={gnomad.get('pLI','?')} — {'proceed carefully (essential gene)' if gnomad.get('essential') else 'not highly constrained'}.",
+            f"CRITICAL variants with starred ClinVar review. Variants concordant with AlphaMissense pathogenic prediction.",
+            "VUS variants. Variants with only one submitter. Benign polymorphisms.",
+            "Disease phenotype in knock-in cells = causal validation. Rescuable with WT construct = drug opportunity confirmed.",
+            is_priority=False)
     else:
-        c1,c2,c3=st.columns(3); c1.metric("Rows",f"{len(df):,}"); c2.metric("Columns",len(df.columns)); c3.metric("Type","VCF Variants" if "Condition(s)" in df.columns else "Dataset")
-        st.dataframe(df.head(20),use_container_width=True,height=260)
-        sig_col=next((c for c in df.columns if any(t in c.lower() for t in ["ignif","pathogen"])),"")
-        if sig_col:
-            _sec("Variant Classification")
-            counts=df[sig_col].value_counts(); path=sum(v for k,v in counts.items() if "pathogenic" in str(k).lower() and "benign" not in str(k).lower()); vus=sum(v for k,v in counts.items() if "uncertain" in str(k).lower()); benign=sum(v for k,v in counts.items() if "benign" in str(k).lower())
-            c1,c2,c3=st.columns(3); c1.metric("Pathogenic/LP",f"{path:,}"); c2.metric("VUS",f"{vus:,}"); c3.metric("Benign/LB",f"{benign:,}")
-            for k,v in counts.head(8).items(): st.markdown(f'<div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid #060d14;font-size:.71rem"><span class="dim">{k}</span><span style="color:#d0e8ff;font-family:monospace">{v:,}</span></div>', unsafe_allow_html=True)
-        _sec("Recommended Next Experiments")
-        st.markdown(f'<div class="dim"><b>1. ClinVar submission</b> — pathogenic variants absent from ClinVar should be submitted.<br><b>2. Functional validation</b> — P/LP variants lacking functional evidence: DMS or CRISPR knock-in.<br><b>3. VUS resolution</b> — AlphaMissense threshold {sens:.2f} + DMS data.<br><b>4. Segregation analysis</b> — confirm P/LP variants segregate with disease in family members.</div>', unsafe_allow_html=True)
-        gene_col=next((c for c in df.columns if any(t in c.lower() for t in ["gene","symbol","hugo"])),"")
-        if gene_col:
-            _sec(f"Quick Analyse — {gene_col}")
-            top=df[gene_col].dropna().unique()[:10]; gc=st.columns(min(10,len(top)))
-            for i,g in enumerate(top):
-                with gc[i]:
-                    if st.button(str(g)[:8],key=f"csv_g_{g}"): st.session_state._qval=str(g); st.rerun()
+        _exp_card("CRISPR Knock-in — PREMATURE",
+            "Disease Model", 15000, 10, 15,
+            f"Only {n_critical} CRITICAL variants and {concordant} AlphaMissense-concordant. Genetic evidence insufficient. Run Co-IP, ADP-Glo, and TSA first to build evidence base.",
+            "N/A — run earlier experiments first.",
+            "All variants at this stage.",
+            "Not applicable — return when you have >2 CRITICAL variants with functional assay data.",
+            is_priority=False, is_avoid=True)
+    
+    if ot_d.get("sm_tractable") and gi_s.get("n_pathogenic",0)>=3:
+        existing = ot_d.get("known_drugs",[])
+        cost = 50000 if existing else 80000
+        _exp_card(f"Drug Screen — {existing[0] if existing else 'Fragment-Based'}",
+            "Drug Discovery", cost, 8, 60 if existing else 50,
+            f"OpenTargets: small-molecule tractable. {'Test '+existing[0]+' analogues (200–500 compound library) — fastest path to hit.' if existing else 'Fragment-based screen via SPR — no existing scaffold.'} Superimpose {vstr} onto AlphaFold structure to confirm target engagement at variant sites.",
+            f"Pathogenic variant positions ({vstr}). Hotspot clusters from AlphaMissense.",
+            "Off-target positions. Sites without disease variant evidence.",
+            f"IC50 < 10µM in primary assay → SAR campaign. Selectivity confirmed vs off-targets → candidate. {'Start with '+existing[0]+' structure as pharmacophore.' if existing else 'FBDD: fragments <300 Da, LE>0.3.'}",
+            is_priority=False)
+    
+    if papers:
+        _sec("Experiment Types from Literature")
+        tg_map = {}
+        for p in papers: tg_map.setdefault(p["tier_label"],[]).append(p)
+        for tlbl,tp in sorted(tg_map.items(), key=lambda x:x[1][0]["tier"]):
+            with st.expander(f"{tlbl} ({len(tp)} papers)"):
+                for p in tp: st.markdown(f'<div class="dim" style="padding:2px 0;border-bottom:1px solid #0d1a2a"><a href="{p["url"]}" target="_blank" style="color:#7a9aaa;font-size:.71rem">{p["title"][:100]}</a> · {p["authors"][:18]} · {p["year"]} PMID:{p["pmid"]}</div>', unsafe_allow_html=True)
 
-with t6:  # AI REPORT
-    _sec("Evidence-Tiered Literature")
-    tg={}
-    for p in papers: tg.setdefault(p["tier_label"],[]).append(p)
-    for tlbl,tp in sorted(tg.items(),key=lambda x:x[1][0]["tier"]):
-        tc=tp[0]["tier_color"]
-        with st.expander(f"{tlbl} ({len(tp)})",expanded=tlbl in ("RCT","Cohort","Functional")):
-            for p in tp: st.markdown(f'<div class="dim" style="padding:2px 0;border-bottom:1px solid #060d14"><a href="{p["url"]}" target="_blank" style="color:#8baabf;font-size:.71rem">{p["title"][:100]}</a> · {p["authors"][:18]} · {p["journal"]} · {p["year"]} · PMID:{p["pmid"]}</div>', unsafe_allow_html=True)
-    _sec("AI Synthesis")
-    api_key=st.session_state.get("anthropic_key","")
-    if not api_key: st.markdown('<div class="dim">Add Anthropic API key in sidebar to enable AI synthesis with live web search.</div>', unsafe_allow_html=True)
-    else:
-        if st.button("▶ Generate AI Report",type="primary",key="ai_run"):
-            with st.spinner("Claude searching literature…"):
+
+# ─── TAB 5: CHEMISTRY ───────────────────────────────────────────
+with t5:
+    _sec("Chemical Structure & Molecular Interactions")
+    cl,cr = st.columns([1.3,.7], gap="large")
+    with cl:
+        _sec("3D Chemical Structure — Binding Sites & Interaction Points")
+        # Surface view with binding sites highlighted
+        if pdb:
+            binding_sites = pdata.get("binding_sites",[])
+            phospho_sites = pdata.get("phospho_sites",[])
+            
+            # Build sphere JS for binding sites and phospho sites
+            chem_js = ""
+            for bs in binding_sites[:20]:
+                if bs.get("start") != "?":
+                    try:
+                        pos = int(bs["start"])
+                        col = "#ffd60a" if bs["type"] in ("ACT_SITE","METAL") else "#4ade80" if bs["type"]=="BINDING" else "#818cf8"
+                        chem_js += f"viewer.addStyle({{resi:{pos}}},{{sphere:{{color:'{col}',radius:1.4,opacity:0.8}}}});"
+                    except: pass
+            for ps in phospho_sites[:15]:
                 try:
-                    import anthropic; client=anthropic.Anthropic(api_key=api_key)
-                    path_count=gi_s.get("n_pathogenic",0); conditions=list({c for v in cv for c in v.get("conditions",[]) if c})[:5]; partners=[p["partner"] for p in string_d[:5]]
-                    prompt=f"""You are a specialist molecular biologist analysing {gene} for drug target potential.
-Gene: {gene} | Protein: {pdata.get('protein_name','')} | P/LP variants: {path_count} | pLI: {gnomad.get('pLI','?')} | Conditions: {', '.join(conditions) or 'None'} | STRING partners: {', '.join(partners) or 'Unknown'}
-Generate: VERDICT (PURSUE/DEPRIORITISE with genetic justification), MECHANISM (specific molecular mechanism), INHERITANCE (AD/AR/XL/de novo), THERAPEUTIC HYPOTHESES (3 specific approaches), KEY UNKNOWNS (what experiments resolve them). 
-Rules: Cite every claim Author/Journal/Year/PMID. Never say 'unknown' — say what experiment resolves it. If GPCR: note Filamin Ser2152-P as receptor-proximal readout. If ARRB1/2: immediately DEPRIORITISE."""
-                    message=client.messages.create(model="claude-sonnet-4-20250514",max_tokens=2000,tools=[{"type":"web_search_20250305","name":"web_search"}],messages=[{"role":"user","content":prompt}])
-                    report="\n".join(b.text for b in message.content if hasattr(b,"text") and b.text)
-                    st.session_state[f"ai_{gene}"]=report
+                    pos = int(ps["position"])
+                    chem_js += f"viewer.addStyle({{resi:{pos}}},{{sphere:{{color:'#f97316',radius:1.3,opacity:0.85}}}});"
+                except: pass
+            
+            esc = pdb.replace("\\","\\\\").replace("`","\\`")
+            chem_html = f"""<!DOCTYPE html><html><head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.0.4/3Dmol-min.js"></script>
+<style>
+body{{margin:0;background:#060b14;overflow:hidden}}
+#v{{width:100%;height:460px}}
+#leg{{position:absolute;top:8px;right:8px;background:rgba(8,15,26,.92);color:#d0e8ff;border:1px solid #1a2a3a;border-radius:6px;padding:8px 12px;font:10px monospace}}
+.lr{{display:flex;align-items:center;gap:6px;margin:2px 0}}.lc{{width:10px;height:10px;border-radius:2px}}
+#info{{position:absolute;bottom:8px;left:8px;background:rgba(8,15,26,.96);color:#d0e8ff;border:1px solid rgba(0,229,255,.2);border-radius:6px;padding:7px 12px;font:11px/1.6 monospace;display:none;z-index:100;max-width:300px}}
+</style></head><body>
+<div id="v"></div><div id="info"></div>
+<div id="leg">
+  <b style="color:#00e5ff;font-size:10px">Sites</b>
+  <div class="lr"><div class="lc" style="background:#ffd60a"></div>Active/Metal site</div>
+  <div class="lr"><div class="lc" style="background:#4ade80"></div>Binding site</div>
+  <div class="lr"><div class="lc" style="background:#818cf8"></div>DNA binding</div>
+  <div class="lr"><div class="lc" style="background:#f97316"></div>Phosphorylation</div>
+  <div class="lr"><div class="lc" style="background:#35c7a3"></div>Other domain</div>
+</div>
+<script>
+try{{
+  var viewer=$3Dmol.createViewer(document.getElementById('v'),{{backgroundColor:'#060b14'}});
+  viewer.addModel(`{esc}`,'pdb');
+  viewer.setStyle({{}},{{cartoon:{{colorfunc:function(a){{var b=a.b;if(b>=90)return'#00c4e0';if(b>=70)return'#35c7a3';if(b>=50)return'#f5c842';return'#e05c5c';}}}}}});
+  viewer.addSurface($3Dmol.SurfaceType.VDW,{{opacity:0.12,color:'#00e5ff'}});
+  {chem_js}
+  viewer.setClickable({{}},true,function(a,v){{
+    var b=document.getElementById('info');b.style.display='block';
+    b.innerHTML='<b style="color:#00e5ff">'+a.resn+' '+a.resi+'</b><br>pLDDT: '+(a.b?a.b.toFixed(1):'?')+'<br>Atom: '+a.atom;
+    v.addStyle({{resi:a.resi}},{{sphere:{{color:'#ffffff',radius:0.9,opacity:0.5}}}});v.render();
+  }});
+  viewer.zoomTo();
+  viewer.render();
+}}catch(e){{document.getElementById('v').innerHTML='<p style="color:#ff8c42;padding:14px;font:12px monospace">Error: '+e.message+'</p>';}}
+</script></body></html>"""
+            components.html(chem_html, height=460, scrolling=False)
+        else:
+            st.markdown('<div class="dim" style="padding:12px">Structure not available from AlphaFold.</div>', unsafe_allow_html=True)
+    
+    with cr:
+        _sec("Binding Sites & Active Sites")
+        binding = pdata.get("binding_sites",[])
+        if binding:
+            for bs in binding[:12]:
+                type_col = {"ACT_SITE":"#ffd60a","BINDING":"#4ade80","METAL":"#ffd60a","DNA_BIND":"#818cf8","CARBOHYD":"#f97316"}.get(bs["type"],"#3a5570")
+                st.markdown(f'<div style="display:flex;gap:6px;padding:4px 0;border-bottom:1px solid #0d1a2a"><span style="color:{type_col};font-size:.62rem;min-width:70px;font-weight:600">{bs["type"]}</span><div><span style="color:#d0e8ff;font-size:.71rem">{bs.get("name","?")[:40]}</span><br><span class="dim">Residues {bs.get("start","?")}–{bs.get("end","?")}</span></div></div>', unsafe_allow_html=True)
+        else:
+            st.markdown('<div class="dim">No binding site annotations in UniProt.</div>', unsafe_allow_html=True)
+        
+        _sec("Phosphorylation Sites")
+        phospho = pdata.get("phospho_sites",[])
+        if phospho:
+            for ps in phospho[:10]:
+                st.markdown(f'<div style="display:flex;gap:6px;padding:4px 0;border-bottom:1px solid #0d1a2a"><span style="color:#f97316;font-family:monospace;font-size:.71rem">Pos {ps["position"]}</span><span style="color:#d0e8ff;font-size:.7rem">{ps["name"][:40]}</span></div>', unsafe_allow_html=True)
+        else:
+            st.markdown('<div class="dim">No phosphorylation annotations in UniProt for this protein.</div>', unsafe_allow_html=True)
+        
+        _sec("Interaction Partners — Possible Disease Pathways")
+        if string_d:
+            for p in string_d[:8]:
+                exp_score = p.get("experimental",0); col = "#00e5ff" if exp_score>0.5 else "#4ade80" if p["score"]>0.8 else "#3a5570"
+                st.markdown(f'<div style="display:flex;gap:6px;padding:4px 0;border-bottom:1px solid #0d1a2a"><span style="color:{col};font-family:monospace;font-size:.71rem;min-width:60px">{p["partner"]}</span><div><span class="dim">Score: {p["score"]:.2f}</span> {" · <span style=&quot;color:#4ade80;font-size:.62rem&quot;>exp</span>" if exp_score>0.3 else ""}</div></div>', unsafe_allow_html=True)
+        
+        _sec("Phosphatase & Kinase Context")
+        if is_kinase:
+            st.markdown('<div class="card" style="border-color:rgba(74,222,128,.2)"><span style="color:#4ade80;font-size:.72rem;font-weight:600">KINASE</span><div class="dim" style="margin-top:4px;line-height:1.6">Phosphorylates downstream substrates. Pathogenic variants often alter substrate specificity or autoinhibition. Drug strategy: ATP-competitive inhibitor or allosteric inhibitor targeting regulatory domain.</div></div>', unsafe_allow_html=True)
+        if is_pase:
+            st.markdown('<div class="card" style="border-color:rgba(251,191,36,.2)"><span style="color:#fbbf24;font-size:.72rem;font-weight:600">PHOSPHATASE</span><div class="dim" style="margin-top:4px;line-height:1.6">Dephosphorylates substrates. LoF variants lead to substrate hyperphosphorylation. Drug strategy: phosphatase activator or substrate-targeted inhibitor.</div></div>', unsafe_allow_html=True)
+        if is_filamin:
+            st.markdown('<div class="card" style="border-color:rgba(249,115,22,.2)"><span style="color:#f97316;font-size:.72rem;font-weight:600">FILAMIN — Ser2152 IP TARGET</span><div class="dim" style="margin-top:4px;line-height:1.6">Ser2152 is the functionally dominant phosphorylation peak. PKA phosphorylates Ser2152 upon GPCR activation. Only FLNA (not FLNB/C) carries this site. Validated by pathogenic R2149 variants causing periventricular nodular heterotopia.</div></div>', unsafe_allow_html=True)
+        
+        _sec("PTM Summary")
+        ptms = pdata.get("ptms",[])
+        if ptms:
+            for pt in ptms[:4]: st.markdown(f'<div class="dim" style="padding:3px 0;border-bottom:1px solid #0d1a2a;line-height:1.6">{pt[:100]}</div>', unsafe_allow_html=True)
+        else: st.markdown('<div class="dim">No PTM annotations available.</div>', unsafe_allow_html=True)
+
+
+# ─── TAB 6: AI REPORT ───────────────────────────────────────────
+with t6:
+    _sec("Evidence-Tiered Literature")
+    tg = {}
+    for p in papers: tg.setdefault(p["tier_label"],[]).append(p)
+    for tlbl,tp in sorted(tg.items(), key=lambda x: x[1][0]["tier"]):
+        with st.expander(f"{tlbl} ({len(tp)} papers)", expanded=tlbl in ("RCT","Cohort","Functional")):
+            for p in tp: st.markdown(f'<div class="dim" style="padding:2px 0;border-bottom:1px solid #0d1a2a"><a href="{p["url"]}" target="_blank" style="color:#7a9aaa;font-size:.71rem">{p["title"][:105]}</a> · {p["authors"][:18]} · {p["journal"]} · {p["year"]} · PMID:{p["pmid"]}</div>', unsafe_allow_html=True)
+    
+    _sec("AI Synthesis with Live Web Search")
+    api_key = st.session_state.get("anthropic_key","")
+    if not api_key:
+        st.info("Add your Anthropic API key in the sidebar (AI Report Key) to enable Claude synthesis with live literature search.")
+        st.markdown("""<div class="card"><div style="color:#d0e8ff;font-size:.76rem;font-weight:600;margin-bottom:6px">The AI Report provides:</div>
+<div class="dim" style="line-height:1.8">• VERDICT with full genetic justification and confidence level<br>• MECHANISM — specific molecular mechanism from the variant data<br>• INHERITANCE PATTERN — AD/AR/XL/de novo inference<br>• THERAPEUTIC HYPOTHESES — 3 specific, actionable drug strategies<br>• ACTIVE RESEARCH — current clinical trial and drug pipeline context (live search)<br>• KEY UNKNOWNS — what experiments would resolve critical gaps<br>• Every claim cited: Author / Journal / Year / PMID</div></div>""", unsafe_allow_html=True)
+    else:
+        if st.button("▶ Generate AI Report", type="primary", key="ai_run"):
+            with st.spinner("Searching literature and synthesising analysis…"):
+                try:
+                    import anthropic; client = anthropic.Anthropic(api_key=api_key)
+                    conditions = list({c for v in cv for c in v.get("conditions",[]) if c})[:5]
+                    partners_ai = [p["partner"] for p in string_d[:5]]
+                    prompt = f"""You are a specialist molecular biologist analysing {gene} for drug target potential.
+
+PROTEIN: {gene} / {pdata.get('protein_name','')} / {acc}
+ClinVar P/LP variants: {gi_s.get('n_pathogenic',0)} | gnomAD pLI: {gnomad.get('pLI','Unknown')} | Verdict: {verdict}
+Disease conditions: {', '.join(conditions) or 'None confirmed'} | STRING partners: {', '.join(partners_ai) or 'Unknown'}
+UniProt diseases: {len(pdata.get('diseases',[]))} | GPCR: {is_gpcr} | Kinase: {is_kinase} | Filamin: {is_filamin}
+
+Generate these sections:
+## VERDICT
+State PURSUE / DEPRIORITISE with genetic justification and confidence.
+
+## MOLECULAR MECHANISM  
+Specific mechanism by which pathogenic variants cause disease.
+
+## INHERITANCE PATTERN
+AD / AR / XL / de novo — infer from variant data and pLI.
+
+## THERAPEUTIC HYPOTHESES
+3 specific, actionable strategies with rationale. Include variant positions.
+
+## ACTIVE RESEARCH LANDSCAPE
+Use web search to find 2024–2025 developments. Drug trials, preprints, breakthroughs.
+
+## KEY UNKNOWNS AND RESOLVING EXPERIMENTS
+What 3 experiments would provide the most critical missing information.
+
+RULES:
+- Every claim must cite: Author, Journal, Year, PMID or DOI
+- Never say "unknown" — specify what experiment resolves it
+- If GPCR: mention Filamin Ser2152-P IP assay (PMID:26124276) where relevant
+- Be specific about variant positions (p.Arg175His not just "missense variant")"""
+                    message = client.messages.create(model="claude-sonnet-4-20250514", max_tokens=2500, tools=[{"type":"web_search_20250305","name":"web_search"}], messages=[{"role":"user","content":prompt}])
+                    report = "\n".join(b.text for b in message.content if hasattr(b,"text") and b.text)
+                    st.session_state[f"ai_{gene}"] = report
                 except Exception as e: st.error(f"AI error: {e}")
         if f"ai_{gene}" in st.session_state:
-            st.markdown(f'<div class="card" style="line-height:1.8;font-size:.76rem">{st.session_state[f"ai_{gene}"]}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="card" style="line-height:1.85;font-size:.75rem">{st.session_state[f"ai_{gene}"]}</div>', unsafe_allow_html=True)
             if st.button("🔄 Regenerate"): del st.session_state[f"ai_{gene}"]; st.rerun()
 
-with t7:  # WORKSPACE
-    _sec(f"Workspace — {user.get('name','')}")
-    c1,c2,c3=st.columns(3); c1.metric("Searches Used",_used()); c2.metric("Quota",_quota() if _quota()<99999 else "∞"); c3.metric("Proteins",len(st.session_state.workspace))
-    ws=st.session_state.workspace
-    if not ws: st.markdown('<div class="dim">No proteins analysed yet.</div>', unsafe_allow_html=True)
+
+# ─── TAB 7: WORKSPACE ───────────────────────────────────────────
+with t7:
+    _sec(f"Research Workspace — {user.get('name','')}")
+    c1,c2,c3 = st.columns(3)
+    c1.metric("Searches Used",_used()); c2.metric("Quota",_quota() if _quota()<99999 else "∞"); c3.metric("Proteins Analysed",len(st.session_state.workspace))
+    ws_data = st.session_state.workspace
+    if not ws_data:
+        st.markdown('<div class="dim" style="padding:10px">No proteins analysed yet. Search for a gene in the sidebar to begin.</div>', unsafe_allow_html=True)
     else:
         _sec("Search History")
-        for item in ws:
-            col2=item.get("color","#4a7090"); ca,cb=st.columns([5,1])
-            with ca: st.markdown(f'<div style="display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:1px solid #060d14"><span style="color:#d0e8ff;font-family:monospace">{item["gene"]}</span><span style="background:{col2}18;color:{col2};border:1px solid {col2}30;border-radius:3px;font-size:.61rem;padding:1px 6px">{item["verdict"]}</span><span class="dim">{item.get("domain","")} · {item["accession"]} · {item["protein"][:38]}</span></div>', unsafe_allow_html=True)
+        for item in ws_data:
+            col2 = item.get("color","#3a5570"); ca,cb = st.columns([5,1])
+            with ca: st.markdown(f'<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #0d1a2a"><span style="color:#d0e8ff;font-family:monospace;font-size:.8rem;font-weight:600">{item["gene"]}</span><span style="background:{col2}18;color:{col2};border:1px solid {col2}35;border-radius:4px;padding:1px 7px;font-size:.63rem;font-weight:600">{item["verdict"]}</span><span class="dim">{item.get("domain","")} · {item["accession"]} · {item["protein"][:38]}</span></div>', unsafe_allow_html=True)
             with cb:
-                if st.button("↗",key=f"ws_{item['gene']}"): st.session_state._qval=item["gene"]; st.rerun()
-
-with t8:  # DISEASE LINK
-    _sec("Disease → Protein Mapping")
-    dq=st.text_input("Disease / pathogen",value=st.session_state._dval,placeholder="Alzheimer · Hantavirus · breast cancer · arrhythmia",label_visibility="collapsed",key="_dl_input")
-    if dq:
-        dql=dq.lower(); found=False
-        for org_name,org in MICRO_ORGANISMS.items():
-            if org_name.lower() in dql or org.get("disease","").lower() in dql:
-                found=True
-                st.markdown(f"**{org['organism']}** — {org['type']}"); st.write(org.get("mechanism","")[:200])
-                _sec("Host Receptors — Click to Analyse")
-                rc=st.columns(min(4,len(org.get("host_receptors",[])) or 1))
-                for i,rec in enumerate(org.get("host_receptors",[])):
-                    with rc[i]:
-                        if st.button(rec,key=f"dl_rec_{rec}"): st.session_state._qval=rec; st.rerun()
-                if org.get("approved_drugs"): _sec("Approved Treatments"); st.markdown(" ".join(f'<span class="pill">💊 {d}</span>' for d in org["approved_drugs"]), unsafe_allow_html=True)
-                break
-        if not found:
-            try:
-                r=requests.get("https://rest.uniprot.org/uniprotkb/search",params={"query":f"cc_disease:{dq} AND organism_id:9606 AND reviewed:true","format":"json","size":8,"fields":"accession,gene_names,protein_name"},headers=HDR,timeout=12)
-                hits=r.json().get("results",[])
-                if hits:
-                    _sec(f"Proteins associated with {dq}")
-                    for hit in hits:
-                        gs=[g.get("geneName",{}).get("value","") for g in hit.get("genes",[])]
-                        g=gs[0] if gs else hit.get("primaryAccession",""); pn=hit.get("proteinDescription",{}).get("recommendedName",{}).get("fullName",{}).get("value","")
-                        c1,c2=st.columns([4,1])
-                        with c1: st.markdown(f'<span style="color:#00e5ff;font-family:monospace">{g}</span> <span class="dim">{pn[:55]}</span>', unsafe_allow_html=True)
-                        with c2:
-                            if st.button(f"↗{g}",key=f"dl_{g}"): st.session_state._qval=g; st.rerun()
-                else: st.markdown('<div class="dim">No proteins found for this query.</div>', unsafe_allow_html=True)
-            except: st.markdown('<div class="dim">Search unavailable.</div>', unsafe_allow_html=True)
-    else: st.markdown('<div class="dim">Enter a disease or pathogen name to map to associated proteins.</div>', unsafe_allow_html=True)
+                if st.button("↗",key=f"ws_{item['gene']}",help=f"Re-analyse {item['gene']}"): st.session_state._qval=item["gene"]; st.rerun()
