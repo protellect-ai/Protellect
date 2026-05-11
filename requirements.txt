@@ -1,9 +1,8 @@
-streamlit
-requests
-pandas
-numpy
-plotly
-openpyxl
-Pillow
-streamlit-authenticator
-stripe
+streamlit>=1.32.0
+requests>=2.31.0
+pandas>=2.1.0
+numpy>=1.26.0
+plotly>=5.20.0
+openpyxl>=3.1.0
+Pillow>=10.0.0
+anthropic>=0.20.0
