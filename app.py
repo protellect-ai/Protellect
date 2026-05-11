@@ -11,6 +11,8 @@ st.markdown("""<style>
 *{font-family:'Inter',sans-serif!important}
 html,body,[data-testid="stAppViewContainer"]{background:#010306!important}
 #MainMenu,footer,header,[data-testid="stToolbar"]{visibility:hidden;height:0}
+[data-testid="stSidebarCollapseButton"]{display:none!important}
+[data-testid="collapsedControl"]{display:none!important}
 .block-container{padding:.5rem 1.2rem!important;max-width:100%}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#0d1a2a;border-radius:2px}
 [data-testid="stSidebar"]{background:#020609!important;border-right:1px solid #0a1520!important;min-width:240px!important;max-width:265px!important}
@@ -46,6 +48,29 @@ def _src(l, u=""): return f'<a class="src" href="{u}" target="_blank">{l}</a>' i
 
 # ── auth ─────────────────────────────────────────────────────────────────
 def _h(pw): return hashlib.sha256(pw.encode()).hexdigest()
+
+# ─── Tutorial modal ──────────────────────────────────────────────
+def _tutorial():
+    if not st.session_state.get("show_tutorial"): return
+    st.markdown("""
+    <div style="background:linear-gradient(135deg,#020609,#050f1a);border:2px solid rgba(0,229,255,0.3);border-radius:14px;padding:24px 28px;margin-bottom:14px">
+      <div style="font-size:1rem;font-weight:700;color:#00e5ff;margin-bottom:14px">🔬 Welcome to Protellect — Quick Start Guide</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div style="background:#010306;border:1px solid #0a1520;border-radius:8px;padding:11px"><div style="color:#00e5ff;font-size:.74rem;font-weight:600;margin-bottom:5px">① Select a Domain</div><div style="color:#4a7090;font-size:.71rem;line-height:1.6">Choose Neuroscience, Cancer Biology, Pharmaceuticals, Microbiome, or Molecular Biology from the landing page or top navigation bar.</div></div>
+        <div style="background:#010306;border:1px solid #0a1520;border-radius:8px;padding:11px"><div style="color:#00e5ff;font-size:.74rem;font-weight:600;margin-bottom:5px">② Search a Gene</div><div style="color:#4a7090;font-size:.71rem;line-height:1.6">Type a gene symbol (e.g. FLNA, TP53, ADRB2) in the <b style="color:#d0e8ff">Protein Search</b> sidebar box, then click <b style="color:#00e5ff">⚡ Analyse Protein</b>.</div></div>
+        <div style="background:#010306;border:1px solid #0a1520;border-radius:8px;padding:11px"><div style="color:#00e5ff;font-size:.74rem;font-weight:600;margin-bottom:5px">③ Read the Verdict</div><div style="color:#4a7090;font-size:.71rem;line-height:1.6"><span style="color:#ff2d55">DISEASE-CRITICAL</span> = pursue. <span style="color:#ef4444">DEPRIORITISE</span> = avoid (ARRB2 → $4.05M wasted). <span style="color:#ffd60a">MODERATE</span> = selective.</div></div>
+        <div style="background:#010306;border:1px solid #0a1520;border-radius:8px;padding:11px"><div style="color:#00e5ff;font-size:.74rem;font-weight:600;margin-bottom:5px">④ Explore 9 Tabs</div><div style="color:#4a7090;font-size:.71rem;line-height:1.6"><b style="color:#d0e8ff">Summary</b> → verdict + top 5 experiments. <b style="color:#d0e8ff">Triage</b> → 3D + variants. <b style="color:#d0e8ff">Experiments</b> → ROI ranking. <b style="color:#d0e8ff">AI Report</b> → Claude synthesis.</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+        <div style="background:#010306;border:1px solid rgba(255,45,85,0.25);border-radius:6px;padding:9px"><div style="color:#ff2d55;font-size:.69rem;font-weight:600">Try: ARRB2</div><div style="color:#4a7090;font-size:.66rem">→ DEPRIORITISE + $4.05M breakdown + 6 landmark papers</div></div>
+        <div style="background:#010306;border:1px solid rgba(0,229,255,0.2);border-radius:6px;padding:9px"><div style="color:#00e5ff;font-size:.69rem;font-weight:600">Try: ADRB2</div><div style="color:#4a7090;font-size:.66rem">→ GPCR protocol + Filamin Ser2152-P Step 3 IP assay</div></div>
+        <div style="background:#010306;border:1px solid rgba(255,140,66,0.2);border-radius:6px;padding:9px"><div style="color:#ff8c42;font-size:.69rem;font-weight:600">Try: FLNA</div><div style="color:#4a7090;font-size:.66rem">→ DISEASE-CRITICAL + 1000+ variants + Ser2152</div></div>
+      </div>
+      <div style="color:#1e3a5f;font-size:.66rem;text-align:center;font-style:italic">The only platform that tells you which proteins to abandon before you spend the money.</div>
+    </div>""", unsafe_allow_html=True)
+    if st.button("✓  Got it — Enter Protellect", type="primary", key="dismiss_tutorial"):
+        st.session_state.show_tutorial = False; st.rerun()
+
 ACCOUNTS = {
     "protellect@gmail.com": {"hash": _h("dev@protellect"), "tier": "enterprise", "name": "Protellect Dev", "quota": 999999, "dev": True},
     "demo@protellect.io":   {"hash": _h("demo2025"),       "tier": "free",       "name": "Demo User",     "quota": 5,      "dev": False},
@@ -100,7 +125,7 @@ if not _authed():
 for k, v in {"workspace": [], "current_protein": None, "protein_data_cache": {}, "domain": None,
              "research_goal": "Drug target identification", "anthropic_key": "", "sensitivity": 0.70,
              "csv_data": None, "wet_lab_text": "", "_qval": "", "_dval": "",
-             "_trig": False, "_dtrig": False}.items():
+             "_trig": False, "_dtrig": False, "show_tutorial": False}.items():
     if k not in st.session_state: st.session_state[k] = v
 
 # ── databases ─────────────────────────────────────────────────────────────
@@ -543,9 +568,12 @@ with st.sidebar:
         if st.button("Clear", use_container_width=True): st.session_state._qval=""; st.session_state.current_protein=None; st.rerun()
     with c3:
         if st.button("Logout", use_container_width=True): _logout(); st.rerun()
+    if st.button("📖 Tutorial",use_container_width=True,key="tut_btn"):
+        st.session_state.show_tutorial=True; st.rerun()
 
 # ── domain landing ────────────────────────────────────────────────────────
 if not st.session_state.domain:
+    _tutorial()
     _landing(); st.stop()
 
 domain = st.session_state.domain
@@ -553,6 +581,7 @@ st.markdown(f"""<div style="display:flex;align-items:center;gap:8px;padding:2px 
 <span style="font-size:.85rem;font-weight:700;color:#00e5ff">🔬 Protellect</span><span style="color:#1e3a5f">—</span>
 <span style="color:#4a7090;font-size:.75rem">{ICONS.get(domain,'')} {domain}</span>
 <span style="color:#1e3a5f;font-size:.68rem;margin-left:auto;font-family:monospace">{st.session_state.research_goal[:35]}</span></div>""", unsafe_allow_html=True)
+_tutorial()
 dc = st.columns(5)
 for i,d in enumerate(["Neuroscience","Cancer Biology","Pharmaceuticals","Microbiome","Molecular Biology"]):
     with dc[i]:
@@ -627,7 +656,10 @@ if domain == "Microbiome":
 query = st.session_state._qval.strip()
 if not query and not st.session_state._trig:
     meta = DOMAIN_META.get(domain,{}); exs2 = DOMAIN_EXAMPLES.get(domain,[])
-    st.markdown(f"### {meta.get('icon','🔬')} {domain}"); st.caption(f"Enter a gene symbol in the sidebar · {st.session_state.research_goal}")
+    _sec(f'{meta.get("icon","🔬")} {domain}')
+    color=meta.get('color','#00e5ff'); glow=meta.get('glow','rgba(0,229,255,0.2)')
+    tags_html=' '.join(f'<span class="pill">{t}</span>' for t in meta.get('tags',[])[:8])
+    st.markdown(f'<div style="background:linear-gradient(135deg,#020609,#050f1a);border:1px solid {color}22;border-radius:12px;padding:20px 24px;margin:8px 0"><div style="font-size:.78rem;color:#4a7090;margin-bottom:10px">{st.session_state.research_goal} · Enter a gene in the sidebar search box, then click ⚡ Analyse Protein</div><div>{tags_html}</div></div>', unsafe_allow_html=True)
     if exs2:
         st.markdown("**Quick examples:**"); ec = st.columns(min(7,len(exs2)))
         for i,ex in enumerate(exs2):
