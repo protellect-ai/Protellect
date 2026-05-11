@@ -513,11 +513,13 @@ el.innerHTML=`<div class="scan"></div><div class="ch"><span class="ci">${{d.icon
 el.addEventListener('click',()=>{{el.style.transform='scale(0.97)';setTimeout(()=>window.parent.postMessage({{isStreamlitMessage:true,type:'streamlit:setComponentValue',value:d.id}},'*'),100);}});grid.appendChild(el);}});
 </script></body></html>"""
     components.html(html, height=640, scrolling=False)
+    st.markdown('<div style="margin-top:-4px">', unsafe_allow_html=True)
     cols = st.columns(5)
     for i,(d,m) in enumerate(DOMAIN_META.items()):
         with cols[i]:
             if st.button(f"{m['icon']} {d}", key=f"dl_{d}", use_container_width=True):
                 st.session_state.domain = d; st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # ── sidebar ───────────────────────────────────────────────────────────────
 user = _user()
@@ -655,14 +657,131 @@ if domain == "Microbiome":
 # ── search ────────────────────────────────────────────────────────────────
 query = st.session_state._qval.strip()
 if not query and not st.session_state._trig:
-    meta = DOMAIN_META.get(domain,{}); exs2 = DOMAIN_EXAMPLES.get(domain,[])
-    _sec(f'{meta.get("icon","🔬")} {domain}')
-    color=meta.get('color','#00e5ff'); glow=meta.get('glow','rgba(0,229,255,0.2)')
-    tags_html=' '.join(f'<span class="pill">{t}</span>' for t in meta.get('tags',[])[:8])
-    st.markdown(f'<div style="background:linear-gradient(135deg,#020609,#050f1a);border:1px solid {color}22;border-radius:12px;padding:20px 24px;margin:8px 0"><div style="font-size:.78rem;color:#4a7090;margin-bottom:10px">{st.session_state.research_goal} · Enter a gene in the sidebar search box, then click ⚡ Analyse Protein</div><div>{tags_html}</div></div>', unsafe_allow_html=True)
+    meta = DOMAIN_META.get(domain, {}); exs2 = DOMAIN_EXAMPLES.get(domain, [])
+    color = meta.get("color", "#00e5ff"); glow = meta.get("glow", "rgba(0,229,255,0.2)")
+    icon = meta.get("icon", "🔬"); desc = meta.get("desc","")
+    tags_html = "".join(f'<span style="background:{color}0d;color:{color};border:1px solid {color}20;border-radius:10px;padding:2px 8px;margin:2px;font-size:.61rem;display:inline-block">{t}</span>' for t in meta.get("tags", []))
+    
+    _FEATURED = {
+        "Neuroscience":[
+            {"g":"LRRK2","v":"DISEASE-CRITICAL","w":"PD kinase · 6 P/LP variants · Phase III LRRK2i","c":"#ff2d55"},
+            {"g":"GBA","v":"DISEASE-CRITICAL","w":"PD lysosomal target · 300+ ClinVar · gene therapy","c":"#ff2d55"},
+            {"g":"SNCA","v":"DISEASE-ASSOCIATED","w":"Alpha-synuclein · Parkinson founder · aggregation target","c":"#ff8c42"},
+            {"g":"APP","v":"DISEASE-ASSOCIATED","w":"Amyloid precursor · Alzheimer anchor · GWAS locus","c":"#ff8c42"},
+            {"g":"TARDBP","v":"DISEASE-ASSOCIATED","w":"TDP-43 · ALS/FTD · cytoplasmic aggregates","c":"#ff8c42"},
+            {"g":"ARRB2","v":"DEPRIORITISE","w":"<5 Mendelian variants · $4.05M avoidable spend","c":"#ef4444"},
+        ],
+        "Cancer Biology":[
+            {"g":"TP53","v":"DISEASE-CRITICAL","w":"Tumour suppressor · 1800+ ClinVar · p53 reactivators","c":"#ff2d55"},
+            {"g":"KRAS","v":"DISEASE-CRITICAL","w":"RAS oncogene · G12C/D hotspots · Sotorasib approved","c":"#ff2d55"},
+            {"g":"BRCA1","v":"DISEASE-CRITICAL","w":"Hereditary breast/ovarian · PARP inhibitors · founder muts","c":"#ff2d55"},
+            {"g":"EGFR","v":"DISEASE-ASSOCIATED","w":"Receptor kinase · lung adenocarcinoma · multiple drugs","c":"#ff8c42"},
+            {"g":"PTEN","v":"DISEASE-ASSOCIATED","w":"PI3K suppressor · Cowden syndrome · Proteus syndrome","c":"#ff8c42"},
+            {"g":"MYC","v":"MODERATE","w":"Transcription factor · difficult to drug · somatic amplifications","c":"#ffd60a"},
+        ],
+        "Pharmaceuticals":[
+            {"g":"FLNA","v":"DISEASE-CRITICAL","w":"Filamin A · Ser2152 IP target · 1000+ ClinVar variants","c":"#ff2d55"},
+            {"g":"ADRB2","v":"DISEASE-ASSOCIATED","w":"Beta-2 AR GPCR · FBM present · cardiac · asthma","c":"#ff8c42"},
+            {"g":"AGTR1","v":"DISEASE-ASSOCIATED","w":"AT1R GPCR · hypertension · 47 P/LP variants","c":"#ff8c42"},
+            {"g":"GRK2","v":"DISEASE-ASSOCIATED","w":"GPCR kinase 2 · cardiac · drug target heart failure","c":"#ff8c42"},
+            {"g":"DRD2","v":"MODERATE","w":"Dopamine D2 receptor · antipsychotics · PD","c":"#ffd60a"},
+            {"g":"ARRB2","v":"DEPRIORITISE","w":"<5 Mendelian variants · $4.05M avoidable · DKO mice normal","c":"#ef4444"},
+        ],
+        "Molecular Biology":[
+            {"g":"FLNA","v":"DISEASE-CRITICAL","w":"Filamin A · Ser2152 PKA substrate · GPCR scaffold","c":"#ff2d55"},
+            {"g":"MAPK1","v":"DISEASE-ASSOCIATED","w":"ERK2 kinase · RAS/MAPK · somatic variants · drug target","c":"#ff8c42"},
+            {"g":"AKT1","v":"DISEASE-ASSOCIATED","w":"AKT1 kinase · E17K hotspot · Proteus syndrome","c":"#ff8c42"},
+            {"g":"CDK2","v":"MODERATE","w":"Cell cycle kinase · tractable · CDK2i in trials","c":"#ffd60a"},
+            {"g":"SRC","v":"MODERATE","w":"Proto-oncogene tyrosine kinase · many drug interactions","c":"#ffd60a"},
+            {"g":"GRK2","v":"DISEASE-ASSOCIATED","w":"Cardiac GPCR kinase · heart failure biomarker","c":"#ff8c42"},
+        ],
+    }
+    _FACTS = {
+        "Neuroscience":["pLI >0.9 = essential neurodevelopmental — lethal to disrupt","Heterozygous LoF = dominant neurodegeneration in most cases","BBB penetrance needed for CNS drugs (cLogP 1-3, MW below 500)","Digenic interactions drive low-penetrance epilepsy syndromes","Somatic mosaicism causes sporadic epilepsy — germline triage misses it"],
+        "Cancer Biology":["Founder mutations = earliest cancer events = primary targets","Superimpose P/LP variants onto drug crystal structures before HTS","LoF + LOH = classic tumour suppressor two-hit mechanism","Oncogene GoF occurs at specific hotspot residues only — not broadly","cfDNA surveillance: variants detectable at 0.1% allele frequency"],
+        "Pharmaceuticals":["Filamin Ser2152-P = receptor-proximal GPCR readout (your IP)","ARRB1/2: DEPRIORITISE — <5 Mendelian variants · $4.05M avoidable","TMAO = cardiac GPCR conformational rattling → arrhythmia (patent-free)","~300 of 800 Class A GPCRs carry H8 FBM — Start with these","Step 3 Filamin Ser2152-P > cAMP/IP3/arrestin as primary readout"],
+        "Molecular Biology":["Phosphorylation validated ONLY if its mutation causes human disease","Background kinase noise is not the same as functional phospho code","pLI >0.9 = essential — handle carefully in CRISPR experiments","AlphaMissense ≥0.564 = pathogenic prediction (Cheng et al. Science 2023)","ipTM >0.8 in AlphaFold-Multimer = high-confidence complex"],
+        "Microbiome":["Biosynthesis is not an annotation — it is the absence of one","LLM reasoning over KO IDs beats BLAST-only annotation","BGC clusters predict secondary metabolites: NRPS/PKS/RiPP","Host receptor blockade = microbiome-driven therapeutic hypothesis","Pathobionts in remission are not harmless — reactivation drives relapse"],
+    }
+    
+    featured = _FEATURED.get(domain, [])
+    facts = _FACTS.get(domain, [])
+    recent_ws = st.session_state.workspace[:3]
+    
+    feat_rows = ""
+    for p in featured:
+        vc = p["c"]
+        feat_rows += (
+            f'<div onclick="pick(\\"{p["g"]}\\")" ' 
+            + f'style="background:#010306;border:1px solid {vc}22;border-radius:7px;padding:9px 11px;cursor:pointer;transition:all .18s"' 
+            + f' onmouseover="this.style.borderColor=\\"{vc}55\\";this.style.transform=\'translateY(-2px)\'"' 
+            + f' onmouseout="this.style.borderColor=\\"{vc}22\\";this.style.transform=\'translateY(0)\'">'
+            + f'<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">'
+            + f'<span style="color:#d0e8ff;font-family:monospace;font-weight:700;font-size:.79rem">{p["g"]}</span>'
+            + f'<span style="background:{vc}18;color:{vc};border:1px solid {vc}40;border-radius:3px;padding:0 5px;font-size:.57rem;font-weight:700">{p["v"]}</span>'
+            + f'</div><div style="color:#4a7090;font-size:.65rem;line-height:1.45">{p["w"]}</div></div>'
+        )
+    
+    facts_html = "".join(
+        f'<div style="padding:5px 0;border-bottom:1px solid #060d14;font-size:.69rem;color:#4a7090"><span style="color:{color};margin-right:5px">▸</span>{f}</div>'
+        for f in facts
+    )
+    
+    recent_html = ""
+    for w in recent_ws:
+        wc = w.get("color","#4a7090")
+        recent_html += (
+            f'<div onclick="pick(\\"{w["gene"]}\\")" '
+            + f'style="display:flex;align-items:center;gap:6px;padding:5px 7px;background:#010306;border:1px solid #0a1520;border-radius:5px;cursor:pointer;margin-bottom:3px;transition:all .15s"'
+            + f' onmouseover="this.style.borderColor=\\"{wc}40\\"" onmouseout="this.style.borderColor=\'#0a1520\'">'
+            + f'<span style="color:#d0e8ff;font-family:monospace;font-size:.74rem;font-weight:600">{w["gene"]}</span>'
+            + f'<span style="background:{wc}18;color:{wc};border-radius:3px;padding:0 4px;font-size:.57rem">{w["verdict"]}</span>'
+            + f'<span style="color:#2a5070;font-size:.63rem;margin-left:auto">{w.get("domain","")}</span></div>'
+        )
+    if not recent_html:
+        recent_html = '<div style="color:#1e3a5f;font-size:.68rem;padding:5px 0">No searches yet. Click any featured protein above to begin.</div>'
+    
+    # Build final HTML as string concatenation (avoid f-string CSS conflicts)
+    _H = (
+        '<!DOCTYPE html><html><head>'
+        '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">'
+        '<style>'
+        '*{margin:0;padding:0;box-sizing:border-box;font-family:"Inter",sans-serif}'
+        'body{background:#010306;color:#d0e8ff;overflow-x:hidden}'
+        '.w{padding:14px 18px;animation:fadeIn .3s ease}'
+        f'.hero{{background:linear-gradient(135deg,#020609,#050f1a);border:1px solid {color}22;border-radius:12px;padding:18px 22px;margin-bottom:14px;position:relative;overflow:hidden}}'
+        f'.hero::before{{content:"";position:absolute;top:-60px;right:-60px;width:200px;height:200px;background:radial-gradient(circle,{glow},transparent 70%);pointer-events:none}}'
+        '.ht{display:flex;align-items:flex-start;gap:12px}'
+        '.hi{font-size:1.8rem;animation:float 4s ease infinite}'
+        f'.dt{{font-size:1.05rem;font-weight:700;color:{color};margin-bottom:3px}}'
+        '.ds{font-size:.73rem;color:#4a7090;line-height:1.6;max-width:560px}'
+        f'.cta{{display:inline-flex;align-items:center;gap:5px;background:{color}10;border:1px solid {color}30;border-radius:6px;padding:5px 12px;font-size:.72rem;color:{color};font-weight:600;margin-top:8px}}'
+        '.cta b{display:inline-block;animation:bounce 1.5s ease infinite}'
+        '.tgs{margin-top:10px;display:flex;flex-wrap:wrap;gap:3px}'
+        '.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}'
+        '.pnl{background:#020609;border:1px solid #0a1520;border-radius:10px;padding:12px 14px}'
+        '.pt{font-size:.63rem;color:#1e3a5f;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid #060d14}'
+        '.fg{display:grid;grid-template-columns:1fr 1fr;gap:5px}'
+        '@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}'
+        '@keyframes bounce{0%,100%{transform:translateX(0)}50%{transform:translateX(4px)}}'
+        '@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}'
+        '</style></head><body><div class="w">'
+        f'<div class="hero"><div class="ht"><div class="hi">{icon}</div><div><div class="dt">{domain}</div>'
+        f'<div class="ds">{desc}</div>'
+        f'<div class="cta"><b>←</b> Protein Search sidebar → <b style="color:#d0e8ff">gene symbol</b> → <b style="color:{color}">⚡ Analyse</b> — or click any card below</div></div></div>'
+        f'<div class="tgs">{tags_html}</div></div>'
+        f'<div class="g3"><div class="pnl" style="grid-column:1/3"><div class="pt">Featured Proteins for {domain} — Click to Analyse</div><div class="fg">{feat_rows}</div></div>'
+        f'<div><div class="pnl" style="margin-bottom:10px"><div class="pt">Key Concepts</div>{facts_html}</div>'
+        f'<div class="pnl"><div class="pt">Recent Searches</div>{recent_html}</div></div></div></div>'
+        '<script>function pick(g){window.parent.postMessage({isStreamlitMessage:true,type:"streamlit:setComponentValue",value:"pick:"+g},"*");}'
+        '</script></body></html>'
+    )
+    components.html(_H, height=640, scrolling=False)
+    
     if exs2:
-        st.markdown("**Quick examples:**"); ec = st.columns(min(7,len(exs2)))
-        for i,ex in enumerate(exs2):
+        st.markdown('<div style="color:#1e3a5f;font-size:.6rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin:5px 0 3px">QUICK START — CLICK TO ANALYSE</div>', unsafe_allow_html=True)
+        ec = st.columns(min(7, len(exs2)))
+        for i, ex in enumerate(exs2):
             with ec[i]:
                 if st.button(ex, key=f"dex_{ex}_{domain}", use_container_width=True): st.session_state._qval=ex; st.rerun()
     st.stop()
