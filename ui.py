@@ -1,10 +1,9 @@
-"""ui.py — CSS injection + domain UI helpers. Proper module, no exec()."""
+"""ui.py — CSS injection + domain UI helpers. Streamlit-native components where possible."""
 import streamlit as st
 import requests
 
 def inject_css():
-    st.markdown("""
-<style>
+    st.markdown("""<style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 *{font-family:'Inter',sans-serif!important}
 html,body,[data-testid="stAppViewContainer"]{background:#010306!important}
@@ -50,90 +49,113 @@ html,body,[data-testid="stAppViewContainer"]{background:#010306!important}
 .bdc-ok{background:rgba(74,222,128,0.07);color:#4ade80;border:1px solid rgba(74,222,128,0.2)}
 .mono{font-family:'JetBrains Mono',monospace!important;font-size:.78rem}
 .dim{color:#2a5070;font-size:.7rem}
-.exp-dof{border-color:rgba(0,229,255,0.25)!important;background:rgba(0,229,255,0.02)!important}
-.exp-av{border-color:rgba(239,68,68,0.25)!important;background:rgba(239,68,68,0.02)!important}
 </style>""", unsafe_allow_html=True)
 
-def lbl(t): return f'<div class="p-lbl">{t}</div>'
-def section(t): st.markdown(f'<div class="sec">{t}</div>', unsafe_allow_html=True)
+# ── Simple helpers that don't rely on HTML rendering ───────────────────────
+
+def lbl(t):
+    return f'<div class="p-lbl">{t}</div>'
+
+def section(t):
+    st.markdown(f'<div class="sec">{t}</div>', unsafe_allow_html=True)
+
 def badge(cls, t):
-    m={"critical":"crit","high":"hi","moderate":"mod","low":"lo","neutral":"lo",
-       "deprioritise":"dep","ok":"ok","CRITICAL":"crit","HIGH":"hi","MODERATE":"mod",
-       "DISEASE-CRITICAL":"crit","DISEASE-ASSOCIATED":"hi","VERY LOW":"lo",
-       "DEPRIORITISE":"dep","NO DISEASE VARIANTS":"lo"}
-    c=m.get(cls,cls); return f'<span class="bdc bdc-{c}">{t}</span>'
+    m = {"critical":"crit","high":"hi","moderate":"mod","low":"lo","neutral":"lo",
+         "deprioritise":"dep","ok":"ok","CRITICAL":"crit","HIGH":"hi","MODERATE":"mod",
+         "DISEASE-CRITICAL":"crit","DISEASE-ASSOCIATED":"hi","VERY LOW":"lo",
+         "DEPRIORITISE":"dep","NO DISEASE VARIANTS":"lo"}
+    c = m.get(cls, cls)
+    return f'<span class="bdc bdc-{c}">{t}</span>'
+
 def src(label, url=""):
     if url: return f'<a class="src" href="{url}" target="_blank">{label}</a>'
     return f'<span class="src">{label}</span>'
 
+# ── Domain landing — pure Streamlit, no unsafe HTML needed ─────────────────
+
 def show_domain_landing():
     from databases import DOMAIN_EXAMPLES
-    ICONS={"Neuroscience":"🧠","Cancer Biology":"🎗","Pharmaceuticals":"💊","Microbiome":"🦠","Molecular Biology":"⚛️"}
-    DESC={"Neuroscience":"Neurodegeneration · ALS/AD/PD · BBB penetrance · Brain expression",
-          "Cancer Biology":"Oncogene/TSG · Somatic hotspots · Founder mutations · cfDNA",
-          "Pharmaceuticals":"GPCR targets · Filamin Ser2152-P IP assay · Drug tractability",
-          "Microbiome":"LLM gene annotation · BGC · Taxonomy · Host–microbe pathways",
-          "Molecular Biology":"Protein structure · Phosphorylation codes · Kinase signalling"}
-    st.markdown("""<style>
-    @keyframes fadeInUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
-    .dlanding{animation:fadeInUp .35s ease forwards;opacity:0;animation-delay:var(--d,0s)}
-    </style>
-    <div style='text-align:center;padding:48px 0 28px'>
-      <div style='font-size:1.6rem;font-weight:800;background:linear-gradient(90deg,#00e5ff,#7c3aed);
-           -webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-0.5px'>Protellect</div>
-      <div style='color:#1e3a5f;font-size:.7rem;letter-spacing:.12em;margin-top:2px'>GENETICS-FIRST PROTEIN INTELLIGENCE</div>
-      <div style='color:#2a5070;font-size:.78rem;margin-top:10px'>Select a domain to begin</div>
-    </div>""", unsafe_allow_html=True)
-    _, mc, _ = st.columns([1,2.5,1])
+    ICONS = {"Neuroscience":"🧠","Cancer Biology":"🎗","Pharmaceuticals":"💊",
+             "Microbiome":"🦠","Molecular Biology":"⚛️"}
+    DESC = {
+        "Neuroscience":     "Neurodegeneration · ALS/AD/PD · BBB penetrance · Brain expression",
+        "Cancer Biology":   "Oncogene/TSG · Somatic hotspots · Founder mutations · cfDNA",
+        "Pharmaceuticals":  "GPCR targets · Filamin Ser2152-P IP assay · Drug tractability",
+        "Microbiome":       "LLM gene annotation · BGC · Taxonomy · Host–microbe pathways",
+        "Molecular Biology":"Protein structure · Phosphorylation codes · Kinase signalling",
+    }
+
+    st.markdown("<div style='height:40px'></div>", unsafe_allow_html=True)
+    _, mc, _ = st.columns([1, 2, 1])
     with mc:
-        for i,(d,desc) in enumerate(DESC.items()):
-            delay=f"{i*0.08:.2f}s"
-            st.markdown(f'<div class="dlanding" style="--d:{delay}"></div>', unsafe_allow_html=True)
+        st.markdown("## 🔬 Protellect")
+        st.caption("GENETICS-FIRST PROTEIN INTELLIGENCE · Select a domain to begin")
+        st.markdown("---")
+        for d, desc in DESC.items():
             if st.button(f"{ICONS[d]}  {d}  ·  {desc}", key=f"dl_{d}", use_container_width=True):
-                st.session_state.domain=d; st.rerun()
-    st.markdown('<div style="text-align:center;margin-top:28px;color:#0d1a2a;font-size:.68rem;font-style:italic">The only platform that tells you which proteins to abandon before you spend the money.</div>', unsafe_allow_html=True)
+                st.session_state.domain = d
+                st.rerun()
+        st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
+        st.caption("_The only platform that tells you which proteins to abandon before you spend the money._")
+
+
+# ── Domain workspace — pure Streamlit ──────────────────────────────────────
 
 def show_domain_workspace(domain):
     from databases import DOMAIN_EXAMPLES
-    ICONS={"Neuroscience":"🧠","Cancer Biology":"🎗","Pharmaceuticals":"💊","Microbiome":"🦠","Molecular Biology":"⚛️"}
-    examples=DOMAIN_EXAMPLES.get(domain,[])
-    st.markdown(f"""<div style='border:1px solid #0a1520;border-radius:6px;padding:20px;text-align:center;margin:8px 0'>
-      <div style='font-size:1rem;margin-bottom:6px'>{ICONS.get(domain,"🔬")}</div>
-      <div style='font-size:.85rem;font-weight:600;color:#d0e8ff'>{domain}</div>
-      <div style='color:#2a5070;font-size:.73rem;margin-top:3px'>Enter a gene symbol in the sidebar or click an example below.</div>
-    </div>""", unsafe_allow_html=True)
+    ICONS = {"Neuroscience":"🧠","Cancer Biology":"🎗","Pharmaceuticals":"💊",
+             "Microbiome":"🦠","Molecular Biology":"⚛️"}
+    examples = DOMAIN_EXAMPLES.get(domain, [])
+    icon = ICONS.get(domain, "🔬")
+
+    st.markdown(f"### {icon} {domain}")
+    st.caption("Enter a gene symbol in the sidebar search box, or click an example below.")
     if examples:
-        st.markdown('<div style="color:#1e3a5f;font-size:.64rem;text-align:center;margin-bottom:4px;letter-spacing:.06em">QUICK EXAMPLES</div>', unsafe_allow_html=True)
-        ec=st.columns(min(7,len(examples)))
-        for i,ex in enumerate(examples):
+        st.markdown("**Quick examples:**")
+        ec = st.columns(min(7, len(examples)))
+        for i, ex in enumerate(examples):
             with ec[i]:
                 if st.button(ex, key=f"dex_{ex}_{domain}", use_container_width=True):
-                    st.session_state._qval=ex; st.rerun()
+                    st.session_state._qval = ex
+                    st.rerun()
+
+
+# ── Disease link inline ────────────────────────────────────────────────────
 
 def show_disease_link_inline(q):
     from databases import MICRO_ORGANISMS
     from fetchers import HEADERS
     section(f"Disease: {q}")
-    q_l=q.lower()
-    for org_name,org in MICRO_ORGANISMS.items():
+    q_l = q.lower()
+    for org_name, org in MICRO_ORGANISMS.items():
         if org_name.lower() in q_l or org.get("disease","").lower() in q_l:
-            st.markdown(f'<div class="card"><span class="mono">{org["organism"]}</span> <span class="bdc bdc-dep">{org["type"]}</span><br><span class="dim">Disease: {org["disease"]}</span><br><span class="dim">{org.get("mechanism","")[:150]}</span></div>', unsafe_allow_html=True)
-            section("Host Receptors — Analyse")
-            rc=st.columns(min(4,len(org.get("host_receptors",[])) or 1))
-            for i,rec in enumerate(org.get("host_receptors",[])):
+            st.markdown(f"**{org['organism']}**")
+            st.caption(f"{org['type']} · Disease: {org['disease']}")
+            st.write(org.get("mechanism","")[:200])
+            section("Human Host Receptors — Analyse")
+            rc = st.columns(min(4, len(org.get("host_receptors",[])) or 1))
+            for i, rec in enumerate(org.get("host_receptors",[])):
                 with rc[i]:
-                    if st.button(rec, key=f"rec_{rec}"): st.session_state._qval=rec; st.rerun()
+                    if st.button(rec, key=f"rec_{rec}"):
+                        st.session_state._qval = rec
+                        st.rerun()
             return
     try:
-        r=requests.get("https://rest.uniprot.org/uniprotkb/search",
-                       params={"query":f"cc_disease:{q} AND organism_id:9606 AND reviewed:true","format":"json","size":8,"fields":"accession,gene_names,protein_name"},
-                       headers=HEADERS, timeout=12)
+        r = requests.get(
+            "https://rest.uniprot.org/uniprotkb/search",
+            params={"query": f"cc_disease:{q} AND organism_id:9606 AND reviewed:true",
+                    "format":"json","size":8,"fields":"accession,gene_names,protein_name"},
+            headers=HEADERS, timeout=12)
         for hit in r.json().get("results",[]):
-            gs=[g.get("geneName",{}).get("value","") for g in hit.get("genes",[])]
-            g=gs[0] if gs else hit.get("primaryAccession","")
-            pn=hit.get("proteinDescription",{}).get("recommendedName",{}).get("fullName",{}).get("value","")
-            c1,c2=st.columns([4,1])
-            with c1: st.markdown(f'<span class="mono">{g}</span> <span class="dim">{pn[:55]}</span>',unsafe_allow_html=True)
+            gs = [g.get("geneName",{}).get("value","") for g in hit.get("genes",[])]
+            g  = gs[0] if gs else hit.get("primaryAccession","")
+            pn = hit.get("proteinDescription",{}).get("recommendedName",{}).get("fullName",{}).get("value","")
+            c1, c2 = st.columns([4,1])
+            with c1:
+                st.markdown(f"**`{g}`** — {pn[:55]}")
             with c2:
-                if st.button(f"↗{g}",key=f"dis_{g}"): st.session_state._qval=g; st.rerun()
-    except: pass
+                if st.button(f"↗ {g}", key=f"dis_{g}"):
+                    st.session_state._qval = g
+                    st.rerun()
+    except Exception:
+        pass
