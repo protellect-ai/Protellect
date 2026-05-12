@@ -5414,6 +5414,34 @@ def render_molbio_workspace():
 
 
 # ─── Sidebar ────────────────────────────────────────────────────────
+for k,v0 in {"pdata":None,"cv":None,"pdb":"","papers":[],"scored":[],"gene":"","uid":"",
+             "assay":"","last":"","csv_df":None,"csv_type":"","goal_label":GOAL_OPTIONS[0],
+             "goal_custom":"","sensitivity":50,"gi":None,"partner_query":"",
+             "partner_cv":None,"partner_gi":None,"disease_search":"","disease_proteins":[],"csv_triage_active":False,"show_tutorial":True,"gnomad":{},"string":[],"trials":[],"drugs":[],"abstracts":[],"org":{},"ai_result":{},"ot":{},"am":{},"isoforms":[],"hotspots":[],"patients":{},"excel_bytes":None,
+             "research_domain":None,"domain_expanded":None,"_last_domain":None}.items():
+    if k not in st.session_state: st.session_state[k]=v0
+
+# Clear protein state when domain changes
+_cur_domain = st.session_state.get("research_domain")
+_last_domain = st.session_state.get("_last_domain")
+if _cur_domain != _last_domain and _cur_domain is not None:
+    # Domain switched — wipe previous protein analysis
+    for _clr_key in ["pdata","cv","pdb","scored","gene","uid","assay","last",
+                      "gi","gnomad","string","trials","drugs","abstracts","org",
+                      "ai_result","ot","am","isoforms","hotspots","patients",
+                      "partner_query","partner_cv","partner_gi","excel_bytes"]:
+        st.session_state[_clr_key] = [] if isinstance(st.session_state.get(_clr_key), list) else ({} if isinstance(st.session_state.get(_clr_key), dict) else (None if _clr_key not in ["pdb","gene","uid","assay","last"] else ""))
+    st.session_state["_last_domain"] = _cur_domain
+
+
+# ════════════════════════════════════════════════════════════════════
+#  RESEARCH DOMAIN SELECTION PAGE
+# ════════════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════════════════════════
+#  DOMAIN WORKSPACE FUNCTIONS — full tab-based workspaces per domain
+#  Called when domain is selected but no protein loaded
+# ════════════════════════════════════════════════════════════════════════════
+
 RESEARCH_DOMAINS = {
     "Neuroscience": {
         "icon": "🧠", "color": "#6366f1", "color2": "#818cf8",
@@ -6283,33 +6311,6 @@ if not st.session_state.get('auth_user'):
     login_page()  # shows login UI and calls st.stop()
 
 # ─── Session state ──────────────────────────────────────────────────
-for k,v0 in {"pdata":None,"cv":None,"pdb":"","papers":[],"scored":[],"gene":"","uid":"",
-             "assay":"","last":"","csv_df":None,"csv_type":"","goal_label":GOAL_OPTIONS[0],
-             "goal_custom":"","sensitivity":50,"gi":None,"partner_query":"",
-             "partner_cv":None,"partner_gi":None,"disease_search":"","disease_proteins":[],"csv_triage_active":False,"show_tutorial":True,"gnomad":{},"string":[],"trials":[],"drugs":[],"abstracts":[],"org":{},"ai_result":{},"ot":{},"am":{},"isoforms":[],"hotspots":[],"patients":{},"excel_bytes":None,
-             "research_domain":None,"domain_expanded":None,"_last_domain":None}.items():
-    if k not in st.session_state: st.session_state[k]=v0
-
-# Clear protein state when domain changes
-_cur_domain = st.session_state.get("research_domain")
-_last_domain = st.session_state.get("_last_domain")
-if _cur_domain != _last_domain and _cur_domain is not None:
-    # Domain switched — wipe previous protein analysis
-    for _clr_key in ["pdata","cv","pdb","scored","gene","uid","assay","last",
-                      "gi","gnomad","string","trials","drugs","abstracts","org",
-                      "ai_result","ot","am","isoforms","hotspots","patients",
-                      "partner_query","partner_cv","partner_gi","excel_bytes"]:
-        st.session_state[_clr_key] = [] if isinstance(st.session_state.get(_clr_key), list) else ({} if isinstance(st.session_state.get(_clr_key), dict) else (None if _clr_key not in ["pdb","gene","uid","assay","last"] else ""))
-    st.session_state["_last_domain"] = _cur_domain
-
-
-# ════════════════════════════════════════════════════════════════════
-#  RESEARCH DOMAIN SELECTION PAGE
-# ════════════════════════════════════════════════════════════════════
-# ════════════════════════════════════════════════════════════════════════════
-#  DOMAIN WORKSPACE FUNCTIONS — full tab-based workspaces per domain
-#  Called when domain is selected but no protein loaded
-# ════════════════════════════════════════════════════════════════════════════
 
 # ── Research domain registry ─────────────────────────────────────────────────
 # ── Domain selection page ──────────────────────────────────────────────────────
