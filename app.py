@@ -7059,27 +7059,7 @@ if st.session_state["csv_df"] is not None and not st.session_state["pdata"]:
     if not st.session_state["pdata"]:
         st.stop()
 
-if not st.session_state["pdata"] and st.session_state["csv_df"] is None:
-    _active_domain = st.session_state.get("research_domain","")
-    if _active_domain == "Oncology":
-        render_oncology_workspace()
-    elif _active_domain == "Neuroscience":
-        render_neuroscience_workspace()
-    elif _active_domain == "Microbiome":
-        render_microbiome_workspace()
-    elif _active_domain == "Pharmaceuticals":
-        render_pharma_workspace()
-    elif _active_domain == "Molecular Biology":
-        render_molbio_workspace()
-    else:
-        st.markdown("""<div style='background:#040d18;border:1px solid #0c2040;border-radius:14px;padding:2rem;text-align:center;margin-top:.5rem;'>
-<img src='data:image/svg+xml;base64,{LOGO_B64}' style='width:72px;height:72px;object-fit:contain;display:block;margin:0 auto .8rem;filter:drop-shadow(0 0 16px #2a8a5055);'>
-<div style='color:#5a8090;font-size:1rem;font-weight:600;margin-bottom:.4rem;'>Select a domain from the sidebar, or enter a protein to begin</div>
-<div style='color:#061828;font-size:1.02rem;margin-bottom:1.2rem;'>Try: <b style='color:#0d2840;'>TP53</b> · <b style='color:#0d2840;'>FLNC</b> · <b style='color:#0d2840;'>ACM2</b> · <b style='color:#0d2840;'>ARRB2</b> · <b style='color:#0d2840;'>P04637</b></div>
-<div style='display:flex;gap:.7rem;justify-content:center;flex-wrap:wrap;'>"""
-+"".join(f"<div style='background:#05101e;border:1px solid #0c2040;border-radius:9px;padding:.6rem .9rem;width:145px;'><div style='font-size:1.1rem;'>{ic}</div><div style='color:#5a8090;font-size:.81rem;margin-top:3px;'><b style='color:#1e4060;'>{tt}</b><br>{dd}</div></div>" for ic,tt,dd in [("🔴","Triage","Structure + hotspots"),("📋","Case Study","Tissue · GPCR"),("🔬","Explorer","Click & mutate"),("🧪","Experiments","Protocols")])
-+"</div></div>", unsafe_allow_html=True)
-    st.stop()
+# Domain routing handled above
 
 # ─── Main variables ──────────────────────────────────────────────────
 pdata=st.session_state["pdata"]; cv=st.session_state["cv"]
