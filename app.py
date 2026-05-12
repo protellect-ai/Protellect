@@ -5276,8 +5276,20 @@ for k,v0 in {"pdata":None,"cv":None,"pdb":"","papers":[],"scored":[],"gene":"","
              "assay":"","last":"","csv_df":None,"csv_type":"","goal_label":GOAL_OPTIONS[0],
              "goal_custom":"","sensitivity":50,"gi":None,"partner_query":"",
              "partner_cv":None,"partner_gi":None,"disease_search":"","disease_proteins":[],"csv_triage_active":False,"show_tutorial":True,"gnomad":{},"string":[],"trials":[],"drugs":[],"abstracts":[],"org":{},"ai_result":{},"ot":{},"am":{},"isoforms":[],"hotspots":[],"patients":{},"excel_bytes":None,
-             "research_domain":None,"domain_expanded":None}.items():
+             "research_domain":None,"domain_expanded":None,"_last_domain":None}.items():
     if k not in st.session_state: st.session_state[k]=v0
+
+# Clear protein state when domain changes
+_cur_domain = st.session_state.get("research_domain")
+_last_domain = st.session_state.get("_last_domain")
+if _cur_domain != _last_domain and _cur_domain is not None:
+    # Domain switched — wipe previous protein analysis
+    for _clr_key in ["pdata","cv","pdb","scored","gene","uid","assay","last",
+                      "gi","gnomad","string","trials","drugs","abstracts","org",
+                      "ai_result","ot","am","isoforms","hotspots","patients",
+                      "partner_query","partner_cv","partner_gi","excel_bytes"]:
+        st.session_state[_clr_key] = [] if isinstance(st.session_state.get(_clr_key), list) else ({} if isinstance(st.session_state.get(_clr_key), dict) else (None if _clr_key not in ["pdb","gene","uid","assay","last"] else ""))
+    st.session_state["_last_domain"] = _cur_domain
 
 
 # ════════════════════════════════════════════════════════════════════
@@ -5392,215 +5404,138 @@ RESEARCH_DOMAINS = {
 # ── Domain selection page ──────────────────────────────────────────────────────
 # ── Domain selection page ──────────────────────────────────────────────────────
 if not st.session_state.get("research_domain"):
-    # Animated hero
     st.markdown("""
-    <style>
-    @keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
-    @keyframes shimmer{0%{background-position:0% 50%}100%{background-position:200% 50%}}
-    .domain-hero{text-align:center;padding:2rem 1rem 1.2rem;animation:fadeUp .5s ease;}
-    .domain-title{font-size:2.2rem;font-weight:800;letter-spacing:-.5px;
-      background:linear-gradient(90deg,#00e5ff,#6366f1,#f43f5e,#00e5ff);
-      background-size:300%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
-      animation:shimmer 5s linear infinite;}
-    .domain-sub{color:#1e4060;font-size:.98rem;margin:.4rem 0 0;}
-    .dom-card{border-radius:14px;padding:1.1rem 1.3rem;cursor:pointer;
-      transition:all .22s ease;position:relative;overflow:hidden;margin:.3rem 0;}
-    .dom-card:hover{transform:translateY(-3px);}
-    .dom-card::before{content:'';position:absolute;inset:0;border-radius:14px;
-      background:linear-gradient(135deg,transparent 60%,rgba(255,255,255,.03));pointer-events:none;}
-    </style>
-    <div class="domain-hero">
-      <div class="domain-title">🔬 Protellect</div>
-      <div class="domain-sub">Select your research domain — every analysis is tailored to your field</div>
-    </div>
-    """, unsafe_allow_html=True)
+<style>
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes shimmer{0%{background-position:0%}100%{background-position:200%}}
+@keyframes pulse_ring{0%,100%{transform:scale(1);opacity:.6}50%{transform:scale(1.08);opacity:1}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 
-    # Domain cards — 3 + 2 layout
-    row1 = st.columns(3, gap="medium")
-    row2_outer = st.columns([1, 1, 1], gap="medium")
-    domain_keys = list(RESEARCH_DOMAINS.keys())
+.dom-page{animation:fadeUp .5s ease;}
+.dom-hero{text-align:center;padding:2.5rem 1rem 2rem;}
+.dom-logo{font-size:3rem;animation:float 3s ease-in-out infinite;}
+.dom-title{
+  font-size:2.6rem;font-weight:900;letter-spacing:-.5px;
+  background:linear-gradient(90deg,#00e5ff 0%,#6366f1 35%,#f43f5e 65%,#00e5ff 100%);
+  background-size:200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  animation:shimmer 4s linear infinite;}
+.dom-sub{color:#1a3a55;font-size:.92rem;margin:.5rem 0 0;}
 
-    def _domain_card(col, dk):
-        dm = RESEARCH_DOMAINS[dk]
-        with col:
-            exp = st.session_state.get("domain_expanded") == dk
-            # Card header button
-            if st.button(
-                f"{dm['icon']}  {dk}\n{dm['tagline']}",
-                key=f"dom_select_{dk}",
-                use_container_width=True,
-            ):
-                if exp:
-                    # Second click = select
-                    st.session_state["research_domain"] = dk
-                    st.session_state["domain_expanded"] = None
-                    st.rerun()
-                else:
-                    st.session_state["domain_expanded"] = dk
-                    st.rerun()
+.dom-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:1100px;margin:0 auto 16px;}
+.dom-grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;max-width:730px;margin:0 auto;}
 
-            if exp:
-                st.markdown(
-                    f"<div style='background:linear-gradient(135deg,{dm['color']}08,#020810);"
-                    f"border:1.5px solid {dm['color']}44;border-radius:12px;padding:1rem 1.2rem;"
-                    f"margin-top:-4px;animation:fadeUp .3s ease;'>",
-                    unsafe_allow_html=True,
-                )
-                st.markdown(
-                    f"<div style='color:{dm['color2']};font-size:.86rem;line-height:1.65;"
-                    f"margin-bottom:.8rem;'>{dm['desc']}</div>",
-                    unsafe_allow_html=True,
-                )
+.dom-card{
+  position:relative;border-radius:16px;padding:1.4rem 1.5rem;cursor:pointer;
+  transition:all .25s cubic-bezier(.4,0,.2,1);overflow:hidden;
+  border:1px solid transparent;background:#010810;}
+.dom-card::before{
+  content:'';position:absolute;inset:0;border-radius:16px;
+  background:var(--card-grad);opacity:0;transition:opacity .25s;}
+.dom-card:hover::before{opacity:1;}
+.dom-card:hover{transform:translateY(-4px);box-shadow:var(--card-shadow);}
+.dom-card .icon{font-size:2rem;margin-bottom:.5rem;display:block;}
+.dom-card .name{font-size:1rem;font-weight:800;margin-bottom:.25rem;}
+.dom-card .tags{font-size:.7rem;line-height:1.6;opacity:.75;}
+.dom-card .enter-btn{
+  display:none;margin-top:.8rem;width:100%;background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.15);color:#fff;padding:6px;border-radius:8px;
+  font-size:.72rem;font-weight:600;cursor:pointer;}
+.dom-card:hover .enter-btn{display:block;}
 
-                # Key experiments
-                st.markdown(f"<div style='color:{dm['color']};font-size:.7rem;font-weight:700;"
-                           f"letter-spacing:.08em;text-transform:uppercase;margin-bottom:.4rem;'>Key Experiments</div>",
-                           unsafe_allow_html=True)
-                for exp_name, timeline, note, exp_clr in dm["key_experiments"]:
-                    st.markdown(
-                        f"<div style='display:flex;gap:7px;align-items:baseline;padding:3px 0;"
-                        f"border-bottom:1px solid #0a1828;'>"
-                        f"<span style='background:{exp_clr}18;color:{exp_clr};border:1px solid {exp_clr}33;"
-                        f"border-radius:4px;padding:0 6px;font-size:.66rem;white-space:nowrap;'>{timeline}</span>"
-                        f"<span style='color:#5a8090;font-size:.75rem;font-weight:600;'>{exp_name}</span>"
-                        f"<span style='color:#1e4060;font-size:.68rem;'>{note}</span>"
-                        f"</div>",
-                        unsafe_allow_html=True,
-                    )
+.dom-hint{text-align:center;color:#071828;font-size:.72rem;margin-top:.5rem;font-style:italic;}
+</style>
+<div class="dom-page">
+<div class="dom-hero">
+  <div class="dom-logo">🔬</div>
+  <div class="dom-title">Protellect</div>
+  <div class="dom-sub">Select your research domain — every analysis and workspace is tailored to your field</div>
+</div>
+</div>
+""", unsafe_allow_html=True)
 
-                # Example proteins
-                if dm["proteins"]:
-                    st.markdown(f"<div style='color:{dm['color']};font-size:.7rem;font-weight:700;"
-                               f"letter-spacing:.08em;text-transform:uppercase;margin:.7rem 0 .3rem;'>Try These Proteins</div>",
-                               unsafe_allow_html=True)
-                    protein_btns = st.columns(min(5, len(dm["proteins"][:10])))
-                    for pi, prot in enumerate(dm["proteins"][:10]):
-                        with protein_btns[pi % len(protein_btns)]:
-                            if st.button(prot, key=f"dom_prot_{dk}_{prot}", use_container_width=True):
-                                st.session_state["research_domain"] = dk
-                                st.session_state["_trigger_search"] = prot
-                                st.session_state["domain_expanded"] = None
-                                st.rerun()
+    DOMAIN_STYLES = {
+        "Neuroscience": {
+            "icon":"🧠","color":"#6366f1","color2":"#818cf8",
+            "grad":"linear-gradient(135deg,rgba(99,102,241,.12),rgba(99,102,241,.04))",
+            "shadow":"0 8px 32px rgba(99,102,241,.25)",
+            "border":"rgba(99,102,241,.5)",
+            "tags":"Synaptic proteins · Neural circuits · BBB · Ion channels · Neurodegeneration"
+        },
+        "Oncology": {
+            "icon":"🎗","color":"#f43f5e","color2":"#fb7185",
+            "grad":"linear-gradient(135deg,rgba(244,63,94,.12),rgba(244,63,94,.04))",
+            "shadow":"0 8px 32px rgba(244,63,94,.25)",
+            "border":"rgba(244,63,94,.5)",
+            "tags":"Metastasis · Early detection · Patient-specific · Driver mutations"
+        },
+        "Pharmaceuticals": {
+            "icon":"💊","color":"#00d4ff","color2":"#38bdf8",
+            "grad":"linear-gradient(135deg,rgba(0,212,255,.12),rgba(0,212,255,.04))",
+            "shadow":"0 8px 32px rgba(0,212,255,.25)",
+            "border":"rgba(0,212,255,.5)",
+            "tags":"GPCR targets · Druggability · HTS · Filamin assay · Clinical pipeline"
+        },
+        "Microbiome": {
+            "icon":"🦠","color":"#22c55e","color2":"#4ade80",
+            "grad":"linear-gradient(135deg,rgba(34,197,94,.12),rgba(34,197,94,.04))",
+            "shadow":"0 8px 32px rgba(34,197,94,.25)",
+            "border":"rgba(34,197,94,.5)",
+            "tags":"Annotation engine · Taxonomy · Host-microbe · BGC · Pathobionts"
+        },
+        "Molecular Biology": {
+            "icon":"⚛️","color":"#f97316","color2":"#fb923c",
+            "grad":"linear-gradient(135deg,rgba(249,115,22,.12),rgba(249,115,22,.04))",
+            "shadow":"0 8px 32px rgba(249,115,22,.25)",
+            "border":"rgba(249,115,22,.5)",
+            "tags":"Phosphorylation · Kinase-substrate · AlphaFold · PTMs · Structural"
+        },
+    }
 
-                # Drug rules
-                st.markdown(f"<div style='color:{dm['color']};font-size:.7rem;font-weight:700;"
-                           f"letter-spacing:.08em;text-transform:uppercase;margin:.7rem 0 .3rem;'>Drug Development Rules</div>",
-                           unsafe_allow_html=True)
-                rule_cols = st.columns(2)
-                for ri, (rule_name, rule_val, rule_note) in enumerate(dm["drug_rules"]):
-                    with rule_cols[ri % 2]:
-                        st.markdown(
-                            f"<div style='background:#020810;border:1px solid #0d2545;border-radius:6px;"
-                            f"padding:5px 8px;margin:2px 0;'>"
-                            f"<div style='color:{dm['color2']};font-size:.7rem;font-weight:600;'>{rule_name}: <span style='color:#b0d8f0;'>{rule_val}</span></div>"
-                            f"<div style='color:#1e4060;font-size:.64rem;'>{rule_note}</div>"
-                            f"</div>",
-                            unsafe_allow_html=True,
-                        )
+    domain_keys = list(DOMAIN_STYLES.keys())
 
-                # Key databases
-                st.markdown(f"<div style='color:{dm['color']};font-size:.7rem;font-weight:700;"
-                           f"letter-spacing:.08em;text-transform:uppercase;margin:.7rem 0 .3rem;'>Key Databases</div>",
-                           unsafe_allow_html=True)
-                db_str = " ".join(
-                    f"<a href='{url}' target='_blank' style='background:{dm['color']}11;color:{dm['color2']};"
-                    f"border:1px solid {dm['color']}33;border-radius:6px;padding:2px 9px;"
-                    f"font-size:.69rem;text-decoration:none;display:inline-block;margin:2px;'>"
-                    f"{name} <span style='color:#1e4060;font-size:.62rem;'>({tip})</span></a>"
-                    for name, url, tip in dm["databases"]
-                )
-                st.markdown(f"<div style='margin-bottom:.5rem;'>{db_str}</div>", unsafe_allow_html=True)
-
-                # ── Domain-specific unique panels ─────────────────────────────────
-                if dk == "Oncology":
-                    st.markdown(f"<div style='color:{dm['color']};font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin:.6rem 0 .3rem;'>Cancer Types & Drivers</div>", unsafe_allow_html=True)
-                    cancer_types_list = list(dm.get("cancer_types",{}).keys())
-                    sel_ct = st.selectbox("Select cancer type for tailored analysis:", ["— select —"] + cancer_types_list, key=f"ct_sel_{dk}")
-                    if sel_ct and sel_ct != "— select —":
-                        ct_data = dm["cancer_types"][sel_ct]
-                        c_a, c_b = st.columns(2)
-                        with c_a:
-                            st.markdown(f"<div style='color:#ff2d55;font-size:.68rem;font-weight:700;margin-bottom:3px;'>🔬 Driver genes</div>", unsafe_allow_html=True)
-                            st.markdown(" ".join(f"<span style='background:#ff2d5518;color:#ff2d55;border:1px solid #ff2d5530;border-radius:5px;padding:1px 7px;font-size:.67rem;margin:2px;display:inline-block;'>{g}</span>" for g in ct_data["drivers"]), unsafe_allow_html=True)
-                            st.markdown(f"<div style='color:#ffd60a;font-size:.68rem;font-weight:700;margin:5px 0 3px;'>🩺 Early detection markers</div>", unsafe_allow_html=True)
-                            for m in ct_data["early_markers"]: st.markdown(f"<div style='color:#4a7090;font-size:.7rem;padding:1px 0;'>◆ {m}</div>", unsafe_allow_html=True)
-                            st.markdown(f"<div style='color:#22c55e;font-size:.68rem;font-weight:700;margin:5px 0 3px;'>🏥 Metastasis sites</div>", unsafe_allow_html=True)
-                            for ms in ct_data.get("metastasis_sites",[]): st.markdown(f"<div style='color:#4a7090;font-size:.7rem;'>→ {ms}</div>", unsafe_allow_html=True)
-                        with c_b:
-                            st.markdown(f"<div style='color:#ff8c42;font-size:.68rem;font-weight:700;margin-bottom:3px;'>⚠ Causes & risk factors</div>", unsafe_allow_html=True)
-                            for c_cause in ct_data["causes"]: st.markdown(f"<div style='color:#4a7090;font-size:.7rem;padding:1px 0;'>• {c_cause}</div>", unsafe_allow_html=True)
-                            st.markdown(f"<div style='color:#00e5ff;font-size:.68rem;font-weight:700;margin:5px 0 3px;'>💊 Treatments</div>", unsafe_allow_html=True)
-                            for tx in ct_data["treatments"]: st.markdown(f"<div style='color:#4a7090;font-size:.7rem;padding:1px 0;'>→ {tx}</div>", unsafe_allow_html=True)
-                    # Early detection panel
-                    st.markdown(f"<div style='color:{dm['color']};font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin:.6rem 0 .3rem;'>Early Detection Methods</div>", unsafe_allow_html=True)
-                    for ed_name, ed_desc in dm.get("early_detection",[]):
-                        st.markdown(f"<div style='background:#010810;border:1px solid #071828;border-radius:7px;padding:6px 10px;margin:2px 0;'><span style='color:#ff2d55;font-size:.7rem;font-weight:700;'>{ed_name}</span><div style='color:#3a6080;font-size:.7rem;margin-top:2px;line-height:1.5;'>{ed_desc}</div></div>", unsafe_allow_html=True)
-                    # Metastasis cascade
-                    st.markdown(f"<div style='color:{dm['color']};font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin:.6rem 0 .3rem;'>Metastasis Cascade</div>", unsafe_allow_html=True)
-                    for step, mech, marker, mclr in dm.get("metastasis_cascade",[]):
-                        st.markdown(f"<div style='display:flex;gap:8px;padding:3px 0;border-bottom:1px solid #050e18;'><span style='color:{mclr};font-size:.67rem;font-weight:700;min-width:110px;'>{step}</span><span style='color:#3a6080;font-size:.67rem;'>{mech}</span><span style='color:#1e4060;font-size:.65rem;margin-left:auto;white-space:nowrap;'>Marker: {marker}</span></div>", unsafe_allow_html=True)
-
-                elif dk == "Neuroscience":
-                    st.markdown(f"<div style='color:{dm['color']};font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin:.6rem 0 .3rem;'>Neural Protein Networks</div>", unsafe_allow_html=True)
-                    for circuit, proteins_list in dm.get("neural_proteins",{}).items():
-                        with st.expander(f"⚡ {circuit}", expanded=False):
-                            st.markdown(" ".join(f"<span style='background:#6366f118;color:#818cf8;border:1px solid #6366f130;border-radius:5px;padding:1px 7px;font-size:.67rem;cursor:pointer;' title='Click to analyse'>{p}</span>" for p in proteins_list), unsafe_allow_html=True)
-                            for pi2, p2 in enumerate(proteins_list[:3]):
-                                if st.button(f"→ Analyse {p2}", key=f"neuro_prot_{dk}_{circuit[:8]}_{pi2}"):
-                                    st.session_state["research_domain"] = dk; st.session_state["_trigger_search"] = p2; st.session_state["domain_expanded"] = None; st.rerun()
-                    st.markdown(f"<div style='color:{dm['color']};font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin:.6rem 0 .3rem;'>Disease → Key Proteins</div>", unsafe_allow_html=True)
-                    for dis_n, dis_prots in dm.get("disease_protein_map",{}).items():
-                        st.markdown(f"<div style='display:flex;gap:8px;padding:3px 0;border-bottom:1px solid #050e18;align-items:center;'><span style='color:#6366f1;font-size:.67rem;min-width:130px;font-weight:600;'>{dis_n}</span>" + " ".join(f"<span style='color:#3a6080;font-size:.65rem;'>{p}</span>" for p in dis_prots[:5]) + "</div>", unsafe_allow_html=True)
-                    st.markdown(f"<div style='color:{dm['color']};font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin:.6rem 0 .3rem;'>BBB Drug Rules</div>", unsafe_allow_html=True)
-                    bbb = dm.get("bbb_rules",{})
-                    st.markdown("<div style='display:flex;gap:6px;flex-wrap:wrap;'>" + "".join(f"<div style='background:#010810;border:1px solid #071828;border-radius:6px;padding:4px 9px;'><div style='color:#6366f1;font-size:.65rem;font-weight:700;'>{k}</div><div style='color:#3a6080;font-size:.67rem;'>{v}</div></div>" for k,v in bbb.items()) + "</div>", unsafe_allow_html=True)
-
-                elif dk == "Microbiome":
-                    st.markdown(f"<div style='color:{dm['color']};font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin:.6rem 0 .3rem;'>AI Annotation Preview</div>", unsafe_allow_html=True)
-                    examples = [("biosynthesis","→ FASII (FabB EC 2.3.1.41, FabG EC 1.1.1.100) — lipid chain elongation 2C/cycle → C16:0 palmitate"),("chemosynthesis","→ AMO (EC 1.14.99.39) + HAO (EC 1.7.2.6) — ammonia oxidation (AOB) OR Sox system (SOB)"),("protein aggregation","→ Curli: CsgA+CsgB → biofilm amyloid → TLR2/TLR1 innate immunity trigger"),("hypothetical protein","→ AlphaFold+Foldseek → eggNOG-mapper v2 → InterProScan → subcellular localisation")]
-                    for vague, specific in examples:
-                        st.markdown(f"<div style='display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #050e18;'><span style='color:#ff2d55;font-size:.67rem;min-width:120px;font-weight:600;'>❌ {vague}</span><span style='color:#22c55e;font-size:.67rem;line-height:1.4;'>{specific}</span></div>", unsafe_allow_html=True)
-                    st.markdown(f"<div style='color:#22c55e;font-size:.7rem;margin-top:6px;font-style:italic;'>Enter any annotation in the Microbiome workspace → AI expands it to EC-numbered pathways with experimental validation strategies.</div>", unsafe_allow_html=True)
-
-                # Animal models
-                st.markdown(
-                    f"<div style='color:#1e4060;font-size:.69rem;margin:.5rem 0;'>"
-                    f"<span style='color:{dm['color']};font-weight:600;font-size:.68rem;'>Animal models: </span>"
-                    + " · ".join(f"<span style='color:#3a6080;'>{m}</span>" for m in dm["animal_models"])
-                    + "</div>",
-                    unsafe_allow_html=True,
-                )
-
-                # Insight callout
-                st.markdown(
-                    f"<div style='background:{dm['color']}0a;border-left:3px solid {dm['color']};"
-                    f"border-radius:0 8px 8px 0;padding:8px 11px;font-size:.74rem;"
-                    f"color:{dm['color2']};line-height:1.65;margin-top:.4rem;'>"
-                    f"{dm['insight']}</div>",
-                    unsafe_allow_html=True,
-                )
-
-                st.markdown("</div>", unsafe_allow_html=True)
-
-                # Select button
-                if st.button(f"Enter {dk} Workspace →", key=f"dom_enter_{dk}", type="primary", use_container_width=True):
-                    st.session_state["research_domain"] = dk
-                    st.session_state["domain_expanded"] = None
-                    st.rerun()
-
+    # Top row: 3 cards
+    r1 = st.columns(3, gap="medium")
     for i, dk in enumerate(domain_keys[:3]):
-        _domain_card(row1[i], dk)
-    
-    _, mid1, mid2, _ = st.columns([.5, 1, 1, .5])
-    for i, dk in enumerate(domain_keys[3:5]):
-        _domain_card([mid1, mid2][i], dk)
+        ds = DOMAIN_STYLES[dk]
+        with r1[i]:
+            st.markdown(
+                f"<div class='dom-card' style='"
+                f"--card-grad:{ds['grad']};--card-shadow:{ds['shadow']};"
+                f"border-color:{ds['border'].replace('.5','.25')};"
+                f"'>"
+                f"<span class='icon'>{ds['icon']}</span>"
+                f"<div class='name' style='color:{ds["color2"]};'>{dk}</div>"
+                f"<div class='tags' style='color:{ds["color"]};'>{ds['tags']}</div>"
+                f"</div>",
+                unsafe_allow_html=True
+            )
+            if st.button(f"Enter {dk} →", key=f"dom_btn_{dk}", use_container_width=True, type="primary"):
+                st.session_state["research_domain"] = dk
+                st.session_state["_last_domain"] = dk
+                st.rerun()
 
-    st.markdown(
-        "<div style='text-align:center;color:#0a1828;font-size:.72rem;margin-top:1rem;font-style:italic;'>"
-        "Click a domain card once to expand · Click again or use Enter button to open workspace"
-        "</div>",
-        unsafe_allow_html=True,
-    )
+    # Bottom row: 2 cards centred
+    _, b1, b2, _ = st.columns([0.5, 1, 1, 0.5], gap="medium")
+    for i, (dk, col) in enumerate(zip(domain_keys[3:5], [b1, b2])):
+        ds = DOMAIN_STYLES[dk]
+        with col:
+            st.markdown(
+                f"<div class='dom-card' style='"
+                f"--card-grad:{ds['grad']};--card-shadow:{ds['shadow']};"
+                f"border-color:{ds['border'].replace('.5','.25')};"
+                f"'>"
+                f"<span class='icon'>{ds['icon']}</span>"
+                f"<div class='name' style='color:{ds["color2"]};'>{dk}</div>"
+                f"<div class='tags' style='color:{ds["color"]};'>{ds['tags']}</div>"
+                f"</div>",
+                unsafe_allow_html=True
+            )
+            if st.button(f"Enter {dk} →", key=f"dom_btn_{dk}", use_container_width=True, type="primary"):
+                st.session_state["research_domain"] = dk
+                st.session_state["_last_domain"] = dk
+                st.rerun()
+
+    st.markdown("<div class='dom-hint'>Click a card to enter its dedicated workspace · All analyses isolated per domain</div>", unsafe_allow_html=True)
     st.stop()
 
 # Set active research domain into goal context
