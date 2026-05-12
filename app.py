@@ -5414,6 +5414,10 @@ def render_molbio_workspace():
 
 
 # ─── Sidebar ────────────────────────────────────────────────────────
+auth_init()
+if not st.session_state.get('auth_user'):
+    login_page()  # shows login UI and calls st.stop()
+
 for k,v0 in {"pdata":None,"cv":None,"pdb":"","papers":[],"scored":[],"gene":"","uid":"",
              "assay":"","last":"","csv_df":None,"csv_type":"","goal_label":GOAL_OPTIONS[0],
              "goal_custom":"","sensitivity":50,"gi":None,"partner_query":"",
@@ -5542,6 +5546,143 @@ RESEARCH_DOMAINS = {
 }
 
 
+
+# ── Domain selection page ──────────────────────────────────────────────────────
+# ── Domain selection page ──────────────────────────────────────────────────────
+if not st.session_state.get("research_domain"):
+    st.markdown("""
+<style>
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes shimmer{0%{background-position:0%}100%{background-position:200%}}
+@keyframes pulse_ring{0%,100%{transform:scale(1);opacity:.6}50%{transform:scale(1.08);opacity:1}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+
+.dom-page{animation:fadeUp .5s ease;}
+.dom-hero{text-align:center;padding:2.5rem 1rem 2rem;}
+.dom-logo{font-size:3rem;animation:float 3s ease-in-out infinite;}
+.dom-title{
+  font-size:2.6rem;font-weight:900;letter-spacing:-.5px;
+  background:linear-gradient(90deg,#00e5ff 0%,#6366f1 35%,#f43f5e 65%,#00e5ff 100%);
+  background-size:200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  animation:shimmer 4s linear infinite;}
+.dom-sub{color:#1a3a55;font-size:.92rem;margin:.5rem 0 0;}
+
+.dom-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:1100px;margin:0 auto 16px;}
+.dom-grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;max-width:730px;margin:0 auto;}
+
+.dom-card{
+  position:relative;border-radius:16px;padding:1.4rem 1.5rem;cursor:pointer;
+  transition:all .25s cubic-bezier(.4,0,.2,1);overflow:hidden;
+  border:1px solid transparent;background:#010810;}
+.dom-card::before{
+  content:'';position:absolute;inset:0;border-radius:16px;
+  background:var(--card-grad);opacity:0;transition:opacity .25s;}
+.dom-card:hover::before{opacity:1;}
+.dom-card:hover{transform:translateY(-4px);box-shadow:var(--card-shadow);}
+.dom-card .icon{font-size:2rem;margin-bottom:.5rem;display:block;}
+.dom-card .name{font-size:1rem;font-weight:800;margin-bottom:.25rem;}
+.dom-card .tags{font-size:.7rem;line-height:1.6;opacity:.75;}
+.dom-card .enter-btn{
+  display:none;margin-top:.8rem;width:100%;background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.15);color:#fff;padding:6px;border-radius:8px;
+  font-size:.72rem;font-weight:600;cursor:pointer;}
+.dom-card:hover .enter-btn{display:block;}
+
+.dom-hint{text-align:center;color:#071828;font-size:.72rem;margin-top:.5rem;font-style:italic;}
+</style>
+<div class="dom-page">
+<div class="dom-hero">
+  <div class="dom-logo">🔬</div>
+  <div class="dom-title">Protellect</div>
+  <div class="dom-sub">Select your research domain — every analysis and workspace is tailored to your field</div>
+</div>
+</div>
+""", unsafe_allow_html=True)
+
+    DOMAIN_STYLES = {
+        "Neuroscience": {
+            "icon":"🧠","color":"#6366f1","color2":"#818cf8",
+            "grad":"linear-gradient(135deg,rgba(99,102,241,.12),rgba(99,102,241,.04))",
+            "shadow":"0 8px 32px rgba(99,102,241,.25)",
+            "border":"rgba(99,102,241,.5)",
+            "tags":"Synaptic proteins · Neural circuits · BBB · Ion channels · Neurodegeneration"
+        },
+        "Oncology": {
+            "icon":"🎗","color":"#f43f5e","color2":"#fb7185",
+            "grad":"linear-gradient(135deg,rgba(244,63,94,.12),rgba(244,63,94,.04))",
+            "shadow":"0 8px 32px rgba(244,63,94,.25)",
+            "border":"rgba(244,63,94,.5)",
+            "tags":"Metastasis · Early detection · Patient-specific · Driver mutations"
+        },
+        "Pharmaceuticals": {
+            "icon":"💊","color":"#00d4ff","color2":"#38bdf8",
+            "grad":"linear-gradient(135deg,rgba(0,212,255,.12),rgba(0,212,255,.04))",
+            "shadow":"0 8px 32px rgba(0,212,255,.25)",
+            "border":"rgba(0,212,255,.5)",
+            "tags":"GPCR targets · Druggability · HTS · Filamin assay · Clinical pipeline"
+        },
+        "Microbiome": {
+            "icon":"🦠","color":"#22c55e","color2":"#4ade80",
+            "grad":"linear-gradient(135deg,rgba(34,197,94,.12),rgba(34,197,94,.04))",
+            "shadow":"0 8px 32px rgba(34,197,94,.25)",
+            "border":"rgba(34,197,94,.5)",
+            "tags":"Annotation engine · Taxonomy · Host-microbe · BGC · Pathobionts"
+        },
+        "Molecular Biology": {
+            "icon":"⚛️","color":"#f97316","color2":"#fb923c",
+            "grad":"linear-gradient(135deg,rgba(249,115,22,.12),rgba(249,115,22,.04))",
+            "shadow":"0 8px 32px rgba(249,115,22,.25)",
+            "border":"rgba(249,115,22,.5)",
+            "tags":"Phosphorylation · Kinase-substrate · AlphaFold · PTMs · Structural"
+        },
+    }
+
+    domain_keys = list(DOMAIN_STYLES.keys())
+
+    # Top row: 3 cards
+    r1 = st.columns(3, gap="medium")
+    for i, dk in enumerate(domain_keys[:3]):
+        ds = DOMAIN_STYLES[dk]
+        with r1[i]:
+            st.markdown(
+                f"<div class='dom-card' style='"
+                f"--card-grad:{ds['grad']};--card-shadow:{ds['shadow']};"
+                f"border-color:{ds['border'].replace('.5','.25')};"
+                f"'>"
+                f"<span class='icon'>{ds['icon']}</span>"
+                f"<div class='name' style='color:{ds["color2"]};'>{dk}</div>"
+                f"<div class='tags' style='color:{ds["color"]};'>{ds['tags']}</div>"
+                f"</div>",
+                unsafe_allow_html=True
+            )
+            if st.button(f"Enter {dk} →", key=f"dom_btn_{dk}", use_container_width=True, type="primary"):
+                st.session_state["research_domain"] = dk
+                st.session_state["_last_domain"] = dk
+                st.rerun()
+
+    # Bottom row: 2 cards centred
+    _, b1, b2, _ = st.columns([0.5, 1, 1, 0.5], gap="medium")
+    for i, (dk, col) in enumerate(zip(domain_keys[3:5], [b1, b2])):
+        ds = DOMAIN_STYLES[dk]
+        with col:
+            st.markdown(
+                f"<div class='dom-card' style='"
+                f"--card-grad:{ds['grad']};--card-shadow:{ds['shadow']};"
+                f"border-color:{ds['border'].replace('.5','.25')};"
+                f"'>"
+                f"<span class='icon'>{ds['icon']}</span>"
+                f"<div class='name' style='color:{ds["color2"]};'>{dk}</div>"
+                f"<div class='tags' style='color:{ds["color"]};'>{ds['tags']}</div>"
+                f"</div>",
+                unsafe_allow_html=True
+            )
+            if st.button(f"Enter {dk} →", key=f"dom_btn_{dk}", use_container_width=True, type="primary"):
+                st.session_state["research_domain"] = dk
+                st.session_state["_last_domain"] = dk
+                st.rerun()
+
+    st.markdown("<div class='dom-hint'>Click a card to enter its dedicated workspace · All analyses isolated per domain</div>", unsafe_allow_html=True)
+    st.stop()
 
 with st.sidebar:
     _rd_sb = st.session_state.get("research_domain","")
@@ -6306,149 +6447,11 @@ def render_molbio_workspace():
                 f"<b style='color:#f97316;'>Recommended: </b>{recs_s}</div>", unsafe_allow_html=True)
 
 
-auth_init()
-if not st.session_state.get('auth_user'):
-    login_page()  # shows login UI and calls st.stop()
 
 # ─── Session state ──────────────────────────────────────────────────
 
 # ── Research domain registry ─────────────────────────────────────────────────
-# ── Domain selection page ──────────────────────────────────────────────────────
-# ── Domain selection page ──────────────────────────────────────────────────────
-if not st.session_state.get("research_domain"):
-    st.markdown("""
-<style>
-@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-@keyframes shimmer{0%{background-position:0%}100%{background-position:200%}}
-@keyframes pulse_ring{0%,100%{transform:scale(1);opacity:.6}50%{transform:scale(1.08);opacity:1}}
-@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 
-.dom-page{animation:fadeUp .5s ease;}
-.dom-hero{text-align:center;padding:2.5rem 1rem 2rem;}
-.dom-logo{font-size:3rem;animation:float 3s ease-in-out infinite;}
-.dom-title{
-  font-size:2.6rem;font-weight:900;letter-spacing:-.5px;
-  background:linear-gradient(90deg,#00e5ff 0%,#6366f1 35%,#f43f5e 65%,#00e5ff 100%);
-  background-size:200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
-  animation:shimmer 4s linear infinite;}
-.dom-sub{color:#1a3a55;font-size:.92rem;margin:.5rem 0 0;}
-
-.dom-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:1100px;margin:0 auto 16px;}
-.dom-grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;max-width:730px;margin:0 auto;}
-
-.dom-card{
-  position:relative;border-radius:16px;padding:1.4rem 1.5rem;cursor:pointer;
-  transition:all .25s cubic-bezier(.4,0,.2,1);overflow:hidden;
-  border:1px solid transparent;background:#010810;}
-.dom-card::before{
-  content:'';position:absolute;inset:0;border-radius:16px;
-  background:var(--card-grad);opacity:0;transition:opacity .25s;}
-.dom-card:hover::before{opacity:1;}
-.dom-card:hover{transform:translateY(-4px);box-shadow:var(--card-shadow);}
-.dom-card .icon{font-size:2rem;margin-bottom:.5rem;display:block;}
-.dom-card .name{font-size:1rem;font-weight:800;margin-bottom:.25rem;}
-.dom-card .tags{font-size:.7rem;line-height:1.6;opacity:.75;}
-.dom-card .enter-btn{
-  display:none;margin-top:.8rem;width:100%;background:rgba(255,255,255,.07);
-  border:1px solid rgba(255,255,255,.15);color:#fff;padding:6px;border-radius:8px;
-  font-size:.72rem;font-weight:600;cursor:pointer;}
-.dom-card:hover .enter-btn{display:block;}
-
-.dom-hint{text-align:center;color:#071828;font-size:.72rem;margin-top:.5rem;font-style:italic;}
-</style>
-<div class="dom-page">
-<div class="dom-hero">
-  <div class="dom-logo">🔬</div>
-  <div class="dom-title">Protellect</div>
-  <div class="dom-sub">Select your research domain — every analysis and workspace is tailored to your field</div>
-</div>
-</div>
-""", unsafe_allow_html=True)
-
-    DOMAIN_STYLES = {
-        "Neuroscience": {
-            "icon":"🧠","color":"#6366f1","color2":"#818cf8",
-            "grad":"linear-gradient(135deg,rgba(99,102,241,.12),rgba(99,102,241,.04))",
-            "shadow":"0 8px 32px rgba(99,102,241,.25)",
-            "border":"rgba(99,102,241,.5)",
-            "tags":"Synaptic proteins · Neural circuits · BBB · Ion channels · Neurodegeneration"
-        },
-        "Oncology": {
-            "icon":"🎗","color":"#f43f5e","color2":"#fb7185",
-            "grad":"linear-gradient(135deg,rgba(244,63,94,.12),rgba(244,63,94,.04))",
-            "shadow":"0 8px 32px rgba(244,63,94,.25)",
-            "border":"rgba(244,63,94,.5)",
-            "tags":"Metastasis · Early detection · Patient-specific · Driver mutations"
-        },
-        "Pharmaceuticals": {
-            "icon":"💊","color":"#00d4ff","color2":"#38bdf8",
-            "grad":"linear-gradient(135deg,rgba(0,212,255,.12),rgba(0,212,255,.04))",
-            "shadow":"0 8px 32px rgba(0,212,255,.25)",
-            "border":"rgba(0,212,255,.5)",
-            "tags":"GPCR targets · Druggability · HTS · Filamin assay · Clinical pipeline"
-        },
-        "Microbiome": {
-            "icon":"🦠","color":"#22c55e","color2":"#4ade80",
-            "grad":"linear-gradient(135deg,rgba(34,197,94,.12),rgba(34,197,94,.04))",
-            "shadow":"0 8px 32px rgba(34,197,94,.25)",
-            "border":"rgba(34,197,94,.5)",
-            "tags":"Annotation engine · Taxonomy · Host-microbe · BGC · Pathobionts"
-        },
-        "Molecular Biology": {
-            "icon":"⚛️","color":"#f97316","color2":"#fb923c",
-            "grad":"linear-gradient(135deg,rgba(249,115,22,.12),rgba(249,115,22,.04))",
-            "shadow":"0 8px 32px rgba(249,115,22,.25)",
-            "border":"rgba(249,115,22,.5)",
-            "tags":"Phosphorylation · Kinase-substrate · AlphaFold · PTMs · Structural"
-        },
-    }
-
-    domain_keys = list(DOMAIN_STYLES.keys())
-
-    # Top row: 3 cards
-    r1 = st.columns(3, gap="medium")
-    for i, dk in enumerate(domain_keys[:3]):
-        ds = DOMAIN_STYLES[dk]
-        with r1[i]:
-            st.markdown(
-                f"<div class='dom-card' style='"
-                f"--card-grad:{ds['grad']};--card-shadow:{ds['shadow']};"
-                f"border-color:{ds['border'].replace('.5','.25')};"
-                f"'>"
-                f"<span class='icon'>{ds['icon']}</span>"
-                f"<div class='name' style='color:{ds["color2"]};'>{dk}</div>"
-                f"<div class='tags' style='color:{ds["color"]};'>{ds['tags']}</div>"
-                f"</div>",
-                unsafe_allow_html=True
-            )
-            if st.button(f"Enter {dk} →", key=f"dom_btn_{dk}", use_container_width=True, type="primary"):
-                st.session_state["research_domain"] = dk
-                st.session_state["_last_domain"] = dk
-                st.rerun()
-
-    # Bottom row: 2 cards centred
-    _, b1, b2, _ = st.columns([0.5, 1, 1, 0.5], gap="medium")
-    for i, (dk, col) in enumerate(zip(domain_keys[3:5], [b1, b2])):
-        ds = DOMAIN_STYLES[dk]
-        with col:
-            st.markdown(
-                f"<div class='dom-card' style='"
-                f"--card-grad:{ds['grad']};--card-shadow:{ds['shadow']};"
-                f"border-color:{ds['border'].replace('.5','.25')};"
-                f"'>"
-                f"<span class='icon'>{ds['icon']}</span>"
-                f"<div class='name' style='color:{ds["color2"]};'>{dk}</div>"
-                f"<div class='tags' style='color:{ds["color"]};'>{ds['tags']}</div>"
-                f"</div>",
-                unsafe_allow_html=True
-            )
-            if st.button(f"Enter {dk} →", key=f"dom_btn_{dk}", use_container_width=True, type="primary"):
-                st.session_state["research_domain"] = dk
-                st.session_state["_last_domain"] = dk
-                st.rerun()
-
-    st.markdown("<div class='dom-hint'>Click a card to enter its dedicated workspace · All analyses isolated per domain</div>", unsafe_allow_html=True)
-    st.stop()
 
 # Set active research domain into goal context
 _rd = st.session_state.get("research_domain", "Molecular Biology")
