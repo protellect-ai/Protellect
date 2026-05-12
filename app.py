@@ -5442,28 +5442,28 @@ if _rd_final == "Oncology":
 
 elif _rd_final == "Neuroscience":
     if not _pdata_f:
-        render_neuroscience_workspace()
+        render_neuroscience_workspace(); st.stop()
     else:
         with st.expander("🧠 Neuroscience Workspace", expanded=False):
             render_neuroscience_workspace()
 
 elif _rd_final == "Microbiome":
     if not _pdata_f:
-        render_microbiome_workspace()
+        render_microbiome_workspace(); st.stop()
     else:
         with st.expander("🦠 Microbiome Workspace", expanded=False):
             render_microbiome_workspace()
 
 elif _rd_final == "Pharmaceuticals":
     if not _pdata_f:
-        render_pharma_workspace()
+        render_pharma_workspace(); st.stop()
     else:
         with st.expander("💊 Pharmaceuticals Workspace", expanded=False):
             render_pharma_workspace()
 
 elif _rd_final == "Molecular Biology":
     if not _pdata_f:
-        render_molbio_workspace()
+        render_molbio_workspace(); st.stop()
     else:
         with st.expander("⚛️ Molecular Biology Workspace", expanded=False):
             render_molbio_workspace()
@@ -7062,11 +7062,11 @@ if st.session_state["csv_df"] is not None and not st.session_state["pdata"]:
 # Domain routing handled above
 
 # ─── Main variables ──────────────────────────────────────────────────
-pdata=st.session_state["pdata"]; cv=st.session_state["cv"]
+pdata=st.session_state.get("pdata") or {}; cv=st.session_state.get("cv") or {}
 pdb=st.session_state["pdb"]; papers=st.session_state["papers"]
 scored=st.session_state["scored"]; gene=st.session_state["gene"]
 assay=st.session_state["assay"]; uid=st.session_state["uid"]
-summary=cv.get("summary",{}); variants=cv.get("variants",[])
+cv = cv or {}; summary=cv.get("summary",{}); variants=cv.get("variants",[])
 diseases=g_diseases(pdata)
 # Enrich diseases with ClinVar conditions not in UniProt
 _cv_disease_names = set(d["name"] for d in diseases)
