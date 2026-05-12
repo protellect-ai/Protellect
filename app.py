@@ -5055,6 +5055,362 @@ def render_oncology_panel(gene, pdata, cv, scored, gi, gnomad, ot_data, am_score
 
 # ── Wire up domain-specific panels into existing tabs ────────────────────────
 # These are called conditionally based on research_domain
+def render_microbiome_page():
+    """Comprehensive microbiome intelligence — annotation engine + taxonomy KB."""
+    sh("🦠", "Microbiome Intelligence Platform")
+    
+    mic_tabs = st.tabs(["🔬 Annotation Engine", "🌳 Taxonomy Intelligence", "🔗 Host-Microbe Interactions", "🧪 BGC Analysis"])
+
+    # ── Tab 1: Annotation Engine ─────────────────────────────────────────────
+    with mic_tabs[0]:
+        sh("⚡", "Vague → Specific Annotation Engine")
+        st.markdown(
+            "<div style='background:#010810;border:1px solid #071828;border-radius:10px;padding:10px 14px;margin-bottom:.8rem;'>"
+            "<div style='color:#22c55e;font-weight:700;font-size:.84rem;margin-bottom:4px;'>The PI's Problem — Solved</div>"
+            "<div style='color:#3a6080;font-size:.78rem;line-height:1.65;'>"
+            "Metagenomic functional annotation returns vague terms: 'biosynthesis', 'chemosynthesis', 'protein aggregation' — "
+            "these tell you nothing actionable. This engine converts every vague annotation into specific EC-numbered pathways, "
+            "molecular mechanisms, validated assays, and database cross-references. No annotation left unknown."
+            "</div></div>",
+            unsafe_allow_html=True,
+        )
+        
+        col_ann1, col_ann2 = st.columns([1, 1])
+        with col_ann1:
+            vague_input = st.text_input("Paste vague annotation", placeholder="e.g. biosynthesis · chemosynthesis · hypothetical protein · metabolism", key="mic_vague")
+            gene_id = st.text_input("Gene ID (KO/EC/accession, optional)", placeholder="K01810 · WP_001234 · EC:4.2.1.16", key="mic_gid")
+            organism_ctx = st.text_input("Organism context (optional)", placeholder="gut microbiome · soil metagenome · marine", key="mic_org")
+            api_key_mic = st.session_state.get("anthropic_key","")
+            run_ann = st.button("⚡ Resolve Annotation", type="primary", key="mic_run", use_container_width=True)
+
+        with col_ann2:
+            st.markdown(
+                "<div style='background:#010810;border:1px solid #071828;border-radius:8px;padding:9px 12px;'>"
+                "<div style='color:#00e5ff;font-size:.74rem;font-weight:700;margin-bottom:5px;'>Supported vague terms</div>"
+                + "".join(f"<div style='color:#1e4060;font-size:.69rem;padding:2px 0;border-bottom:1px solid #050e18;'>• {k.title()}</div>" for k in VAGUE_TO_SPECIFIC.keys())
+                + "</div>",
+                unsafe_allow_html=True,
+            )
+
+        if run_ann and vague_input:
+            vl = vague_input.lower().strip()
+            result_text = ""
+            matched = False
+
+            # Rule-based resolution
+            for vague_key, vague_val in VAGUE_TO_SPECIFIC.items():
+                if vague_key in vl:
+                    matched = True
+                    # Check for sub-types
+                    sub_match = next((v for k, v in vague_val.items() if k != "general" and k in vl), None)
+                    result_text = sub_match or vague_val.get("general", "")
+                    break
+
+            # AI enhancement if available
+            if api_key_mic:
+                try:
+                    import anthropic as _anthro
+                    _client = _anthro.Anthropic(api_key=api_key_mic)
+                    _msg = _client.messages.create(
+                        model="claude-sonnet-4-20250514", max_tokens=800,
+                        messages=[{"role":"user","content":
+                            f"Vague annotation: '{vague_input}'\nGene ID: {gene_id or 'unknown'}\nOrganism: {organism_ctx or 'unknown'}\n\n"
+                            "Provide: (1) Specific molecular function with EC number(s), (2) metabolic pathway name + KEGG pathway ID, "
+                            "(3) biochemical mechanism (substrates → products), (4) diagnostic assay to confirm, (5) ecological role. "
+                            "Be precise. Use EC numbers. No vague terms. If truly unknown, state what experiment resolves it."}]
+                    )
+                    ai_result = _msg.content[0].text
+                    result_text = f"**AI-Enhanced Annotation:**\n\n{ai_result}"
+                    if not matched:
+                        result_text += f"\n\n**Rule-base says:** No direct match — apply eggNOG-mapper v2 + InterProScan pipeline."
+                except Exception as e:
+                    if not matched:
+                        result_text = f"No rule-base match for '{vague_input}'. Add Anthropic API key for AI-powered annotation."
+
+            if result_text:
+                # Before/After comparison
+                col_b, col_a = st.columns(2)
+                with col_b:
+                    st.markdown(
+                        f"<div style='background:#0a0300;border:1px solid #ff2d5522;border-radius:8px;padding:9px 12px;height:100%;'>"
+                        f"<div style='color:#ff2d55;font-size:.7rem;font-weight:700;margin-bottom:4px;'>❌ BEFORE (Vague)</div>"
+                        f"<div style='color:#804050;font-size:.82rem;font-style:italic;'>{vague_input}</div>"
+                        f"<div style='color:#3a2020;font-size:.69rem;margin-top:5px;'>No actionable information. Cannot direct experimental design. Cannot link to database.</div>"
+                        f"</div>",
+                        unsafe_allow_html=True,
+                    )
+                with col_a:
+                    st.markdown(
+                        f"<div style='background:#000a03;border:1px solid #22c55e22;border-radius:8px;padding:9px 12px;height:100%;'>"
+                        f"<div style='color:#22c55e;font-size:.7rem;font-weight:700;margin-bottom:4px;'>✅ AFTER (Specific)</div>"
+                        f"<div style='color:#4a8060;font-size:.77rem;line-height:1.7;white-space:pre-wrap;'>{result_text}</div>"
+                        f"</div>",
+                        unsafe_allow_html=True,
+                    )
+            else:
+                st.warning(f"'{vague_input}' not in rule base. Add Anthropic API key for AI annotation, or try: biosynthesis · chemosynthesis · transport · metabolism · regulation · hypothetical protein")
+
+        # Batch annotation tool
+        st.markdown("<hr class='dv'>", unsafe_allow_html=True)
+        sh("📊", "Batch Annotation Quality Assessment")
+        batch_input = st.text_area("Paste annotations (one per line)", height=100, key="mic_batch",
+                                   placeholder="lipid biosynthesis\nhypothetical protein\nprotein aggregation\ntransport")
+        if st.button("Assess Batch Quality", key="mic_batch_run") and batch_input:
+            lines_b = [l.strip() for l in batch_input.splitlines() if l.strip()]
+            vague_terms = set(VAGUE_TO_SPECIFIC.keys()) | {"unknown","uncharacterized","putative","possible","predicted","conserved"}
+            vague_count = sum(1 for l in lines_b if any(v in l.lower() for v in vague_terms))
+            spec_count = len(lines_b) - vague_count
+            
+            c1b, c2b, c3b, c4b = st.columns(4)
+            c1b.metric("Total annotations", len(lines_b))
+            c2b.metric("Vague (actionable after engine)", vague_count)
+            c3b.metric("Informative", spec_count)
+            c4b.metric("Quality score", f"{spec_count/max(len(lines_b),1)*100:.0f}%")
+            
+            for line in lines_b:
+                is_vague = any(v in line.lower() for v in vague_terms)
+                col_v = "#ff2d55" if is_vague else "#22c55e"
+                icon_v = "❌" if is_vague else "✅"
+                matched_key = next((k for k in VAGUE_TO_SPECIFIC if k in line.lower()), None)
+                resolution = " → " + VAGUE_TO_SPECIFIC[matched_key]["general"][:80] + "…" if matched_key else ""
+                st.markdown(
+                    f"<div style='font-size:.74rem;padding:3px 0;border-bottom:1px solid #050e18;display:flex;gap:6px;align-items:baseline;'>"
+                    f"<span style='color:{col_v};'>{icon_v}</span>"
+                    f"<span style='color:#5a8090;'>{line}</span>"
+                    f"<span style='color:#1e4060;font-size:.67rem;'>{resolution}</span>"
+                    f"</div>",
+                    unsafe_allow_html=True,
+                )
+
+    # ── Tab 2: Taxonomy Intelligence ─────────────────────────────────────────
+    with mic_tabs[1]:
+        sh("🌳", "Microbial Taxonomy Intelligence")
+        st.markdown("<div style='color:#3a6080;font-size:.8rem;margin-bottom:.7rem;'>Curated knowledge base: what each microbe does, its ecological role, clinical significance, and host interactions. Updated with 2020–2025 literature.</div>", unsafe_allow_html=True)
+
+        search_tax = st.text_input("Search microbe genus/species", placeholder="e.g. Akkermansia · Fusobacterium · Helicobacter", key="mic_tax_search")
+        
+        # Show matching microbes
+        display_taxa = {k: v for k, v in MICROBE_TAXONOMY_KB.items() 
+                        if not search_tax or search_tax.lower() in k.lower() or search_tax.lower() in v.get("full_name","").lower()}
+        
+        for genus, info in list(display_taxa.items())[:8]:
+            clr = info.get("color","#3a6080")
+            with st.expander(f"{info['full_name']}  ·  {info['phylum']}", expanded=(len(display_taxa)==1)):
+                col_t1, col_t2 = st.columns([1.2, 0.8])
+                with col_t1:
+                    st.markdown(
+                        f"<div style='background:#010810;border-left:3px solid {clr};padding:8px 12px;border-radius:0 8px 8px 0;margin-bottom:7px;'>"
+                        f"<div style='color:{clr};font-weight:700;font-size:.84rem;margin-bottom:3px;'>{info['full_name']}</div>"
+                        f"<div style='color:#1e4060;font-size:.72rem;'>{info['phylum']}</div>"
+                        f"<div style='color:#3a6080;font-size:.72rem;margin-top:2px;'>🌍 {info['ecology']}</div>"
+                        f"</div>",
+                        unsafe_allow_html=True,
+                    )
+                    st.markdown(f"<div style='color:{clr};font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px;'>Key Functions</div>", unsafe_allow_html=True)
+                    for fn in info.get("key_functions",[]):
+                        st.markdown(f"<div style='color:#4a7090;font-size:.75rem;padding:2px 0;border-bottom:1px solid #050e18;'>• {fn}</div>", unsafe_allow_html=True)
+                with col_t2:
+                    st.markdown(
+                        f"<div style='background:#010810;border:1px solid {clr}33;border-radius:8px;padding:9px 12px;'>"
+                        f"<div style='color:{clr};font-size:.72rem;font-weight:700;margin-bottom:5px;'>🏥 Clinical Significance</div>"
+                        f"<div style='color:#3a6080;font-size:.75rem;line-height:1.65;'>{info.get('clinical','')}</div>"
+                        f"</div>",
+                        unsafe_allow_html=True,
+                    )
+                    # Animated microbe visualisation
+                    components.html(f"""
+<style>body{{margin:0;background:#010810;display:flex;align-items:center;justify-content:center;height:100px;}}</style>
+<canvas id="mc_{genus[:4]}" width="200" height="95"></canvas>
+<script>
+const c=document.getElementById('mc_{genus[:4]}'),x=c.getContext('2d');let t=0;
+function dr(){{
+x.clearRect(0,0,200,95);
+// Draw microbe body
+const r=28;x.beginPath();x.ellipse(100,47,r+Math.sin(t*.5)*3,r*.6,0,0,Math.PI*2);
+x.fillStyle='{clr}22';x.fill();x.strokeStyle='{clr}88';x.lineWidth=2;x.stroke();
+// Flagella
+for(let i=0;i<3;i++){{
+  const fx=100+(r+2)*Math.cos(i*Math.PI*2/3+t*.2);
+  const fy=47+(r*.6)*Math.sin(i*Math.PI*2/3+t*.2);
+  x.beginPath();x.moveTo(fx,fy);
+  x.bezierCurveTo(fx+25*Math.cos(i+t*.3),fy+15*Math.sin(i+t*.2),
+    fx+40*Math.cos(i+t*.1),fy+20*Math.sin(i+t*.4),fx+55*Math.cos(i),fy+8*Math.sin(i));
+  x.strokeStyle='{clr}55';x.lineWidth=1.5;x.stroke();
+}}
+// Ribosomes
+for(let i=0;i<6;i++){{
+  const rx=100+15*Math.cos(i*Math.PI*2/6+t*.1);
+  const ry=47+8*Math.sin(i*Math.PI*2/6+t*.1);
+  x.beginPath();x.arc(rx,ry,2.5,0,Math.PI*2);x.fillStyle='{clr}cc';x.fill();
+}}
+// Name
+x.fillStyle='{clr}';x.font='bold 9px Inter,sans-serif';x.textAlign='center';
+x.fillText('{genus}',100,88);
+t+=0.04;requestAnimationFrame(dr);
+}}
+dr();
+</script>""", height=100, scrolling=False)
+
+    # ── Tab 3: Host-Microbe Interactions ─────────────────────────────────────
+    with mic_tabs[2]:
+        sh("🔗", "Host-Microbe Interaction Atlas")
+        interactions = [
+            ("CsgA (Curli)", "TLR2/TLR1", "#ff2d55", "Curli fibrils activate TLR2/TLR1 → NF-κB → IL-6/TNFα. E. coli/Salmonella biofilm → colitis, systemic inflammation. Block: anti-CsgA antibody or curli inhibitor (pilicide/curlicide)."),
+            ("FadA (Fusobacterium)", "E-cadherin (CDH1)", "#ff2d55", "FadA adhesin binds E-cadherin → β-catenin nuclear translocation → Wnt pathway → CRC driver. Validated in patient tumour samples. FadA peptide inhibitor tested in organoids."),
+            ("LPS (O-antigen)", "TLR4/MD-2", "#ff8c42", "Gram-negative LPS → TLR4 dimerisation → MyD88/TRIF → NF-κB + IRF3 → cytokine storm. Lipid A structure determines potency. LPS-leakage from dysbiotic gut → metabolic endotoxaemia."),
+            ("PSA (Bacteroides fragilis)", "TLR2", "#22c55e", "Polysaccharide A from B. fragilis → TLR2 → Treg induction → IL-10 production → tolerance. Protective in gnotobiotic models. Capsule-specific and symbiont-specific."),
+            ("CagA (H. pylori)", "SRC/ABL kinases", "#ff2d55", "CagA injected via T4SS → EPIYA phosphorylation by Src → SHP-2 activation → RAS/ERK → cell proliferation. CagA-positive strains 5× higher gastric cancer risk."),
+            ("SCFA (Butyrate)", "GPR41/GPR43/HCA2", "#22c55e", "Bacterially-produced butyrate → GPR43 on colonocytes (energy) + HCA2 (niacin receptor) on macrophages → PPARγ → anti-inflammation. Primary energy source for colonocytes. Depleted in IBD."),
+            ("BilR (bile salt hydrolase)", "FXR/TGR5", "#4a90d9", "BSH enzyme deconjugates primary bile acids → secondary bile acids (DCA, LCA) → FXR/TGR5 → GLP-1 secretion, lipid metabolism. Modulates microbiome composition + metabolic syndrome."),
+            ("Indole/Serotonin", "AhR/5-HT3/4", "#a855f7", "Tryptophan → indole/IPA (Bacteroides/Lactobacillus) → AhR → gut barrier + IL-22. Enterochromaffin cells: tryptophan → 5-HT → bowel motility. Serotonin pathway alteration in IBS/depression."),
+        ]
+        for iname, receptor, iclr, desc in interactions:
+            st.markdown(
+                f"<div style='background:#010810;border:1px solid {iclr}22;border-radius:9px;padding:9px 12px;margin:.3rem 0;display:flex;gap:10px;'>"
+                f"<div style='flex:0;min-width:90px;text-align:center;'>"
+                f"<div style='color:{iclr};font-size:.72rem;font-weight:700;'>{iname}</div>"
+                f"<div style='color:#3a6080;font-size:.62rem;'>↓</div>"
+                f"<div style='color:#00e5ff;font-size:.69rem;font-weight:600;'>{receptor}</div>"
+                f"</div>"
+                f"<div style='color:#3a6080;font-size:.77rem;line-height:1.65;border-left:2px solid {iclr}33;padding-left:10px;'>{desc}</div>"
+                f"</div>",
+                unsafe_allow_html=True,
+            )
+
+    # ── Tab 4: BGC Analysis ──────────────────────────────────────────────────
+    with mic_tabs[3]:
+        sh("🧪", "Biosynthetic Gene Cluster (BGC) Analysis")
+        st.markdown("<div style='color:#3a6080;font-size:.8rem;margin-bottom:.6rem;'>BGC types, detection tools, and predicted products. Cross-reference with MiBIG database for known clusters.</div>", unsafe_allow_html=True)
+        bgc_types = [
+            ("Type I PKS", "#ff8c42", "Modular polyketide synthase. Multi-domain assembly line: KS-AT-DH-KR-ACP. Produces: erythromycin, rapamycin, epothilone. Detect: antiSMASH pks1 rule. Signature: AT acyltransferase domain substrate specificity."),
+            ("NRPS", "#4a90d9", "Non-ribosomal peptide synthetase. A-T-C domain cycle: adenylation → thiolation → condensation. Produces: vancomycin, cyclosporin, penicillin. Contains non-standard amino acids. Detect: NRPS-specific A domain."),
+            ("RiPP", "#22c55e", "Ribosomally synthesised and post-translationally modified peptide. Includes: lanthipeptides (nisin), thiopeptides (thiostrepton), bacteriocins, lasso peptides. Detect by: core peptide + modification enzymes."),
+            ("Terpene", "#a855f7", "Isoprenoid-derived: monoterpenes (C10), sesquiterpenes (C15), diterpenes (C20), triterpenes (C30). MVA or MEP/DXP pathway. Produces: hopanoids, carotenoids, ent-kaurene. Detect: terpene synthase (Pfam PF00494)."),
+            ("Type II PKS", "#ffd60a", "Iterative aromatic PKS. Minimal PKS: KSα-KSβ-ACP. Produces: tetracyclines, doxorubicin, actinorhodin. One set of enzymes used iteratively — different from Type I. Detect: CLF/KSβ conserved domain."),
+            ("Aryl polyene", "#ff2d55", "Flexirubin/aryl polyene pigments. Common in Bacteroidetes gut bacteria. Colour-producing. Photoprotective role. Detect: ApeA/ApeB homologs."),
+        ]
+        for bgc_name, bgc_clr, bgc_desc in bgc_types:
+            with st.expander(f"{bgc_name}"):
+                st.markdown(f"<div style='color:#4a7090;font-size:.78rem;line-height:1.65;border-left:2px solid {bgc_clr};padding-left:8px;'>{bgc_desc}</div>", unsafe_allow_html=True)
+                st.markdown(f"<a href='https://antismash.secondarymetabolites.org' target='_blank' style='color:#2a6080;font-size:.72rem;'>antiSMASH ↗</a> <a href='https://mibig.secondarymetabolites.org' target='_blank' style='color:#2a6080;font-size:.72rem;'>MiBIG ↗</a>", unsafe_allow_html=True)
+
+# ════════════════════════════════════════════════════════════════════════════
+#  ONCOLOGY-SPECIFIC FEATURES
+# ════════════════════════════════════════════════════════════════════════════
+
+def render_microbiome_workspace():
+    """Microbiome workspace — delegates to render_microbiome_page."""
+    render_microbiome_page()
+
+
+
+def render_pharma_workspace():
+    """Pharmaceuticals workspace — GPCR pipeline, druggability calculator, drug development guide."""
+    st.markdown("""
+    <div style='background:linear-gradient(135deg,#000810,#001520);border:1px solid #00d4ff33;
+      border-radius:14px;padding:1.1rem 1.4rem;margin-bottom:1rem;'>
+      <div style='font-size:1.3rem;font-weight:800;color:#00d4ff;margin-bottom:4px;'>
+        💊 Drug Discovery Platform</div>
+      <div style='color:#003a50;font-size:.82rem;line-height:1.6;'>
+        GPCR Filamin piggyback assay, druggability scoring, ADMET rules, HTS pipeline, and clinical development timeline.
+        Search a protein in the sidebar for full tractability + variant analysis.
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    ph1, ph2 = st.columns(2)
+    with ph1:
+        sh("★", "Filamin Piggyback Assay Protocol")
+        steps_filamin = [
+            ("Day 1", "Co-immunoprecipitate FLNA from GPCR-expressing cells (HEK293 or native tissue). Use anti-FLNA Ig21 antibody (Millipore clone 3/F9)."),
+            ("Day 2", "Western blot for pSer2152-FLNA (anti-pSer2152; Cell Signalling #4761). Quantify pSer2152/total FLNA ratio."),
+            ("Day 3", "Add GPCR agonist dose-response (0.1nM – 10μM). Calculate EC50 for Ser2152 phosphorylation."),
+            ("Day 4", "Confirm specificity: PKA inhibitor (H89) should abolish signal. Compare to cAMP HTRF EC50 in parallel."),
+            ("Interpretation", "Ser2152 phosphorylation = proximal GPCR activation readout (more proximal than β-arrestin or cAMP). Works for ~300 Class A GPCRs carrying H8 motif."),
+        ]
+        for day, detail in steps_filamin:
+            st.markdown(f"<div style='display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #050e18;'><span style='color:#00d4ff;font-size:.68rem;font-weight:700;min-width:75px;'>{day}</span><span style='color:#3a6080;font-size:.72rem;line-height:1.55;'>{detail}</span></div>", unsafe_allow_html=True)
+        st.markdown("<a href='https://pubmed.ncbi.nlm.nih.gov/26124276/' target='_blank' style='color:#00d4ff;font-size:.7rem;'>PMID:26124276 ↗</a>", unsafe_allow_html=True)
+
+    with ph2:
+        sh("📋", "ADMET Rules & Drug Development Gates")
+        admet = [
+            ("Lipinski Ro5", "MW<500, cLogP<5, HBD≤5, HBA≤10", "Oral bioavailability gate"),
+            ("Veber", "PSA<140Å², rotatable bonds≤10", "Intestinal permeability"),
+            ("CNS (MPO)", "cLogP 1–3, MW<450, pKa<10, HBD≤3, PSA<90", "Blood-brain barrier penetrance"),
+            ("hERG", "IC50 > 30× free Cmax", "Cardiac safety — avoid QT prolongation"),
+            ("CYP3A4", "Not strong inhibitor (IC50>1μM)", "Drug-drug interaction liability"),
+            ("CYP2D6", "Not substrate if CYP2D6 metaboliser variation risk", "PGx safety"),
+            ("Plasma protein binding", "Aim fu>1%", "High PPB → low free drug"),
+            ("Caco-2 Papp", ">10×10⁻⁶ cm/s = good absorption", "Intestinal epithelial permeability"),
+            ("Microsomal stability", "t1/2 >60min (human LM)", "Metabolic stability"),
+            ("Ames test", "Negative", "Genotoxicity — IND-enabling requirement"),
+        ]
+        for rule, criteria, note in admet:
+            st.markdown(f"<div style='display:flex;gap:6px;padding:3px 0;border-bottom:1px solid #050e18;'><span style='color:#00d4ff;font-size:.67rem;min-width:120px;font-weight:600;'>{rule}</span><span style='color:#3a6080;font-size:.67rem;'>{criteria} <span style='color:#1e4060;'>({note})</span></span></div>", unsafe_allow_html=True)
+
+    sh("🗓️", "Drug Development Timeline")
+    timeline = [
+        ("Target ID + Validation", "Year 0–1", "#00e5ff", "Genomic Integrity Score, ClinVar P/LP, AlphaMissense, pLI, OpenTargets tractability. Validate with variant biochemical assay (WT vs P/LP)."),
+        ("Hit Discovery", "Year 1–3", "#4a90d9", "Fragment screen (FBDD, MW<300) OR HTS (100K–1M compounds). TSA engagement (ΔTm>3°C). SPR confirmation. Hit rate ~0.1–1%."),
+        ("Lead Optimisation", "Year 3–5", "#6366f1", "Medicinal chemistry: potency↑, selectivity↑, ADMET↑. Ro5 compliance. Selectivity panel (KINOMEscan/GPCRome). hERG safety. Rat PK (F%, t1/2, Cmax)."),
+        ("Preclinical / IND-enabling", "Year 5–7", "#a855f7", "GLP toxicology (rat+dog 28-day). GLP safety pharmacology (hERG, CNS, respiratory). CMC development. IND submission to FDA/EMA."),
+        ("Phase I (FIH safety)", "Year 7–9", "#ff8c42", "First-in-human. Dose escalation (DLT). PK/PD. MTD. ~20–80 healthy volunteers or patients. Duration: 1–2 years."),
+        ("Phase II (efficacy signal)", "Year 9–12", "#ff8c42", "Proof-of-concept in patients. Dose selection. Biomarker validation. ~100–300 patients. 2–3 years."),
+        ("Phase III (pivotal)", "Year 12–15", "#ff2d55", "Randomised controlled trial vs SoC. Regulatory endpoint. ~500–3000 patients. 3–4 years. $200–800M."),
+        ("Regulatory review → Approval", "Year 15–17", "#22c55e", "NDA/BLA/MAA filing. Priority review if rare disease/breakthrough. FDA review 10–12 months. Post-marketing commitments."),
+    ]
+    tl_cols = st.columns(4)
+    for ti, (phase, years, tclr, tdesc) in enumerate(timeline):
+        with tl_cols[ti % 4]:
+            st.markdown(f"<div style='background:#010810;border:1px solid {tclr}33;border-top:3px solid {tclr};border-radius:8px;padding:8px 10px;margin:4px 0;height:140px;overflow:hidden;'><div style='color:{tclr};font-size:.7rem;font-weight:700;'>{phase}</div><div style='color:#1e4060;font-size:.62rem;margin:2px 0;'>{years}</div><div style='color:#3a6080;font-size:.64rem;line-height:1.45;'>{tdesc[:100]}…</div></div>", unsafe_allow_html=True)
+
+
+def render_molbio_workspace():
+    """Molecular Biology workspace — kinase-substrate browser, PTM atlas, structural tools."""
+    st.markdown("""
+    <div style='background:linear-gradient(135deg,#080400,#120800);border:1px solid #f9731633;
+      border-radius:14px;padding:1.1rem 1.4rem;margin-bottom:1rem;'>
+      <div style='font-size:1.3rem;font-weight:800;color:#fb923c;margin-bottom:4px;'>
+        ⚛️ Molecular Biology Platform</div>
+      <div style='color:#3a2000;font-size:.82rem;line-height:1.6;'>
+        Kinase-substrate networks, PTM landscape, structural biology tools, and mechanism dissection.
+        Search a protein via the sidebar for full phosphorylation map, structural domain cards, and interactome.
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    mb1, mb2 = st.columns(2)
+    with mb1:
+        sh("🔬", "Kinase Families & Their Substrates")
+        kinase_data = [
+            ("PKA (PRKACA/B)", "cAMP-activated. Consensus: [RK]-x-x-[ST]. Key substrates: CREB-Ser133, FLNA-Ser2152, RYR2-Ser2808, CFTR-Ser768. Inhibitor: H89 (IC50 48nM), PKI peptide (for specificity control)."),
+            ("CaMKII (α/β/γ/δ)", "Ca²⁺/CaM-activated. Autophosphorylation at Thr286 → autonomous activity. Substrates: AMPA-GluA1-Ser831, SYNGAP1-Ser1116. LTP mediator. Inhibitor: KN-93."),
+            ("GSK3β", "Constitutively active unless phospho-inhibited (Akt→Ser9). Substrates: tau-Ser396/Ser404, glycogen synthase, β-catenin. Lithium inhibits at mM. Inhibitor: SB216763 (IC50 34nM)."),
+            ("CDK2/4/6", "Cell cycle kinases. CDK4/6+cyclinD → Rb-Ser807/811. CDK2+cyclinE → Rb-Ser612. Inhibitors: palbociclib/ribociclib (CDK4/6) — breast cancer approved."),
+            ("LRRK2", "Dual GTPase+kinase. G2019S → hyperactive kinase. Rab8A-Thr72, Rab10-Thr73 as biomarker substrates. Inhibitor: DNL201/MLi-2 (Phase II Parkinson)."),
+            ("ERK1/2 (MAPK)", "RAS→RAF→MEK→ERK cascade. Substrates: RSK, Elk-1, p90RSK, c-Fos. Thr202/Tyr204 dual phosphorylation activates. Inhibitor: SCH772984 (ERK selective)."),
+            ("PI3K/AKT/mTOR", "PI3K-p110α (PIK3CA mutations → cancer). AKT: Ser473 (mTORC2) + Thr308 (PDK1). mTOR: S6K1-Thr389, 4EBP1-Thr37/46. Inhibitor: alpelisib (PI3Kα), everolimus (mTOR)."),
+            ("Src family (SRC, LCK, FYN)", "Non-receptor tyrosine kinases. Myristoylated → membrane. CagA (H. pylori) EPIYA motif phosphorylated by Src. SH2 domain = pTyr reader. Inhibitor: dasatinib (Src+BCR-ABL)."),
+        ]
+        for kname, kdesc in kinase_data:
+            with st.expander(kname):
+                st.markdown(f"<div style='color:#3a6080;font-size:.75rem;line-height:1.6;'>{kdesc}</div>", unsafe_allow_html=True)
+
+    with mb2:
+        sh("🔭", "Structural Biology Workflow")
+        sb_steps = [
+            ("1 · AlphaFold prediction", "Free. pLDDT score per residue. pLDDT>70 = reliable. IDR regions (pLDDT<50) → use IDP-specific methods. Binding site: PAE matrix for interface confidence."),
+            ("2 · fpocket druggability", "Identify pockets (volume, hydrophobicity, druggability score >0.5). Download AlphaFold PDB → run fpocket locally or fpocket-web. Classify: cryptic, allosteric, orthosteric."),
+            ("3 · Experimental structure (PDB)", "Search RCSB for existing co-crystal structures. If none: cryo-EM for large complexes (>100 kDa), X-ray for small proteins, NMR for <30 kDa IDPs."),
+            ("4 · HDX-MS for dynamics", "Maps regions of conformational flexibility. Deuterium uptake = accessible/dynamic. Ligand-protected = binding site or allosteric change. Resolution: peptide level (~10 aa)."),
+            ("5 · SAXS solution state", "Envelope model without crystallisation. Rg and Dmax from Guinier plot. P(r) distribution → oligomeric state. Combine with AlphaFold for atomic fitting (CORAL)."),
+            ("6 · Cryo-EM (>100 kDa)", "Single-particle analysis on 300kV Titan Krios. Near-atomic (2–4Å) for stable complexes. Conformational heterogeneity captured. RELION/cryoSPARC for data processing."),
+        ]
+        for step, sdesc in sb_steps:
+            st.markdown(f"<div style='background:#010810;border:1px solid #f9731622;border-radius:8px;padding:7px 10px;margin:3px 0;'><div style='color:#fb923c;font-size:.72rem;font-weight:700;'>{step}</div><div style='color:#3a6080;font-size:.7rem;line-height:1.5;margin-top:2px;'>{sdesc}</div></div>", unsafe_allow_html=True)
+
+
 _rd_final = st.session_state.get("research_domain","")
 _pdata_f = st.session_state.get("pdata",{})
 _gene_f = st.session_state.get("gene","")
@@ -5423,360 +5779,6 @@ def render_neuroscience_workspace():
                     if st.button(p2, key=f"dis_prot_{dis[:8]}_{p2}", use_container_width=True):
                         st.session_state["_trigger_search"] = p2
                         st.rerun()
-
-
-def render_pharma_workspace():
-    """Pharmaceuticals workspace — GPCR pipeline, druggability calculator, drug development guide."""
-    st.markdown("""
-    <div style='background:linear-gradient(135deg,#000810,#001520);border:1px solid #00d4ff33;
-      border-radius:14px;padding:1.1rem 1.4rem;margin-bottom:1rem;'>
-      <div style='font-size:1.3rem;font-weight:800;color:#00d4ff;margin-bottom:4px;'>
-        💊 Drug Discovery Platform</div>
-      <div style='color:#003a50;font-size:.82rem;line-height:1.6;'>
-        GPCR Filamin piggyback assay, druggability scoring, ADMET rules, HTS pipeline, and clinical development timeline.
-        Search a protein in the sidebar for full tractability + variant analysis.
-      </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    ph1, ph2 = st.columns(2)
-    with ph1:
-        sh("★", "Filamin Piggyback Assay Protocol")
-        steps_filamin = [
-            ("Day 1", "Co-immunoprecipitate FLNA from GPCR-expressing cells (HEK293 or native tissue). Use anti-FLNA Ig21 antibody (Millipore clone 3/F9)."),
-            ("Day 2", "Western blot for pSer2152-FLNA (anti-pSer2152; Cell Signalling #4761). Quantify pSer2152/total FLNA ratio."),
-            ("Day 3", "Add GPCR agonist dose-response (0.1nM – 10μM). Calculate EC50 for Ser2152 phosphorylation."),
-            ("Day 4", "Confirm specificity: PKA inhibitor (H89) should abolish signal. Compare to cAMP HTRF EC50 in parallel."),
-            ("Interpretation", "Ser2152 phosphorylation = proximal GPCR activation readout (more proximal than β-arrestin or cAMP). Works for ~300 Class A GPCRs carrying H8 motif."),
-        ]
-        for day, detail in steps_filamin:
-            st.markdown(f"<div style='display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #050e18;'><span style='color:#00d4ff;font-size:.68rem;font-weight:700;min-width:75px;'>{day}</span><span style='color:#3a6080;font-size:.72rem;line-height:1.55;'>{detail}</span></div>", unsafe_allow_html=True)
-        st.markdown("<a href='https://pubmed.ncbi.nlm.nih.gov/26124276/' target='_blank' style='color:#00d4ff;font-size:.7rem;'>PMID:26124276 ↗</a>", unsafe_allow_html=True)
-
-    with ph2:
-        sh("📋", "ADMET Rules & Drug Development Gates")
-        admet = [
-            ("Lipinski Ro5", "MW<500, cLogP<5, HBD≤5, HBA≤10", "Oral bioavailability gate"),
-            ("Veber", "PSA<140Å², rotatable bonds≤10", "Intestinal permeability"),
-            ("CNS (MPO)", "cLogP 1–3, MW<450, pKa<10, HBD≤3, PSA<90", "Blood-brain barrier penetrance"),
-            ("hERG", "IC50 > 30× free Cmax", "Cardiac safety — avoid QT prolongation"),
-            ("CYP3A4", "Not strong inhibitor (IC50>1μM)", "Drug-drug interaction liability"),
-            ("CYP2D6", "Not substrate if CYP2D6 metaboliser variation risk", "PGx safety"),
-            ("Plasma protein binding", "Aim fu>1%", "High PPB → low free drug"),
-            ("Caco-2 Papp", ">10×10⁻⁶ cm/s = good absorption", "Intestinal epithelial permeability"),
-            ("Microsomal stability", "t1/2 >60min (human LM)", "Metabolic stability"),
-            ("Ames test", "Negative", "Genotoxicity — IND-enabling requirement"),
-        ]
-        for rule, criteria, note in admet:
-            st.markdown(f"<div style='display:flex;gap:6px;padding:3px 0;border-bottom:1px solid #050e18;'><span style='color:#00d4ff;font-size:.67rem;min-width:120px;font-weight:600;'>{rule}</span><span style='color:#3a6080;font-size:.67rem;'>{criteria} <span style='color:#1e4060;'>({note})</span></span></div>", unsafe_allow_html=True)
-
-    sh("🗓️", "Drug Development Timeline")
-    timeline = [
-        ("Target ID + Validation", "Year 0–1", "#00e5ff", "Genomic Integrity Score, ClinVar P/LP, AlphaMissense, pLI, OpenTargets tractability. Validate with variant biochemical assay (WT vs P/LP)."),
-        ("Hit Discovery", "Year 1–3", "#4a90d9", "Fragment screen (FBDD, MW<300) OR HTS (100K–1M compounds). TSA engagement (ΔTm>3°C). SPR confirmation. Hit rate ~0.1–1%."),
-        ("Lead Optimisation", "Year 3–5", "#6366f1", "Medicinal chemistry: potency↑, selectivity↑, ADMET↑. Ro5 compliance. Selectivity panel (KINOMEscan/GPCRome). hERG safety. Rat PK (F%, t1/2, Cmax)."),
-        ("Preclinical / IND-enabling", "Year 5–7", "#a855f7", "GLP toxicology (rat+dog 28-day). GLP safety pharmacology (hERG, CNS, respiratory). CMC development. IND submission to FDA/EMA."),
-        ("Phase I (FIH safety)", "Year 7–9", "#ff8c42", "First-in-human. Dose escalation (DLT). PK/PD. MTD. ~20–80 healthy volunteers or patients. Duration: 1–2 years."),
-        ("Phase II (efficacy signal)", "Year 9–12", "#ff8c42", "Proof-of-concept in patients. Dose selection. Biomarker validation. ~100–300 patients. 2–3 years."),
-        ("Phase III (pivotal)", "Year 12–15", "#ff2d55", "Randomised controlled trial vs SoC. Regulatory endpoint. ~500–3000 patients. 3–4 years. $200–800M."),
-        ("Regulatory review → Approval", "Year 15–17", "#22c55e", "NDA/BLA/MAA filing. Priority review if rare disease/breakthrough. FDA review 10–12 months. Post-marketing commitments."),
-    ]
-    tl_cols = st.columns(4)
-    for ti, (phase, years, tclr, tdesc) in enumerate(timeline):
-        with tl_cols[ti % 4]:
-            st.markdown(f"<div style='background:#010810;border:1px solid {tclr}33;border-top:3px solid {tclr};border-radius:8px;padding:8px 10px;margin:4px 0;height:140px;overflow:hidden;'><div style='color:{tclr};font-size:.7rem;font-weight:700;'>{phase}</div><div style='color:#1e4060;font-size:.62rem;margin:2px 0;'>{years}</div><div style='color:#3a6080;font-size:.64rem;line-height:1.45;'>{tdesc[:100]}…</div></div>", unsafe_allow_html=True)
-
-
-def render_molbio_workspace():
-    """Molecular Biology workspace — kinase-substrate browser, PTM atlas, structural tools."""
-    st.markdown("""
-    <div style='background:linear-gradient(135deg,#080400,#120800);border:1px solid #f9731633;
-      border-radius:14px;padding:1.1rem 1.4rem;margin-bottom:1rem;'>
-      <div style='font-size:1.3rem;font-weight:800;color:#fb923c;margin-bottom:4px;'>
-        ⚛️ Molecular Biology Platform</div>
-      <div style='color:#3a2000;font-size:.82rem;line-height:1.6;'>
-        Kinase-substrate networks, PTM landscape, structural biology tools, and mechanism dissection.
-        Search a protein via the sidebar for full phosphorylation map, structural domain cards, and interactome.
-      </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    mb1, mb2 = st.columns(2)
-    with mb1:
-        sh("🔬", "Kinase Families & Their Substrates")
-        kinase_data = [
-            ("PKA (PRKACA/B)", "cAMP-activated. Consensus: [RK]-x-x-[ST]. Key substrates: CREB-Ser133, FLNA-Ser2152, RYR2-Ser2808, CFTR-Ser768. Inhibitor: H89 (IC50 48nM), PKI peptide (for specificity control)."),
-            ("CaMKII (α/β/γ/δ)", "Ca²⁺/CaM-activated. Autophosphorylation at Thr286 → autonomous activity. Substrates: AMPA-GluA1-Ser831, SYNGAP1-Ser1116. LTP mediator. Inhibitor: KN-93."),
-            ("GSK3β", "Constitutively active unless phospho-inhibited (Akt→Ser9). Substrates: tau-Ser396/Ser404, glycogen synthase, β-catenin. Lithium inhibits at mM. Inhibitor: SB216763 (IC50 34nM)."),
-            ("CDK2/4/6", "Cell cycle kinases. CDK4/6+cyclinD → Rb-Ser807/811. CDK2+cyclinE → Rb-Ser612. Inhibitors: palbociclib/ribociclib (CDK4/6) — breast cancer approved."),
-            ("LRRK2", "Dual GTPase+kinase. G2019S → hyperactive kinase. Rab8A-Thr72, Rab10-Thr73 as biomarker substrates. Inhibitor: DNL201/MLi-2 (Phase II Parkinson)."),
-            ("ERK1/2 (MAPK)", "RAS→RAF→MEK→ERK cascade. Substrates: RSK, Elk-1, p90RSK, c-Fos. Thr202/Tyr204 dual phosphorylation activates. Inhibitor: SCH772984 (ERK selective)."),
-            ("PI3K/AKT/mTOR", "PI3K-p110α (PIK3CA mutations → cancer). AKT: Ser473 (mTORC2) + Thr308 (PDK1). mTOR: S6K1-Thr389, 4EBP1-Thr37/46. Inhibitor: alpelisib (PI3Kα), everolimus (mTOR)."),
-            ("Src family (SRC, LCK, FYN)", "Non-receptor tyrosine kinases. Myristoylated → membrane. CagA (H. pylori) EPIYA motif phosphorylated by Src. SH2 domain = pTyr reader. Inhibitor: dasatinib (Src+BCR-ABL)."),
-        ]
-        for kname, kdesc in kinase_data:
-            with st.expander(kname):
-                st.markdown(f"<div style='color:#3a6080;font-size:.75rem;line-height:1.6;'>{kdesc}</div>", unsafe_allow_html=True)
-
-    with mb2:
-        sh("🔭", "Structural Biology Workflow")
-        sb_steps = [
-            ("1 · AlphaFold prediction", "Free. pLDDT score per residue. pLDDT>70 = reliable. IDR regions (pLDDT<50) → use IDP-specific methods. Binding site: PAE matrix for interface confidence."),
-            ("2 · fpocket druggability", "Identify pockets (volume, hydrophobicity, druggability score >0.5). Download AlphaFold PDB → run fpocket locally or fpocket-web. Classify: cryptic, allosteric, orthosteric."),
-            ("3 · Experimental structure (PDB)", "Search RCSB for existing co-crystal structures. If none: cryo-EM for large complexes (>100 kDa), X-ray for small proteins, NMR for <30 kDa IDPs."),
-            ("4 · HDX-MS for dynamics", "Maps regions of conformational flexibility. Deuterium uptake = accessible/dynamic. Ligand-protected = binding site or allosteric change. Resolution: peptide level (~10 aa)."),
-            ("5 · SAXS solution state", "Envelope model without crystallisation. Rg and Dmax from Guinier plot. P(r) distribution → oligomeric state. Combine with AlphaFold for atomic fitting (CORAL)."),
-            ("6 · Cryo-EM (>100 kDa)", "Single-particle analysis on 300kV Titan Krios. Near-atomic (2–4Å) for stable complexes. Conformational heterogeneity captured. RELION/cryoSPARC for data processing."),
-        ]
-        for step, sdesc in sb_steps:
-            st.markdown(f"<div style='background:#010810;border:1px solid #f9731622;border-radius:8px;padding:7px 10px;margin:3px 0;'><div style='color:#fb923c;font-size:.72rem;font-weight:700;'>{step}</div><div style='color:#3a6080;font-size:.7rem;line-height:1.5;margin-top:2px;'>{sdesc}</div></div>", unsafe_allow_html=True)
-
-def render_microbiome_page():
-    """Comprehensive microbiome intelligence — annotation engine + taxonomy KB."""
-    sh("🦠", "Microbiome Intelligence Platform")
-    
-    mic_tabs = st.tabs(["🔬 Annotation Engine", "🌳 Taxonomy Intelligence", "🔗 Host-Microbe Interactions", "🧪 BGC Analysis"])
-
-    # ── Tab 1: Annotation Engine ─────────────────────────────────────────────
-    with mic_tabs[0]:
-        sh("⚡", "Vague → Specific Annotation Engine")
-        st.markdown(
-            "<div style='background:#010810;border:1px solid #071828;border-radius:10px;padding:10px 14px;margin-bottom:.8rem;'>"
-            "<div style='color:#22c55e;font-weight:700;font-size:.84rem;margin-bottom:4px;'>The PI's Problem — Solved</div>"
-            "<div style='color:#3a6080;font-size:.78rem;line-height:1.65;'>"
-            "Metagenomic functional annotation returns vague terms: 'biosynthesis', 'chemosynthesis', 'protein aggregation' — "
-            "these tell you nothing actionable. This engine converts every vague annotation into specific EC-numbered pathways, "
-            "molecular mechanisms, validated assays, and database cross-references. No annotation left unknown."
-            "</div></div>",
-            unsafe_allow_html=True,
-        )
-        
-        col_ann1, col_ann2 = st.columns([1, 1])
-        with col_ann1:
-            vague_input = st.text_input("Paste vague annotation", placeholder="e.g. biosynthesis · chemosynthesis · hypothetical protein · metabolism", key="mic_vague")
-            gene_id = st.text_input("Gene ID (KO/EC/accession, optional)", placeholder="K01810 · WP_001234 · EC:4.2.1.16", key="mic_gid")
-            organism_ctx = st.text_input("Organism context (optional)", placeholder="gut microbiome · soil metagenome · marine", key="mic_org")
-            api_key_mic = st.session_state.get("anthropic_key","")
-            run_ann = st.button("⚡ Resolve Annotation", type="primary", key="mic_run", use_container_width=True)
-
-        with col_ann2:
-            st.markdown(
-                "<div style='background:#010810;border:1px solid #071828;border-radius:8px;padding:9px 12px;'>"
-                "<div style='color:#00e5ff;font-size:.74rem;font-weight:700;margin-bottom:5px;'>Supported vague terms</div>"
-                + "".join(f"<div style='color:#1e4060;font-size:.69rem;padding:2px 0;border-bottom:1px solid #050e18;'>• {k.title()}</div>" for k in VAGUE_TO_SPECIFIC.keys())
-                + "</div>",
-                unsafe_allow_html=True,
-            )
-
-        if run_ann and vague_input:
-            vl = vague_input.lower().strip()
-            result_text = ""
-            matched = False
-
-            # Rule-based resolution
-            for vague_key, vague_val in VAGUE_TO_SPECIFIC.items():
-                if vague_key in vl:
-                    matched = True
-                    # Check for sub-types
-                    sub_match = next((v for k, v in vague_val.items() if k != "general" and k in vl), None)
-                    result_text = sub_match or vague_val.get("general", "")
-                    break
-
-            # AI enhancement if available
-            if api_key_mic:
-                try:
-                    import anthropic as _anthro
-                    _client = _anthro.Anthropic(api_key=api_key_mic)
-                    _msg = _client.messages.create(
-                        model="claude-sonnet-4-20250514", max_tokens=800,
-                        messages=[{"role":"user","content":
-                            f"Vague annotation: '{vague_input}'\nGene ID: {gene_id or 'unknown'}\nOrganism: {organism_ctx or 'unknown'}\n\n"
-                            "Provide: (1) Specific molecular function with EC number(s), (2) metabolic pathway name + KEGG pathway ID, "
-                            "(3) biochemical mechanism (substrates → products), (4) diagnostic assay to confirm, (5) ecological role. "
-                            "Be precise. Use EC numbers. No vague terms. If truly unknown, state what experiment resolves it."}]
-                    )
-                    ai_result = _msg.content[0].text
-                    result_text = f"**AI-Enhanced Annotation:**\n\n{ai_result}"
-                    if not matched:
-                        result_text += f"\n\n**Rule-base says:** No direct match — apply eggNOG-mapper v2 + InterProScan pipeline."
-                except Exception as e:
-                    if not matched:
-                        result_text = f"No rule-base match for '{vague_input}'. Add Anthropic API key for AI-powered annotation."
-
-            if result_text:
-                # Before/After comparison
-                col_b, col_a = st.columns(2)
-                with col_b:
-                    st.markdown(
-                        f"<div style='background:#0a0300;border:1px solid #ff2d5522;border-radius:8px;padding:9px 12px;height:100%;'>"
-                        f"<div style='color:#ff2d55;font-size:.7rem;font-weight:700;margin-bottom:4px;'>❌ BEFORE (Vague)</div>"
-                        f"<div style='color:#804050;font-size:.82rem;font-style:italic;'>{vague_input}</div>"
-                        f"<div style='color:#3a2020;font-size:.69rem;margin-top:5px;'>No actionable information. Cannot direct experimental design. Cannot link to database.</div>"
-                        f"</div>",
-                        unsafe_allow_html=True,
-                    )
-                with col_a:
-                    st.markdown(
-                        f"<div style='background:#000a03;border:1px solid #22c55e22;border-radius:8px;padding:9px 12px;height:100%;'>"
-                        f"<div style='color:#22c55e;font-size:.7rem;font-weight:700;margin-bottom:4px;'>✅ AFTER (Specific)</div>"
-                        f"<div style='color:#4a8060;font-size:.77rem;line-height:1.7;white-space:pre-wrap;'>{result_text}</div>"
-                        f"</div>",
-                        unsafe_allow_html=True,
-                    )
-            else:
-                st.warning(f"'{vague_input}' not in rule base. Add Anthropic API key for AI annotation, or try: biosynthesis · chemosynthesis · transport · metabolism · regulation · hypothetical protein")
-
-        # Batch annotation tool
-        st.markdown("<hr class='dv'>", unsafe_allow_html=True)
-        sh("📊", "Batch Annotation Quality Assessment")
-        batch_input = st.text_area("Paste annotations (one per line)", height=100, key="mic_batch",
-                                   placeholder="lipid biosynthesis\nhypothetical protein\nprotein aggregation\ntransport")
-        if st.button("Assess Batch Quality", key="mic_batch_run") and batch_input:
-            lines_b = [l.strip() for l in batch_input.splitlines() if l.strip()]
-            vague_terms = set(VAGUE_TO_SPECIFIC.keys()) | {"unknown","uncharacterized","putative","possible","predicted","conserved"}
-            vague_count = sum(1 for l in lines_b if any(v in l.lower() for v in vague_terms))
-            spec_count = len(lines_b) - vague_count
-            
-            c1b, c2b, c3b, c4b = st.columns(4)
-            c1b.metric("Total annotations", len(lines_b))
-            c2b.metric("Vague (actionable after engine)", vague_count)
-            c3b.metric("Informative", spec_count)
-            c4b.metric("Quality score", f"{spec_count/max(len(lines_b),1)*100:.0f}%")
-            
-            for line in lines_b:
-                is_vague = any(v in line.lower() for v in vague_terms)
-                col_v = "#ff2d55" if is_vague else "#22c55e"
-                icon_v = "❌" if is_vague else "✅"
-                matched_key = next((k for k in VAGUE_TO_SPECIFIC if k in line.lower()), None)
-                resolution = " → " + VAGUE_TO_SPECIFIC[matched_key]["general"][:80] + "…" if matched_key else ""
-                st.markdown(
-                    f"<div style='font-size:.74rem;padding:3px 0;border-bottom:1px solid #050e18;display:flex;gap:6px;align-items:baseline;'>"
-                    f"<span style='color:{col_v};'>{icon_v}</span>"
-                    f"<span style='color:#5a8090;'>{line}</span>"
-                    f"<span style='color:#1e4060;font-size:.67rem;'>{resolution}</span>"
-                    f"</div>",
-                    unsafe_allow_html=True,
-                )
-
-    # ── Tab 2: Taxonomy Intelligence ─────────────────────────────────────────
-    with mic_tabs[1]:
-        sh("🌳", "Microbial Taxonomy Intelligence")
-        st.markdown("<div style='color:#3a6080;font-size:.8rem;margin-bottom:.7rem;'>Curated knowledge base: what each microbe does, its ecological role, clinical significance, and host interactions. Updated with 2020–2025 literature.</div>", unsafe_allow_html=True)
-
-        search_tax = st.text_input("Search microbe genus/species", placeholder="e.g. Akkermansia · Fusobacterium · Helicobacter", key="mic_tax_search")
-        
-        # Show matching microbes
-        display_taxa = {k: v for k, v in MICROBE_TAXONOMY_KB.items() 
-                        if not search_tax or search_tax.lower() in k.lower() or search_tax.lower() in v.get("full_name","").lower()}
-        
-        for genus, info in list(display_taxa.items())[:8]:
-            clr = info.get("color","#3a6080")
-            with st.expander(f"{info['full_name']}  ·  {info['phylum']}", expanded=(len(display_taxa)==1)):
-                col_t1, col_t2 = st.columns([1.2, 0.8])
-                with col_t1:
-                    st.markdown(
-                        f"<div style='background:#010810;border-left:3px solid {clr};padding:8px 12px;border-radius:0 8px 8px 0;margin-bottom:7px;'>"
-                        f"<div style='color:{clr};font-weight:700;font-size:.84rem;margin-bottom:3px;'>{info['full_name']}</div>"
-                        f"<div style='color:#1e4060;font-size:.72rem;'>{info['phylum']}</div>"
-                        f"<div style='color:#3a6080;font-size:.72rem;margin-top:2px;'>🌍 {info['ecology']}</div>"
-                        f"</div>",
-                        unsafe_allow_html=True,
-                    )
-                    st.markdown(f"<div style='color:{clr};font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px;'>Key Functions</div>", unsafe_allow_html=True)
-                    for fn in info.get("key_functions",[]):
-                        st.markdown(f"<div style='color:#4a7090;font-size:.75rem;padding:2px 0;border-bottom:1px solid #050e18;'>• {fn}</div>", unsafe_allow_html=True)
-                with col_t2:
-                    st.markdown(
-                        f"<div style='background:#010810;border:1px solid {clr}33;border-radius:8px;padding:9px 12px;'>"
-                        f"<div style='color:{clr};font-size:.72rem;font-weight:700;margin-bottom:5px;'>🏥 Clinical Significance</div>"
-                        f"<div style='color:#3a6080;font-size:.75rem;line-height:1.65;'>{info.get('clinical','')}</div>"
-                        f"</div>",
-                        unsafe_allow_html=True,
-                    )
-                    # Animated microbe visualisation
-                    components.html(f"""
-<style>body{{margin:0;background:#010810;display:flex;align-items:center;justify-content:center;height:100px;}}</style>
-<canvas id="mc_{genus[:4]}" width="200" height="95"></canvas>
-<script>
-const c=document.getElementById('mc_{genus[:4]}'),x=c.getContext('2d');let t=0;
-function dr(){{
-x.clearRect(0,0,200,95);
-// Draw microbe body
-const r=28;x.beginPath();x.ellipse(100,47,r+Math.sin(t*.5)*3,r*.6,0,0,Math.PI*2);
-x.fillStyle='{clr}22';x.fill();x.strokeStyle='{clr}88';x.lineWidth=2;x.stroke();
-// Flagella
-for(let i=0;i<3;i++){{
-  const fx=100+(r+2)*Math.cos(i*Math.PI*2/3+t*.2);
-  const fy=47+(r*.6)*Math.sin(i*Math.PI*2/3+t*.2);
-  x.beginPath();x.moveTo(fx,fy);
-  x.bezierCurveTo(fx+25*Math.cos(i+t*.3),fy+15*Math.sin(i+t*.2),
-    fx+40*Math.cos(i+t*.1),fy+20*Math.sin(i+t*.4),fx+55*Math.cos(i),fy+8*Math.sin(i));
-  x.strokeStyle='{clr}55';x.lineWidth=1.5;x.stroke();
-}}
-// Ribosomes
-for(let i=0;i<6;i++){{
-  const rx=100+15*Math.cos(i*Math.PI*2/6+t*.1);
-  const ry=47+8*Math.sin(i*Math.PI*2/6+t*.1);
-  x.beginPath();x.arc(rx,ry,2.5,0,Math.PI*2);x.fillStyle='{clr}cc';x.fill();
-}}
-// Name
-x.fillStyle='{clr}';x.font='bold 9px Inter,sans-serif';x.textAlign='center';
-x.fillText('{genus}',100,88);
-t+=0.04;requestAnimationFrame(dr);
-}}
-dr();
-</script>""", height=100, scrolling=False)
-
-    # ── Tab 3: Host-Microbe Interactions ─────────────────────────────────────
-    with mic_tabs[2]:
-        sh("🔗", "Host-Microbe Interaction Atlas")
-        interactions = [
-            ("CsgA (Curli)", "TLR2/TLR1", "#ff2d55", "Curli fibrils activate TLR2/TLR1 → NF-κB → IL-6/TNFα. E. coli/Salmonella biofilm → colitis, systemic inflammation. Block: anti-CsgA antibody or curli inhibitor (pilicide/curlicide)."),
-            ("FadA (Fusobacterium)", "E-cadherin (CDH1)", "#ff2d55", "FadA adhesin binds E-cadherin → β-catenin nuclear translocation → Wnt pathway → CRC driver. Validated in patient tumour samples. FadA peptide inhibitor tested in organoids."),
-            ("LPS (O-antigen)", "TLR4/MD-2", "#ff8c42", "Gram-negative LPS → TLR4 dimerisation → MyD88/TRIF → NF-κB + IRF3 → cytokine storm. Lipid A structure determines potency. LPS-leakage from dysbiotic gut → metabolic endotoxaemia."),
-            ("PSA (Bacteroides fragilis)", "TLR2", "#22c55e", "Polysaccharide A from B. fragilis → TLR2 → Treg induction → IL-10 production → tolerance. Protective in gnotobiotic models. Capsule-specific and symbiont-specific."),
-            ("CagA (H. pylori)", "SRC/ABL kinases", "#ff2d55", "CagA injected via T4SS → EPIYA phosphorylation by Src → SHP-2 activation → RAS/ERK → cell proliferation. CagA-positive strains 5× higher gastric cancer risk."),
-            ("SCFA (Butyrate)", "GPR41/GPR43/HCA2", "#22c55e", "Bacterially-produced butyrate → GPR43 on colonocytes (energy) + HCA2 (niacin receptor) on macrophages → PPARγ → anti-inflammation. Primary energy source for colonocytes. Depleted in IBD."),
-            ("BilR (bile salt hydrolase)", "FXR/TGR5", "#4a90d9", "BSH enzyme deconjugates primary bile acids → secondary bile acids (DCA, LCA) → FXR/TGR5 → GLP-1 secretion, lipid metabolism. Modulates microbiome composition + metabolic syndrome."),
-            ("Indole/Serotonin", "AhR/5-HT3/4", "#a855f7", "Tryptophan → indole/IPA (Bacteroides/Lactobacillus) → AhR → gut barrier + IL-22. Enterochromaffin cells: tryptophan → 5-HT → bowel motility. Serotonin pathway alteration in IBS/depression."),
-        ]
-        for iname, receptor, iclr, desc in interactions:
-            st.markdown(
-                f"<div style='background:#010810;border:1px solid {iclr}22;border-radius:9px;padding:9px 12px;margin:.3rem 0;display:flex;gap:10px;'>"
-                f"<div style='flex:0;min-width:90px;text-align:center;'>"
-                f"<div style='color:{iclr};font-size:.72rem;font-weight:700;'>{iname}</div>"
-                f"<div style='color:#3a6080;font-size:.62rem;'>↓</div>"
-                f"<div style='color:#00e5ff;font-size:.69rem;font-weight:600;'>{receptor}</div>"
-                f"</div>"
-                f"<div style='color:#3a6080;font-size:.77rem;line-height:1.65;border-left:2px solid {iclr}33;padding-left:10px;'>{desc}</div>"
-                f"</div>",
-                unsafe_allow_html=True,
-            )
-
-    # ── Tab 4: BGC Analysis ──────────────────────────────────────────────────
-    with mic_tabs[3]:
-        sh("🧪", "Biosynthetic Gene Cluster (BGC) Analysis")
-        st.markdown("<div style='color:#3a6080;font-size:.8rem;margin-bottom:.6rem;'>BGC types, detection tools, and predicted products. Cross-reference with MiBIG database for known clusters.</div>", unsafe_allow_html=True)
-        bgc_types = [
-            ("Type I PKS", "#ff8c42", "Modular polyketide synthase. Multi-domain assembly line: KS-AT-DH-KR-ACP. Produces: erythromycin, rapamycin, epothilone. Detect: antiSMASH pks1 rule. Signature: AT acyltransferase domain substrate specificity."),
-            ("NRPS", "#4a90d9", "Non-ribosomal peptide synthetase. A-T-C domain cycle: adenylation → thiolation → condensation. Produces: vancomycin, cyclosporin, penicillin. Contains non-standard amino acids. Detect: NRPS-specific A domain."),
-            ("RiPP", "#22c55e", "Ribosomally synthesised and post-translationally modified peptide. Includes: lanthipeptides (nisin), thiopeptides (thiostrepton), bacteriocins, lasso peptides. Detect by: core peptide + modification enzymes."),
-            ("Terpene", "#a855f7", "Isoprenoid-derived: monoterpenes (C10), sesquiterpenes (C15), diterpenes (C20), triterpenes (C30). MVA or MEP/DXP pathway. Produces: hopanoids, carotenoids, ent-kaurene. Detect: terpene synthase (Pfam PF00494)."),
-            ("Type II PKS", "#ffd60a", "Iterative aromatic PKS. Minimal PKS: KSα-KSβ-ACP. Produces: tetracyclines, doxorubicin, actinorhodin. One set of enzymes used iteratively — different from Type I. Detect: CLF/KSβ conserved domain."),
-            ("Aryl polyene", "#ff2d55", "Flexirubin/aryl polyene pigments. Common in Bacteroidetes gut bacteria. Colour-producing. Photoprotective role. Detect: ApeA/ApeB homologs."),
-        ]
-        for bgc_name, bgc_clr, bgc_desc in bgc_types:
-            with st.expander(f"{bgc_name}"):
-                st.markdown(f"<div style='color:#4a7090;font-size:.78rem;line-height:1.65;border-left:2px solid {bgc_clr};padding-left:8px;'>{bgc_desc}</div>", unsafe_allow_html=True)
-                st.markdown(f"<a href='https://antismash.secondarymetabolites.org' target='_blank' style='color:#2a6080;font-size:.72rem;'>antiSMASH ↗</a> <a href='https://mibig.secondarymetabolites.org' target='_blank' style='color:#2a6080;font-size:.72rem;'>MiBIG ↗</a>", unsafe_allow_html=True)
-
-# ════════════════════════════════════════════════════════════════════════════
-#  ONCOLOGY-SPECIFIC FEATURES
-# ════════════════════════════════════════════════════════════════════════════
-
-def render_microbiome_workspace():
-    """Microbiome workspace — delegates to render_microbiome_page."""
-    render_microbiome_page()
 
 
 def render_pharma_workspace():
