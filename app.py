@@ -4856,7 +4856,7 @@ draw();
 
 
 def render_microbiome_workspace():
-    render_microbiome_page()
+    pass  # self-contained above
 
 
 def render_pharma_workspace():
@@ -10659,10 +10659,10 @@ elif _rd_final == "Neuroscience":
 
 elif _rd_final == "Microbiome":
     if not _pdata_f:
-        render_microbiome_page()
+        render_microbiome_workspace()
     else:
         with st.expander("🦠 Microbiome Workspace", expanded=False):
-            render_microbiome_page()
+            render_microbiome_workspace()
 
 elif _rd_final == "Pharmaceuticals":
     if not _pdata_f:
