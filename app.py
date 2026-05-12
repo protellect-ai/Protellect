@@ -5059,10 +5059,10 @@ def render_microbiome_page():
     """Comprehensive microbiome intelligence — annotation engine + taxonomy KB."""
     sh("🦠", "Microbiome Intelligence Platform")
     
-    mic_tabs = st.tabs(["🔬 Annotation Engine", "🌳 Taxonomy Intelligence", "🔗 Host-Microbe Interactions", "🧪 BGC Analysis"])
+    _mic_mode = st.radio("", ["🔬 Annotation Engine", "🌳 Taxonomy Intelligence", "🔗 Host-Microbe Interactions", "🧪 BGC Analysis"], horizontal=True, key="mic_page_mode")
 
     # ── Tab 1: Annotation Engine ─────────────────────────────────────────────
-    with mic_tabs[0]:
+    if _mic_mode == "🔬 Annotation Engine":
         sh("⚡", "Vague → Specific Annotation Engine")
         st.markdown(
             "<div style='background:#010810;border:1px solid #071828;border-radius:10px;padding:10px 14px;margin-bottom:.8rem;'>"
@@ -5183,7 +5183,7 @@ def render_microbiome_page():
                 )
 
     # ── Tab 2: Taxonomy Intelligence ─────────────────────────────────────────
-    with mic_tabs[1]:
+    elif _mic_mode == "🌳 Taxonomy Intelligence":
         sh("🌳", "Microbial Taxonomy Intelligence")
         st.markdown("<div style='color:#3a6080;font-size:.8rem;margin-bottom:.7rem;'>Curated knowledge base: what each microbe does, its ecological role, clinical significance, and host interactions. Updated with 2020–2025 literature.</div>", unsafe_allow_html=True)
 
@@ -5252,7 +5252,7 @@ dr();
 </script>""", height=100, scrolling=False)
 
     # ── Tab 3: Host-Microbe Interactions ─────────────────────────────────────
-    with mic_tabs[2]:
+    elif _mic_mode == "🔗 Host-Microbe Interactions":
         sh("🔗", "Host-Microbe Interaction Atlas")
         interactions = [
             ("CsgA (Curli)", "TLR2/TLR1", "#ff2d55", "Curli fibrils activate TLR2/TLR1 → NF-κB → IL-6/TNFα. E. coli/Salmonella biofilm → colitis, systemic inflammation. Block: anti-CsgA antibody or curli inhibitor (pilicide/curlicide)."),
@@ -5278,7 +5278,7 @@ dr();
             )
 
     # ── Tab 4: BGC Analysis ──────────────────────────────────────────────────
-    with mic_tabs[3]:
+    elif _mic_mode == "🧪 BGC Analysis":
         sh("🧪", "Biosynthetic Gene Cluster (BGC) Analysis")
         st.markdown("<div style='color:#3a6080;font-size:.8rem;margin-bottom:.6rem;'>BGC types, detection tools, and predicted products. Cross-reference with MiBIG database for known clusters.</div>", unsafe_allow_html=True)
         bgc_types = [
