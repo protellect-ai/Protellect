@@ -5044,6 +5044,107 @@ for k,v0 in {"pdata":None,"cv":None,"pdb":"","papers":[],"scored":[],"gene":"","
 #  Called when domain is selected but no protein loaded
 # ════════════════════════════════════════════════════════════════════════════
 
+# ── Research domain registry ─────────────────────────────────────────────────
+RESEARCH_DOMAINS = {
+    "Neuroscience": {
+        "icon": "🧠", "color": "#6366f1", "color2": "#818cf8",
+        "tagline": "Synaptic proteins · Neural circuits · Neurodegeneration · BBB · Ion channels",
+        "desc": "Deep synaptic biology — presynaptic vesicle machinery, glutamate/GABA receptors, PSD scaffolds, axonal transport, and neurodegeneration. BBB requirements flagged automatically.",
+        "proteins": ["APP","SNCA","MAPT","LRRK2","TARDBP","HTT","GBA","SOD1","SHANK3","NRXN1","GRIN2B","GRIA1","DLG4","SNAP25","SYT1","VAMP2","SCN1A","KCNQ2","CACNA1A","KIF5A"],
+        "key_experiments": [
+            ("iPSC-Neuron (NGN2/NeuroD1) + isogenic control", "2–3 weeks", "Patient-specific neurons; isogenic eliminates background", "#22c55e"),
+            ("Multi-electrode array (MEA) — Axion Maestro", "2 weeks", "Network burst rate, synchrony, ISI — seizure vs silence phenotype", "#22c55e"),
+            ("Whole-cell patch-clamp (automated QPatch)", "1 week", "Nav/Kv/GABA/NMDA kinetics; GoF persistent current → seizure", "#22c55e"),
+            ("Proximity ligation assay (PLA) at synapse", "3 days", "In-situ PPI without pull-down artefact", "#ffd60a"),
+            ("Live-cell Ca²⁺ imaging (GCaMP8 / Fluo-4)", "1 week", "Network Ca²⁺ dynamics; NMDA excitotoxicity", "#ffd60a"),
+            ("PAMPA-BBB + P-gp efflux + MDR1-MDCK", "3 days", "Pe>4×10⁻⁶ cm/s AND ER<2 = CNS-penetrant", "#ff8c42"),
+        ],
+        "drug_rules": [("cLogP","1–3","CNS penetrance"),("MW","<450 Da","BBB limit"),("HBD","≤3","H-bond donors"),("PSA","<90 Å²","Polar surface"),("CNS MPO","≥4/6","Multi-param"),("P-gp","Not substrate","Avoid efflux")],
+        "animal_models": ["APP/PS1 (Alzheimer)","5xFAD (amyloid)","MPTP (Parkinson)","SOD1-G93A (ALS)","SCN1A+/− (Dravet)","Shank3+/− (ASD)"],
+        "insight": "★ Synaptic scaffolds (SHANK3, DLG4) lack enzymatic active sites — target upstream kinases (mTOR, ERK, CaMKII) or use ASO to restore haploinsufficient levels.",
+        "databases": [("Allen Brain Atlas","https://brain-map.org","Regional expression"),("SynGO","https://www.syngoportal.org","Synaptic GO"),("SFARI Gene","https://gene.sfari.org","Autism genes"),("NeuroMorpho","https://neuromorpho.org","Neuron morphology")],
+        "bbb_rules": {"cLogP":"1–3","MW":"<450 Da","HBD":"≤3","PSA":"<90Å²","CNS_MPO":"≥4/6","Pgp":"Not substrate"},
+        "neural_proteins": {"Synaptic vesicle":["SYT1","VAMP2","STX1A","SNAP25","SYN1","STXBP1"],"Glutamate receptors":["GRIN1","GRIN2A","GRIN2B","GRIA1","GRIA2","GRM1"],"GABA receptors":["GABRA1","GABRA2","GABRG2","GABRB3"],"Post-synaptic scaffold":["DLG4","SHANK3","SYNGAP1","HOMER1","DLGAP1"],"Ion channels":["SCN1A","SCN2A","SCN8A","KCNQ2","HCN1","CACNA1A"],"Neurodegeneration":["APP","SNCA","MAPT","LRRK2","TARDBP","SOD1"]},
+        "disease_protein_map": {"Alzheimer's":["APP","PSEN1","PSEN2","APOE","TREM2"],"Parkinson's":["SNCA","LRRK2","PINK1","PARKIN","GBA"],"ALS":["SOD1","TARDBP","FUS","C9orf72","TBK1"],"Epilepsy":["SCN1A","SCN2A","SCN8A","KCNQ2","GRIN2A"],"ASD":["SHANK3","SYNGAP1","NRXN1","ADNP","TSC1"]},
+    },
+    "Oncology": {
+        "icon": "🎗", "color": "#f43f5e", "color2": "#fb7185",
+        "tagline": "Metastasis · Early Detection · Patient-Specific · Driver Mutations · Tumour Biology",
+        "desc": "Patient-first oncology. Enter cancer type and variant for personalised treatment stratification. Metastasis cascade, early detection, somatic/germline split, companion Dx.",
+        "proteins": ["TP53","KRAS","BRCA1","BRCA2","EGFR","MYC","PTEN","BRAF","RB1","CDK4","PIK3CA","APC","VHL","IDH1","ALK","ROS1","ERBB2","PALB2"],
+        "key_experiments": [
+            ("Patient-derived organoid (PDO) drug sensitivity", "8–12 weeks", "Gold standard for predicting patient response", "#22c55e"),
+            ("ctDNA liquid biopsy (ddPCR/ultra-deep NGS)", "1 week", "MRD at 0.01% VAF — track treatment response and early relapse", "#22c55e"),
+            ("CRISPR knock-in of patient hotspot variant", "4–6 weeks", "PS3 causal evidence for ClinGen classification", "#22c55e"),
+            ("Transwell Matrigel invasion assay", "48h", "Quantify invasive capacity — add MMP inhibitor to confirm", "#ffd60a"),
+            ("Tail-vein metastasis assay (GFP+ cells)", "10–16 weeks", "In vivo lung colonisation + bioluminescence imaging", "#ff8c42"),
+            ("Spatial transcriptomics (10x Visium/Xenium)", "3 weeks", "Tumour microenvironment: T cell exclusion, CAF subtypes", "#ffd60a"),
+        ],
+        "drug_rules": [("Driver vs passenger","COSMIC tier 1","Only tier 1 justified"),("Synthetic lethal","BRCA+PARP","LoF→HRD target"),("Companion Dx","Mandatory rare","Required for targeted"),("TMB/MSI","ICI biomarker","TMB>10 or MSI-H→pembro"),("Resistance","Plan upfront","ctDNA at progression"),("FTO","Check patents","Freedom to operate")],
+        "animal_models": ["PDX (patient-derived xenograft)","GEMMs (Kras-G12D/p53-null)","Syngeneic (MC38, CT26)","Organoid orthotopic","Zebrafish xenograft (5 days)"],
+        "insight": "★ Cancer type + mutation context determines EVERYTHING. KRAS G12C→sotorasib. BRCA2→PARP inhibitor. MSI-H→pembrolizumab. Never recommend a generic screen without OncoKB tier check first.",
+        "databases": [("COSMIC","https://cancer.sanger.ac.uk/cosmic","Somatic mutations"),("cBioPortal","https://www.cbioportal.org","Pan-cancer genomics"),("OncoKB","https://www.oncokb.org","Actionable variants"),("DepMap","https://depmap.org","CRISPR screens")],
+        "cancer_types": {"Lung adenocarcinoma (LUAD)":{"drivers":["EGFR","KRAS","ALK","ROS1","MET","BRAF","RET","NTRK1"],"early_markers":["cfDNA EGFR","CEA","CYFRA21-1"],"causes":["Smoking (KRAS G12C dominant)","Radon","Asbestos","PM2.5"],"treatments":["Osimertinib (EGFR)","Alectinib (ALK)","Sotorasib (KRAS G12C)","Pembrolizumab (PD-L1≥50%)"],"metastasis_sites":["Brain (40%)","Bone","Adrenal","Liver"]}},
+        "early_detection": [("Liquid biopsy (ctDNA)","VAF>0.1% detectable — ddPCR or ultra-deep 60,000×. CRC/NSCLC/PDAC best validated."),("MCED (Galleri/CancerSEEK)","50+ cancers from blood. Stage I sens ~17%, Stage III/IV ~79%. Not yet FDA screening approved."),("Germline risk panel","BRCA1/2, MLH1/MSH2, TP53, PALB2 — cascade family testing. Defines surveillance protocol."),("AI-assisted imaging","Mammography AI (Transpara): 44% workload reduction. LungRADS AI nodule scoring."),("SHIELD blood test","cfDNA methylation — 83.1% CRC sensitivity (FDA approved 2024 for CRC screening)."),],
+        "metastasis_cascade": [("1·EMT","E-cadherin↓ vimentin↑","TWIST/SNAIL/ZEB","#ff2d55"),("2·Invasion","MMP-2/9 ECM degradation","TIMP1/2 loss","#ff4465"),("3·Intravasation","EpCAM+ CTCs","VEGF-A, CXCR4","#ff6080"),("4·Circulation","Platelet coating + anoikis resist","CD47 don't-eat-me","#ff8c42"),("5·Extravasation","CXCR4→CXCL12 organ tropism","ITG profiling","#ffd60a"),("6·Pre-met niche","Tumour exosomes prime organ","LOX + fibronectin","#ffd60a"),("7·Colonisation","Dormancy→outgrowth","VCAM1/NF-κB","#22c55e")],
+    },
+    "Pharmaceuticals": {
+        "icon": "💊", "color": "#00d4ff", "color2": "#38bdf8",
+        "tagline": "GPCR Targets · Druggability · HTS · Filamin Assay · Clinical Pipeline",
+        "desc": "Full drug discovery pipeline. GPCR Filamin piggyback, OpenTargets tractability, ChEMBL scaffolds, ADMET, selectivity panel, patent landscape, clinical development timeline.",
+        "proteins": ["ADRB2","ADRB1","AGTR1","DRD2","FLNA","GRK2","OPRM1","CHRM2","HTR2A","ADORA2A","CXCR4","GLP1R","GCGR","GHRL"],
+        "key_experiments": [
+            ("Filamin Ser2152-P IP assay ★ PRIMARY", "1 week", "GPCR agonist → H8 displaces FLNA → PKA phosphorylates Ser2152. PMID:26124276", "#22c55e"),
+            ("cAMP HTRF (Gs) / IP-ONE (Gq)", "3 days", "G-protein coupling class confirmation", "#22c55e"),
+            ("β-arrestin NanoBRET / PathHunter", "3 days", "Biased agonism — G-protein vs β-arrestin arms", "#22c55e"),
+            ("SPR binding kinetics (Biacore)", "2 weeks", "KD, kon, koff — residence time predicts in vivo duration", "#ffd60a"),
+            ("hERG patch-clamp + CYP3A4 inhibition", "1 week", "Cardiac safety + DDI liability — must pass before animals", "#ff8c42"),
+            ("ADMET panel (Caco-2, PPB, metabolic stability)", "2 weeks", "Oral bioavailability gates — fail early, fail cheap", "#ff8c42"),
+        ],
+        "drug_rules": [("Ro5","MW<500 cLogP<5 HBD≤5","Oral bioavailability"),("GPCR","34% FDA drugs","Best tractability"),("hERG","IC50>30×Cmax","Cardiac safety"),("CYP3A4","Not strong inhib","DDI liability"),("FTO","Check before synth","Patent freedom"),("Selectivity","1000× vs off-tgt","SPR panel required")],
+        "animal_models": ["GPCR knockout mice","Humanised receptor knock-in","Cardiac overexpression (Tg)","GRK2 haploinsufficiency"],
+        "insight": "★ FILAMIN PIGGYBACK: ~300 Class A GPCRs carry H8 Filamin-Binding Motif. Use pSer2152 IP as PRIMARY readout. ARRB2 has NO confirmed Mendelian disease variants — deprioritise. PMID:26124276.",
+        "databases": [("OpenTargets","https://platform.opentargets.org","Tractability"),("ChEMBL","https://www.ebi.ac.uk/chembl","Compounds"),("IUPHAR","https://www.guidetopharmacology.org","Drug targets"),("PDB","https://www.rcsb.org","Co-crystals")],
+    },
+    "Microbiome": {
+        "icon": "🦠", "color": "#22c55e", "color2": "#4ade80",
+        "tagline": "Annotation Engine · Taxonomy · Host-Microbe · BGC · Pathobionts · SCFA",
+        "desc": "AI annotation engine converts vague annotations (biosynthesis, chemosynthesis) to specific EC-numbered pathways. Curated taxonomy KB with animated microbe visuals. BGC prediction, host-receptor mapping.",
+        "proteins": [],
+        "key_experiments": [
+            ("16S V3-V4 amplicon (Illumina)", "1 week", "Taxonomic profiling — Silva/GTDB. α-diversity + β-diversity", "#22c55e"),
+            ("Shotgun metagenomics (WGS)", "2 weeks", "Species + functional genes. HUMAnN3 + eggNOG-mapper v2", "#22c55e"),
+            ("SCFA metabolomics (GC-MS/LC-MS)", "3 days", "Butyrate/propionate/acetate — faecal + plasma", "#ffd60a"),
+            ("Germ-free mouse mono-colonisation", "8–12 weeks", "Causal validation — single microbe defines phenotype", "#ff8c42"),
+            ("Metatranscriptomics (rRNA-depleted RNA-seq)", "1 week", "Active genes not just present genes", "#ffd60a"),
+            ("In vitro biofilm + host cell co-culture", "1 week", "FadA/CsgA invasion + host TLR activation", "#ffd60a"),
+        ],
+        "drug_rules": [("Specificity","Target pathobiont","Spare commensals"),("Biofilm","Need penetrating form","1000× more resistant"),("Phage","Precision antimicrobial","Strain-specific"),("FMT","Causal validation first","Prove dysbiosis→phenotype"),("Postbiotics","SCFA/indoles as Tx","No live bacteria needed"),("Prebiotics","Selectively feed benefit","FOS/inulin/resistant starch")],
+        "animal_models": ["Germ-free (GF) C57BL/6","Humanised gut (HGF)","DSS colitis (IBD)","HFD dysbiosis","C. diff infection"],
+        "insight": "★ THE PI'S PROBLEM SOLVED: >30% of metagenomics annotations are 'biosynthesis'/'metabolism' — uninformative. This platform uses AI+eggNOG DB to convert to specific EC-numbered pathways. No other tool does this.",
+        "databases": [("KEGG","https://www.kegg.jp","Pathways+EC"),("antiSMASH","https://antismash.secondarymetabolites.org","BGC"),("MiBIG","https://mibig.secondarymetabolites.org","Known BGCs"),("CARD","https://card.mcmaster.ca","AMR genes")],
+    },
+    "Molecular Biology": {
+        "icon": "⚛️", "color": "#f97316", "color2": "#fb923c",
+        "tagline": "Phosphorylation · Kinase-substrate · AlphaFold · STRING · PTMs · Structural",
+        "desc": "Deep mechanistic analysis. Phosphorylation cascades, kinase-substrate networks, structural domain function, PPI biology, and full PTM landscape. Integrated with PhosphoSitePlus and AlphaFold.",
+        "proteins": ["FLNA","MAPK1","AKT1","SRC","CDK2","EGFR","JAK2","PIK3CA","MTOR","PRKACA","CAMK2A","GSK3B","CHEK1","ATM","AURKA","PLK1"],
+        "key_experiments": [
+            ("ADP-Glo kinase assay (Promega)", "1 week", "Km, Vmax, kcat — WT vs P/LP variant. GoF vs LoF.", "#22c55e"),
+            ("HDX-MS (hydrogen-deuterium exchange)", "2 weeks", "Residue-level conformational dynamics map", "#22c55e"),
+            ("AP-MS (affinity purification + mass spec)", "2 weeks", "Unbiased interactome — ALL binding partners", "#22c55e"),
+            ("NanoBRET / BRET2 proximity", "1 week", "Real-time kinase-substrate interaction in live cells", "#ffd60a"),
+            ("SAXS (small-angle X-ray scattering)", "3 days", "Solution oligomeric state and shape", "#ffd60a"),
+            ("Cryo-EM single-particle (300 kV Titan Krios)", "6–18 months", "Near-atomic structure without crystallisation", "#ff8c42"),
+        ],
+        "drug_rules": [("Kinome selectivity","KINOMEscan 468","Off-target = toxicity"),("DFG conformation","Type I/II/III","Type II more selective"),("Covalent","Cys/Lys warhead","Irreversible high potency"),("PROTAC","E3+target binder","Degrade, bypass resistance"),("Allosteric","Remote from active","Highest selectivity"),("Fragment FBDD","MW<300 LE>0.3","Start weak, grow to lead")],
+        "animal_models": ["Conditional KO (Cre-lox/ERT2)","Phospho-dead knock-in (Ser→Ala)","Phospho-mimic (Ser→Asp/Glu)","AID degron tag","CRISPRa/i"],
+        "insight": "★ PHOSPHORYLATION FIRST: Map all S/T/Y against PhosphoSitePlus before any wet-lab. Variants that alter kinase consensus motifs are highest-priority. Validate by ADP-Glo with synthetic peptide substrate.",
+        "databases": [("PhosphoSitePlus","https://www.phosphosite.org","PTM sites"),("STRING-DB","https://string-db.org","Interactions"),("KinBase","http://kinase.com/kinbase","Kinase families"),("BioGRID","https://thebiogrid.org","Physical interactions")],
+    },
+}
+
+
 # ── Domain selection page ──────────────────────────────────────────────────────
 # ── Domain selection page ──────────────────────────────────────────────────────
 if not st.session_state.get("research_domain"):
