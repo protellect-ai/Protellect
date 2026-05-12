@@ -4573,161 +4573,272 @@ for k,v0 in {"pdata":None,"cv":None,"pdb":"","papers":[],"scored":[],"gene":"","
 RESEARCH_DOMAINS = {
     "Neuroscience": {
         "icon": "🧠", "color": "#6366f1", "color2": "#818cf8",
-        "tagline": "Neural circuits · Neurodegeneration · BBB · Synaptopathies",
-        "desc": "Genetics-first approach to CNS drug targets. Every analysis flags BBB penetrance requirements, neural circuit context, and synaptopathy mechanisms. Alzheimer, Parkinson, ALS, epilepsy.",
-        "proteins": ["APP", "SNCA", "MAPT", "LRRK2", "TARDBP", "HTT", "GBA", "SOD1", "FUS", "C9orf72", "PINK1", "PARKIN", "SCN1A", "KCNQ2"],
+        "tagline": "Synaptic proteins · Neural circuits · Neurodegeneration · BBB · Ion channels",
+        "desc": "Deep synaptic biology and neurodegeneration. Proteins in neural connections: synaptic vesicle machinery (SNAP25, SYT1, VAMP2), glutamate receptors (GRIN2B, GRIA1), scaffolds (SHANK3, DLG4/PSD-95), and axonal transport (KIF5A, DCTN1). BBB requirements flagged automatically.",
+        "proteins": [
+            "APP","SNCA","MAPT","LRRK2","TARDBP","HTT","GBA","SOD1",
+            "SHANK3","NRXN1","GRIN2B","GRIA1","DLG4","SNAP25","SYT1","VAMP2",
+            "SCN1A","KCNQ2","CACNA1A","KIF5A","DCTN1","PINK1","PARKIN","FUS"
+        ],
+        "neural_proteins": {
+            "Synaptic vesicle": ["SYT1","VAMP2","STX1A","SNAP25","SYN1","SYN2","SYNGR1"],
+            "Glutamate receptors": ["GRIN1","GRIN2A","GRIN2B","GRIA1","GRIA2","GRIA3","GRIK1","GRM1"],
+            "GABA receptors": ["GABRA1","GABRA2","GABRG2","GABRB3","GABRD"],
+            "Post-synaptic scaffold": ["DLG4","SHANK1","SHANK2","SHANK3","HOMER1","DLGAP1","NRXN1"],
+            "Presynaptic scaffold": ["NRXN1","NRXN2","NLGN1","NLGN3","LRRTM1","CASK"],
+            "Ion channels": ["SCN1A","SCN2A","SCN8A","KCNQ2","KCNQ3","KCNT1","CACNA1A","HCN1"],
+            "Axonal transport": ["KIF5A","KIF1B","DCTN1","NEFL","NEFM","NEFH","TUBA4A"],
+            "Neurodegeneration": ["APP","PSEN1","PSEN2","SNCA","MAPT","LRRK2","GBA","TARDBP","FUS","SOD1"],
+        },
+        "disease_protein_map": {
+            "Alzheimer's disease": ["APP","PSEN1","PSEN2","APOE","TREM2","SORL1","BIN1"],
+            "Parkinson's disease": ["SNCA","LRRK2","PINK1","PARKIN","GBA","UCHL1","VPS35"],
+            "ALS": ["SOD1","TARDBP","FUS","C9orf72","OPTN","TBK1","VCP","HNRNPA1"],
+            "Epilepsy": ["SCN1A","SCN2A","SCN8A","KCNQ2","KCNQ3","GRIN2A","GABRA1","HCN1"],
+            "Autism (ASD)": ["SHANK3","NRXN1","NLGN3","NLGN4X","SYNGAP1","ADNP","FOXP1","CNTNAP2"],
+            "Schizophrenia": ["DISC1","DTNBP1","COMT","NRG1","DGCR8","CNTNAP2","RELN"],
+            "Huntington's": ["HTT"],
+            "Spinal muscular atrophy": ["SMN1","SMN2","BICD2","DYNC1H1"],
+        },
         "databases": [
-            ("Allen Brain Atlas", "https://brain-map.org", "Regional expression"),
-            ("NeuroMorpho", "https://neuromorpho.org", "Morphology"),
-            ("AD Knowledge Portal", "https://adknowledgeportal.org", "Alzheimer data"),
-            ("OMIM Neuro", "https://omim.org/search?search=neurological", "Genetic disorders"),
-            ("Uniprot Neuro", "https://www.uniprot.org/uniprotkb?query=brain", "Reviewed proteins"),
+            ("Allen Brain Atlas", "https://brain-map.org", "Regional/single-cell expression"),
+            ("SynGO", "https://www.syngoportal.org", "Synaptic gene ontology"),
+            ("NeuroMorpho", "https://neuromorpho.org", "Neuron morphology DB"),
+            ("SFARI Gene", "https://gene.sfari.org", "Autism gene database"),
+            ("Uniprot Brain", "https://www.uniprot.org/uniprotkb?query=brain", "Reviewed proteins"),
         ],
         "key_experiments": [
-            ("iPSC-Neuron (NGN2/NeuroD1 direct conversion)", "2–3 weeks", "Generate patient-specific neurons from skin biopsy — isogenic control essential", "#22c55e"),
-            ("Whole-cell patch-clamp (automated: QPatch/Roboocyte)", "1 week", "Nav/Kv/Cav channel kinetics — GoF channel → seizure, LoF → no AP", "#22c55e"),
-            ("Multi-electrode array (MEA) network analysis", "2 weeks", "Spontaneous firing rate, burst frequency, network synchrony — seizure vs silence", "#22c55e"),
-            ("Proximity ligation assay (PLA) — synaptic proteins", "3 days", "In-situ protein-protein interaction at synapse — no pull-down artefact", "#ffd60a"),
-            ("ThT fluorescence + AFM — aggregate morphology", "2–4 weeks", "Fibril vs oligomer — different toxicity mechanisms require different therapeutic strategy", "#ffd60a"),
-            ("PAMPA-BBB permeability + P-gp efflux ratio", "3 days", "Drug candidate CNS penetrance: Pe>4×10⁻⁶ cm/s AND efflux ratio<2 = CNS-penetrant", "#ff8c42"),
+            ("iPSC-Neuron (NGN2/NeuroD1) + isogenic control", "2–3 weeks", "Patient-specific neurons; isogenic control eliminates genetic background noise", "#22c55e"),
+            ("Multi-electrode array (MEA) — Axion Maestro", "2 weeks", "Network burst rate, synchrony index, ISI CV — detects seizure vs silencing phenotypes", "#22c55e"),
+            ("Whole-cell patch-clamp (automated QPatch)", "1 week", "Nav/Kv/GABA/NMDA kinetics; GoF channel → persistent current → seizure", "#22c55e"),
+            ("Proximity ligation assay (PLA) at synapse", "3 days", "In-situ PPI without pull-down artefact; detects SHANK3-HOMER1 interaction at spine", "#ffd60a"),
+            ("Live-cell Ca²⁺ imaging (GCaMP8 / Fluo-4)", "1 week", "Network Ca²⁺ dynamics; glutamate excitotoxicity, NMDA overactivation", "#ffd60a"),
+            ("PAMPA-BBB + P-gp efflux + MDR1-MDCK", "3 days", "Pe >4×10⁻⁶ cm/s + ER<2 = CNS-penetrant; hERG safety also required", "#ff8c42"),
         ],
         "drug_rules": [
             ("cLogP", "1–3", "Optimal CNS penetrance"),
-            ("MW", "< 450 Da", "Blood-brain barrier size limit"),
+            ("MW", "< 450 Da", "BBB size limit"),
             ("HBD", "≤ 3", "Hydrogen bond donors"),
             ("PSA", "< 90 Å²", "Polar surface area"),
-            ("CNS MPO score", "≥ 4/6", "Multi-parameter optimisation"),
-            ("P-gp substrate", "Avoid", "Efflux pump exclusion"),
+            ("CNS MPO", "≥ 4/6", "Multi-parameter optimisation score"),
+            ("P-gp/BCRP", "Not substrate", "Avoid efflux pump removal"),
         ],
-        "animal_models": ["APP/PS1 (Alzheimer)", "5xFAD (rapid amyloid)", "MPTP (Parkinson)", "SOD1-G93A (ALS)", "SCN1A+/− (Dravet)", "Tau P301S"],
-        "insight": "⚠️ Most CNS drug failures occur due to poor BBB penetrance or failure to validate in human iPSC-neurons. Cross-reference every ClinVar pathogenic variant with Allen Brain Atlas region expression before committing to animal models.",
+        "animal_models": [
+            "APP/PS1 (Alzheimer — amyloid)", "5xFAD (rapid amyloid onset)", "Tau P301S (tauopathy)",
+            "MPTP (dopaminergic Parkinson)", "SOD1-G93A (ALS motor neuron)", "Scn1a+/− (Dravet syndrome)",
+            "Shank3+/− (ASD synaptic)", "Fmr1 KO (Fragile X, mGluR)"
+        ],
+        "insight": "★ SYNAPTIC PROTEINS ARE NOT CLASSICAL DRUG TARGETS: Most synaptic scaffolds (SHANK3, DLG4) lack enzymatic active sites. Drug strategies: (1) stabilise PPI interface, (2) target upstream kinase (mTOR, ERK, CaMKII), (3) ASO to restore haploinsufficient levels. Never assume a synaptic protein is druggable without fpocket analysis of AlphaFold structure.",
+        "bbb_rules": {"cLogP": "1–3", "MW": "<450 Da", "HBD": "≤3", "PSA": "<90Å²", "CNS_MPO": "≥4/6", "Pgp": "Not substrate"},
     },
-    "Cancer Biology": {
+    "Oncology": {
         "icon": "🎗", "color": "#f43f5e", "color2": "#fb7185",
-        "tagline": "Oncogenes · Tumour Suppressors · Somatic Hotspots · Driver Mutations",
-        "desc": "Somatic vs germline split, clonal evolution dynamics, cancer driver validation. Every variant is classified as somatic GoF/LoF. Companion diagnostic potential assessed. Hotspot map generated.",
-        "proteins": ["TP53", "KRAS", "BRCA1", "BRCA2", "EGFR", "MYC", "PTEN", "BRAF", "RB1", "CDK4", "PIK3CA", "APC", "VHL", "IDH1", "ARID1A"],
+        "tagline": "Metastasis · Early Detection · Patient-Specific · Driver Mutations · Tumour Biology",
+        "desc": "Patient-first oncology intelligence. Enter cancer type, stage, and variant for personalised treatment stratification. Metastasis cascade analysis, early onset detection biomarkers, somatic vs germline split, companion diagnostic assessment. Covers all solid tumours and haematological malignancies.",
+        "proteins": [
+            "TP53","KRAS","BRCA1","BRCA2","EGFR","MYC","PTEN","BRAF","RB1","CDK4",
+            "PIK3CA","APC","VHL","IDH1","ARID1A","ALK","ROS1","MET","ERBB2","PALB2"
+        ],
+        "cancer_types": {
+            "Lung adenocarcinoma (LUAD)": {
+                "drivers": ["EGFR","KRAS","ALK","ROS1","MET","BRAF","RET","NTRK1"],
+                "early_markers": ["cfDNA EGFR", "CEA", "CA125", "CYFRA 21-1"],
+                "causes": ["Smoking (KRAS G12C dominant)", "Radon", "Asbestos", "Air pollution (PM2.5 → EGFR amplification)"],
+                "treatments": ["Osimertinib (EGFR ex19del/L858R)", "Alectinib (ALK)", "Selpercatinib (RET)", "Pembrolizumab (PD-L1>50%)", "Chemotherapy (carboplatin+pemetrexed)"],
+                "metastasis_sites": ["Brain (40%)", "Adrenal", "Bone", "Liver"],
+            },
+            "Breast cancer (HR+/HER2−)": {
+                "drivers": ["ESR1","PIK3CA","CDH1","GATA3","MAP3K1","AKT1","BRCA1","BRCA2"],
+                "early_markers": ["CA 15-3", "CEA", "ctDNA PIK3CA", "Mammography + MRI"],
+                "causes": ["BRCA1/2 germline", "Oestrogen exposure", "PARITY", "Alcohol", "Obesity"],
+                "treatments": ["Endocrine therapy (letrozole/fulvestrant)", "CDK4/6 inhibitor (palbociclib)", "PI3Ki (alpelisib for PIK3CA)", "PARP inhibitor (BRCA1/2 germline)", "Chemotherapy (AC-T)"],
+                "metastasis_sites": ["Bone (70%)", "Lung", "Liver", "Brain"],
+            },
+            "Colorectal cancer (CRC)": {
+                "drivers": ["APC","KRAS","TP53","PIK3CA","SMAD4","BRAF V600E","MLH1"],
+                "early_markers": ["CEA", "CA 19-9", "ctDNA APC/KRAS", "FIT (faecal immunochemical test)", "Colonoscopy"],
+                "causes": ["Diet (red/processed meat)", "Obesity", "IBD (UC>CD)", "Lynch syndrome (MLH1/MSH2/MSH6)", "FAP (APC germline)"],
+                "treatments": ["FOLFOX/FOLFIRI + bevacizumab", "Cetuximab/panitumumab (RAS WT)", "BRAF+MEK inhibitor (BRAF V600E)", "Pembrolizumab (MSI-H)", "Trifluridine/tipiracil"],
+                "metastasis_sites": ["Liver (60%)", "Lung", "Peritoneum"],
+            },
+            "Glioblastoma (GBM)": {
+                "drivers": ["EGFR","PTEN","TP53","IDH1","TERT","CDKN2A","RB1","NF1"],
+                "early_markers": ["ctDNA (CSF liquid biopsy)", "EGFR vIII on MRI", "IDH1 R132H (IHC)"],
+                "causes": ["Ionising radiation (prior RT)", "Rare germline (Li-Fraumeni, NF1)", "Majority sporadic"],
+                "treatments": ["Temozolomide + RT (Stupp)", "Tumour Treating Fields (TTFields)", "Bevacizumab (recurrence)", "IDH1 inhibitor (vorasidenib for IDH1-mutant grade 3)", "CAR-T (EGFRvIII — investigational)"],
+                "metastasis_sites": ["Local infiltration (rarely systemic)"],
+            },
+            "Pancreatic ductal adenocarcinoma (PDAC)": {
+                "drivers": ["KRAS","TP53","SMAD4","CDKN2A","BRCA2","PALB2","ATM","MLH1"],
+                "early_markers": ["CA 19-9", "CEA", "ctDNA KRAS G12X", "EUS + ERCP"],
+                "causes": ["Smoking (2×)", "Obesity", "T2D", "Chronic pancreatitis", "BRCA2/PALB2 germline"],
+                "treatments": ["FOLFIRINOX (fit patients)", "Gem+nab-paclitaxel", "PARP inhibitor (BRCA2 germline — olaparib maintenance)", "KRAS G12C inhibitor (sotorasib — limited PDAC use)", "Pembrolizumab (MSI-H, rare)"],
+                "metastasis_sites": ["Liver (80%)", "Peritoneum", "Lung"],
+            },
+            "Melanoma": {
+                "drivers": ["BRAF V600E/K","NRAS","NF1","KIT","CDKN2A","TP53","TERT"],
+                "early_markers": ["LDH", "S100B", "ctDNA BRAF V600", "Dermoscopy AI-assisted"],
+                "causes": ["UV exposure (BRAF V600E signature)", "Tanning beds", "CDKN2A germline", "Xeroderma pigmentosum"],
+                "treatments": ["BRAF+MEK inhibitor (dabrafenib+trametinib)", "Anti-PD1 (pembrolizumab/nivolumab)", "Anti-CTLA4+PD1 (nivolumab+ipilimumab)", "Talimogene laherparepvec (T-VEC, stage III)", "Adjuvant pembrolizumab (resected stage III)"],
+                "metastasis_sites": ["Lung", "Brain (30%)", "Liver", "Bone"],
+            },
+        },
+        "metastasis_cascade": [
+            ("1. Local invasion", "EMT: E-cadherin↓ vimentin↑", "TWIST/SNAIL/ZEB", "#ff2d55"),
+            ("2. ECM degradation", "MMP-2/9 secretion + uPA", "TIMP2 resistance", "#ff2d55"),
+            ("3. Intravasation", "CTC into blood/lymph vessels", "EpCAM+ CTCs", "#ff8c42"),
+            ("4. Survival in circulation", "Anoikis resistance + platelet coating", "CTC clusters", "#ff8c42"),
+            ("5. Extravasation", "Organ-specific arrest", "CXCR4→CXCL12", "#ffd60a"),
+            ("6. Pre-metastatic niche", "Exosomes prep organ before CTCs", "LOX + fibronectin", "#ffd60a"),
+            ("7. Colonisation", "Dormancy → outgrowth", "Bone: RANKL/OPG", "#22c55e"),
+        ],
+        "early_detection": [
+            ("Liquid biopsy (ctDNA)", "VAF >0.1% detectable — 5+ years before symptoms in some cancers. ddPCR or ultra-deep sequencing (60,000×). Best for CRC, NSCLC, PDAC monitoring."),
+            ("Multi-cancer early detection (MCED)", "Galleri (Grail), CancerSEEK — detect 50+ cancers from single blood draw via methylation signatures. Stage I sensitivity ~40%, Stage II ~70%."),
+            ("Protein biomarkers", "CA-125 (ovarian, >35 U/mL), PSA (prostate, >4 ng/mL), AFP (HCC, >400 ng/mL), CEA (CRC/lung, >5 ng/mL). Low sensitivity for early-stage."),
+            ("Germline risk stratification", "BRCA1/2, MLH1/MSH2/MSH6, TP53 (Li-Fraumeni), PALB2 — cascade testing in families. Defines surveillance protocol."),
+            ("AI-assisted imaging", "Mammography AI (Transpara, iCAD) reduces radiologist workload 30%. CT colonography AI detects polyps ≥6mm. LungRads AI for nodule risk."),
+        ],
         "databases": [
             ("COSMIC", "https://cancer.sanger.ac.uk/cosmic", "Somatic mutations"),
-            ("cBioPortal", "https://www.cbioportal.org", "Cancer genomics"),
-            ("TCGA", "https://portal.gdc.cancer.gov", "Pan-cancer data"),
-            ("OncoKB", "https://www.oncokb.org", "Actionable mutations"),
-            ("ClinicalTrials", "https://clinicaltrials.gov", "Active trials"),
+            ("cBioPortal", "https://www.cbioportal.org", "Pan-cancer genomics"),
+            ("OncoKB", "https://www.oncokb.org", "Actionable variants"),
+            ("TCGA", "https://portal.gdc.cancer.gov", "Multi-omics data"),
+            ("DepMap", "https://depmap.org", "CRISPR dependency screens"),
         ],
         "key_experiments": [
-            ("CRISPR knock-in of hotspot variant", "4–6 weeks", "Causal validation — PS3 evidence for ClinGen classification", "#22c55e"),
-            ("Organoid drug sensitivity (PDO)", "8–12 weeks", "Patient-derived organoid — predict therapy response before treatment", "#22c55e"),
-            ("ctDNA liquid biopsy (ddPCR/ultra-deep)", "1 week", "MRD detection at 0.01% VAF — track clonal evolution", "#22c55e"),
-            ("Xenograft metastasis assay (tail-vein)", "10–16 weeks", "In vivo metastatic colonisation — lung/liver tropism", "#ff8c42"),
-            ("Spatial transcriptomics (10x Visium)", "3 weeks", "Tumour microenvironment heterogeneity — cellular neighbourhoods", "#ffd60a"),
-            ("Single-cell ATAC-seq", "2 weeks", "Chromatin accessibility — drug resistance epigenome", "#ffd60a"),
+            ("Patient-derived organoid (PDO) drug sensitivity", "8–12 weeks", "Gold standard for predicting patient response — co-culture with CAFs for stromal context", "#22c55e"),
+            ("ctDNA liquid biopsy (ddPCR + NGS)", "1 week", "MRD at 0.01% VAF — track treatment response and early relapse; no tumour biopsy needed", "#22c55e"),
+            ("CRISPR knock-in of patient hotspot", "4–6 weeks", "PS3 causal evidence for ClinGen variant classification; use AAVS1 safe harbour for LoF", "#22c55e"),
+            ("Transwell invasion + Matrigel assay", "48h", "Quantify invasive capacity of variant vs WT; add MMP inhibitor to confirm mechanism", "#ffd60a"),
+            ("Tail-vein metastasis assay (GFP+ cells)", "10–16 weeks", "In vivo lung colonisation; bioluminescence imaging for kinetics; also orthotopic option", "#ff8c42"),
+            ("Spatial transcriptomics (10x Visium/Xenium)", "3 weeks", "Tumour microenvironment: T cell exclusion zones, CAF subtypes, tumour-stroma interface", "#ffd60a"),
         ],
         "drug_rules": [
-            ("Oncogenic mutation", "GoF = inhibit", "Gain-of-function → inhibitor"),
-            ("TSG loss", "Synthetic lethal", "PARP inhibitor for BRCA loss"),
-            ("Companion Dx", "Required for rare", "ctDNA panel if MAF < 1%"),
-            ("Selectivity", "Cancer vs normal", "Therapeutic window essential"),
-            ("Resistance", "Plan upfront", "Acquired resistance in 6–18mo"),
-            ("FDA pathway", "Breakthrough if rare", "< 200K US patients = Breakthrough"),
+            ("Driver vs passenger", "COSMIC tier 1 only", "Only tier 1 drivers justify targeted therapy"),
+            ("Synthetic lethality", "BRCA + PARP", "LoF gene → its DNA repair partner is the target"),
+            ("Resistance mechanism", "Plan 2nd line upfront", "EGFR C797S, KRAS bypass — pre-sequence ctDNA"),
+            ("Companion Dx", "Mandatory for rare", "FDA requires CDx for targeted drugs"),
+            ("TMB/MSI", "Biomarker for ICI", "TMB>10 mut/Mb OR MSI-H → pembrolizumab"),
+            ("Window of opportunity", "Neoadjuvant trials", "Treat pre-surgery to measure tumour response"),
         ],
-        "animal_models": ["Kras-G12D (PDAC)", "Trp53-null (sarcoma)", "BRCA1 conditional", "APC-min (colorectal)", "PyMT (breast)", "B-RAF V600E melanoma"],
-        "insight": "⚠️ Never invest in a cancer target without checking COSMIC. A 'pathogenic' ClinVar germline variant in a cancer-linked gene may be a FOUNDER MUTATION (benign population variant) — not a somatic driver. Always split somatic from germline before interpreting ClinVar data.",
+        "animal_models": [
+            "PDX (patient-derived xenograft)", "GEMMs (Kras-G12D/p53-null)", "Syngeneic (MC38, CT26 for immunotherapy)",
+            "Organoid orthotopic implant", "Zebrafish xenograft (rapid, 5 days)", "CAR-T humanised NSG"
+        ],
+        "insight": "★ PATIENT-FIRST: The cancer type and mutation context completely determine which experiment comes next. KRAS G12C → sotorasib. BRCA2 → PARP inhibitor. MSI-H → pembrolizumab. NEVER recommend a generic 'kinase inhibitor screen' without first checking OncoKB tier and COSMIC tissue-specific frequency. Somatic hotspot ≠ germline pathogenic variant — always check variant origin.",
     },
     "Pharmaceuticals": {
         "icon": "💊", "color": "#00d4ff", "color2": "#38bdf8",
-        "tagline": "GPCR Targets · Drug Discovery · Tractability · HTS · Clinical Development",
-        "desc": "Full drug discovery pipeline from target validation to IND filing. GPCR Filamin piggyback analysis, OpenTargets tractability, patent landscape, ADMET, selectivity panel, and clinical development timeline.",
-        "proteins": ["ADRB2", "ADRB1", "AGTR1", "DRD2", "FLNA", "GRK2", "OPRM1", "CHRM2", "HTR2A", "ADORA2A", "CXCR4", "GPR55", "FFAR1", "S1PR1"],
+        "tagline": "GPCR Targets · Druggability · HTS · Filamin Assay · Clinical Pipeline",
+        "desc": "Full drug discovery pipeline. GPCR Filamin piggyback analysis (PMID:26124276), OpenTargets tractability scoring, ChEMBL scaffold analysis, ADMET profiling, selectivity panel, patent landscape, and clinical development timeline from target to approval.",
+        "proteins": [
+            "ADRB2","ADRB1","AGTR1","DRD2","FLNA","GRK2","OPRM1","CHRM2",
+            "HTR2A","ADORA2A","CXCR4","GPR55","FFAR1","S1PR1","GHRL","GLP1R"
+        ],
         "databases": [
-            ("OpenTargets", "https://platform.opentargets.org", "Tractability + evidence"),
-            ("ChEMBL", "https://www.ebi.ac.uk/chembl", "Bioactive compounds"),
+            ("OpenTargets", "https://platform.opentargets.org", "Tractability + genetic evidence"),
+            ("ChEMBL", "https://www.ebi.ac.uk/chembl", "Bioactive compounds + IC50"),
+            ("IUPHAR/BPS", "https://www.guidetopharmacology.org", "Pharmacology targets"),
             ("DGIdb", "https://dgidb.org", "Drug-gene interactions"),
-            ("IUPHAR/BPS", "https://www.guidetopharmacology.org", "Drug targets"),
-            ("PDB", "https://www.rcsb.org", "Co-crystal structures"),
+            ("PDB", "https://www.rcsb.org", "Co-crystal structures for docking"),
         ],
         "key_experiments": [
-            ("Filamin Ser2152-P IP assay ★", "1 week", "PRIMARY GPCR readout — PMID:26124276", "#22c55e"),
-            ("cAMP HTRF (Gs coupling)", "3 days", "Primary second messenger", "#22c55e"),
-            ("β-arrestin BRET (bias)", "3 days", "Biased signalling profiling", "#22c55e"),
-            ("Thermal shift assay (TSA)", "1 week", "Compound engagement — ΔTm>3°C", "#ffd60a"),
-            ("SPR binding kinetics", "2 weeks", "KD, kon, koff measurement", "#ffd60a"),
-            ("ADMET panel", "2 weeks", "CYP, hERG, plasma protein binding", "#ff8c42"),
+            ("Filamin Ser2152-P IP assay ★ PRIMARY", "1 week", "GPCR agonist → H8 dislodges → PKA phosphorylates Ser2152. Most receptor-proximal GPCR readout. PMID:26124276", "#22c55e"),
+            ("cAMP HTRF (Gs) / IP-ONE (Gq)", "3 days", "Second messenger — confirms G-protein coupling class (Gs/Gi/Gq/G12)", "#22c55e"),
+            ("β-arrestin NanoBRET / PathHunter", "3 days", "Biased agonism profiling — separate G-protein from β-arrestin signalling arms", "#22c55e"),
+            ("SPR binding kinetics (Biacore/OpenSPR)", "2 weeks", "KD, kon, koff — residence time predicts in vivo duration of action", "#ffd60a"),
+            ("hERG patch-clamp + CYP3A4 inhibition", "1 week", "Cardiac safety + DDI liability — must pass before advancing to animals", "#ff8c42"),
+            ("ADMET panel (Caco-2, PPB, metabolic stability)", "2 weeks", "Oral bioavailability gates — fail early, fail cheap", "#ff8c42"),
         ],
         "drug_rules": [
-            ("Ro5", "MW<500, logP<5", "Oral bioavailability"),
-            ("GPCR proven", "34% FDA drugs", "Class A GPCRs best tractability"),
-            ("Selectivity", "1000× vs off-targets", "SPR selectivity panel"),
-            ("hERG", "IC50 > 30× Cmax", "Cardiac safety — QT prolongation"),
-            ("CYP3A4", "Not strong inhibitor", "Drug-drug interaction risk"),
-            ("Patent", "Check FTO upfront", "Freedom to operate analysis"),
+            ("Lipinski Ro5", "MW<500, cLogP<5, HBD≤5, HBA≤10", "Oral bioavailability"),
+            ("GPCR proven", "34% of all FDA drugs", "Class A GPCRs — best tractability class"),
+            ("hERG safety", "IC50 > 30× free Cmax", "QT prolongation risk — cardiac safety"),
+            ("CYP3A4", "Not strong inhibitor", "Avoid drug-drug interaction"),
+            ("FTO (patents)", "Check before synthesising", "Freedom to operate — avoid IP infringement"),
+            ("Selectivity", "1000× vs closest off-target", "SPR/radioligand selectivity panel"),
         ],
-        "animal_models": ["GPCR knockout mice", "Humanised receptor knock-in", "Cardiac overexpression (Tg)", "GRK2 haploinsufficiency", "β-arrestin DKO"],
-        "insight": "★ FILAMIN PIGGYBACK: ~300 Class A GPCRs carry an H8 Filamin-Binding Motif. Agonist → H8 dislodges FLNA → PKA phosphorylates Ser2152. This is MORE PROXIMAL than cAMP, IP3, or β-arrestin. Use this assay FIRST before committing to HTS. β-Arrestin 2 (ARRB2) carries NO confirmed Mendelian disease variants — deprioritise as primary target (PMID:26124276).",
+        "animal_models": [
+            "GPCR knockout mice (β2AR KO, DRD2 KO)", "Humanised receptor knock-in (human ADRB2 in murine background)",
+            "Cardiac overexpression model (βAR-Tg)", "GRK2 haploinsufficiency (cardioprotective)", "β-arrestin DKO (arrestin-null)"
+        ],
+        "insight": "★ FILAMIN PIGGYBACK: ~300 Class A GPCRs have H8 Filamin-Binding Motif. GPCR agonist → H8 dislodges FLNA Ig21 → PKA phosphorylates Ser2152. More proximal than cAMP/IP3/β-arrestin. This assay discriminates true GPCR activation from off-target effects. ARRB2 has NO confirmed Mendelian disease variants — never prioritise as primary target.",
     },
     "Microbiome": {
         "icon": "🦠", "color": "#22c55e", "color2": "#4ade80",
-        "tagline": "Taxonomy · BGC · Host-Microbe · Pathobionts · SCFA · Curli",
-        "desc": "Microbiome-specific intelligence: taxonomic annotation, biosynthetic gene cluster analysis, host-receptor mapping, pathobiont identification, and SCFA pathway context. Supports metagenomics, 16S, and functional annotation workflows.",
+        "tagline": "Taxonomy · Annotation Engine · Host-Microbe · BGC · Pathobionts · SCFA",
+        "desc": "Microbiome intelligence platform. AI-powered annotation engine converts vague annotations (biosynthesis, chemosynthesis) into specific EC-numbered pathways. Curated taxonomy: what each microbe does, its ecological role, clinical significance. BGC prediction, host-receptor mapping, SCFA pathway context.",
         "proteins": [],
         "databases": [
-            ("KEGG", "https://www.kegg.jp", "Metabolic pathways"),
-            ("MiBIG", "https://mibig.secondarymetabolites.org", "BGC database"),
-            ("CARD", "https://card.mcmaster.ca", "Antibiotic resistance"),
-            ("GMrepo", "https://gmrepo.humangut.info", "Gut metagenomes"),
-            ("HMP", "https://hmpdacc.org", "Human microbiome project"),
+            ("KEGG", "https://www.kegg.jp", "Metabolic pathways + EC numbers"),
+            ("antiSMASH", "https://antismash.secondarymetabolites.org", "BGC prediction"),
+            ("MiBIG", "https://mibig.secondarymetabolites.org", "Known BGC clusters"),
+            ("GMrepo", "https://gmrepo.humangut.info", "Human gut metagenomes"),
+            ("CARD", "https://card.mcmaster.ca", "Antibiotic resistance genes"),
         ],
         "key_experiments": [
-            ("16S rRNA amplicon sequencing", "1 week", "Taxonomic profiling", "#22c55e"),
-            ("Shotgun metagenomics", "2 weeks", "Functional gene content", "#22c55e"),
-            ("Metabolomics (SCFA panel)", "3 days", "Butyrate/propionate/acetate LC-MS", "#ffd60a"),
-            ("Germ-free mouse colonisation", "8–12 weeks", "Causality test — mono-colonisation", "#ff8c42"),
-            ("Biofilm imaging (confocal)", "1 week", "Curli + c-di-GMP visualisation", "#ffd60a"),
-            ("Host-receptor binding (SPR)", "2 weeks", "FadA·E-cadherin, CsgA·TLR2", "#ffd60a"),
+            ("16S V3-V4 amplicon sequencing (Illumina)", "1 week", "Taxonomic profiling — genus level. Use Silva/GTDB for taxonomy. α-diversity (Shannon) + β-diversity (Bray-Curtis)", "#22c55e"),
+            ("Shotgun metagenomics (WGS)", "2 weeks", "Species + functional genes. HUMAnN3 for pathway abundance. DIAMOND + eggNOG-mapper v2 for annotation", "#22c55e"),
+            ("SCFA metabolomics (GC-MS/LC-MS)", "3 days", "Butyrate, propionate, acetate quantification. Faecal + plasma. Correlate with 16S profiles", "#ffd60a"),
+            ("Germ-free mouse mono-colonisation", "8–12 weeks", "Causal validation — single microbe defines phenotype. No confounders from other microbes", "#ff8c42"),
+            ("Metatranscriptomics (RNA-seq)", "1 week", "Active genes not just present genes. Depleted rRNA with ribodepletion. Maps to MAGs", "#ffd60a"),
+            ("In vitro biofilm + host cell co-culture", "1 week", "Bacterial biofilm formation on epithelial cells (T84, Caco-2). FadA/CsgA invasion assay", "#ffd60a"),
         ],
         "drug_rules": [
-            ("Specificity", "Avoid broad-spectrum", "Preserve microbiome diversity"),
-            ("Bacteriostatic vs cidal", "Context-dependent", "Severity of infection"),
-            ("Biofilm penetrance", "Key challenge", "Biofilm 1000× more resistant"),
-            ("Postbiotics", "Metabolite target", "SCFA, indoles, secondary BAs"),
-            ("Phage therapy", "Emerging option", "Precision antimicrobial"),
-            ("FMT", "Causal validation", "Before any intervention"),
+            ("Narrow spectrum", "Target pathobiont not commensal", "Avoid microbiome disruption"),
+            ("Biofilm", "Need biofilm-penetrating formulation", "Standard antibiotics fail biofilm"),
+            ("Phage therapy", "Precision antimicrobial option", "Strain-specific, no resistance spread"),
+            ("FMT", "Causal validation first", "Demonstrate dysbiosis → phenotype causally"),
+            ("Postbiotics", "SCFA/indoles as therapeutics", "Modulate host without live bacteria"),
+            ("Prebiotics", "Selectively feed beneficials", "FOS, inulin, resistant starch"),
         ],
-        "animal_models": ["Germ-free (GF) mice", "Humanised gut microbiome", "DSS colitis (IBD)", "HFD-induced dysbiosis", "C. diff infection", "SIHUMI consortium"],
-        "insight": "⚠️ ANNOTATION QUALITY: Most metagenomics databases have >30% hypothetical/vague annotations. Always run eggNOG-mapper v2 + DIAMOND BLAST before assigning function. A 'biosynthesis' annotation with no EC number is NOT actionable. Cross-reference MiBIG for BGC predictions before investing in wet-lab.",
+        "animal_models": [
+            "Germ-free (GF) C57BL/6", "Humanised gut (HGF mice)", "DSS colitis (IBD model)",
+            "HFD-induced dysbiosis (metabolic syndrome)", "C. difficile infection (antibiotic pretreatment)", "Gnotobiotic SIHUMI consortium"
+        ],
+        "insight": "★ THE PI'S PROBLEM SOLVED: >30% of metagenomics annotations are 'biosynthesis', 'metabolism', 'transport' — completely uninformative. This platform uses AI (LLM + eggNOG DB) to convert every vague annotation to a specific EC-numbered pathway. No other tool does this. 'Lipid biosynthesis' → 'FASII: AccABCD (EC 6.4.1.2) → FabB (EC 2.3.1.41) → C16:0 palmitate'. Upload your annotation list below.",
     },
     "Molecular Biology": {
         "icon": "⚛️", "color": "#f97316", "color2": "#fb923c",
-        "tagline": "Phosphorylation · Kinase · AlphaFold · STRING · PTMs · Structural Domains",
-        "desc": "Deep mechanistic analysis. Phosphorylation cascades, kinase-substrate networks, structural domain function, protein-protein interaction biology, and PTM landscape. Full structural and biochemical characterisation workflow.",
-        "proteins": ["FLNA", "MAPK1", "AKT1", "SRC", "CDK2", "EGFR", "JAK2", "PIK3CA", "MTOR", "PRKACA", "CAMK2A", "GSK3B", "CHEK1", "ATM"],
+        "tagline": "Phosphorylation · Kinase-substrate · AlphaFold · STRING · PTMs · Structural",
+        "desc": "Deep mechanistic analysis. Phosphorylation cascades, kinase-substrate networks, structural domain function, PPI biology, and the full PTM landscape. Every analysis shows phosphorylatable residues, kinase recognition motifs, and catalytic domain architecture. Integrated with PhosphoSitePlus.",
+        "proteins": [
+            "FLNA","MAPK1","AKT1","SRC","CDK2","EGFR","JAK2","PIK3CA",
+            "MTOR","PRKACA","CAMK2A","GSK3B","CHEK1","ATM","AURKA","PLK1"
+        ],
         "databases": [
-            ("PhosphoSitePlus", "https://www.phosphosite.org", "PTM database"),
+            ("PhosphoSitePlus", "https://www.phosphosite.org", "Curated PTM sites"),
             ("STRING-DB", "https://string-db.org", "Interaction networks"),
-            ("AlphaFold DB", "https://alphafold.ebi.ac.uk", "3D structures"),
-            ("RCSB PDB", "https://www.rcsb.org", "Experimental structures"),
-            ("KinBase", "http://kinase.com/kinbase", "Kinase classification"),
+            ("KinBase / KinHub", "http://kinase.com/kinbase", "Kinase family classification"),
+            ("AlphaFold DB", "https://alphafold.ebi.ac.uk", "3D predicted structures"),
+            ("BioGRID", "https://thebiogrid.org", "Physical interactions"),
         ],
         "key_experiments": [
-            ("ADP-Glo kinase assay", "1 week", "Vmax/Km — WT vs mutants — GoF vs LoF", "#22c55e"),
-            ("HDX-MS (hydrogen-deuterium exchange)", "2 weeks", "Residue-level conformational dynamics map", "#22c55e"),
-            ("AP-MS (affinity purification + mass spec)", "2 weeks", "Unbiased interactome — identifies ALL binding partners", "#22c55e"),
-            ("FRET / NanoBRET live-cell proximity", "1 week", "Real-time interaction dynamics in intact cells", "#ffd60a"),
-            ("SAXS (small-angle X-ray scattering)", "3 days", "Solution-state oligomerisation and shape", "#ffd60a"),
-            ("Cryo-EM single-particle analysis", "6–18 months", "Near-atomic structure without crystallisation", "#ff8c42"),
+            ("ADP-Glo kinase assay (Promega)", "1 week", "Km, Vmax, kcat for WT vs P/LP variant. Determines GoF (↑Vmax) vs LoF (↓kcat). Substrate peptide panel for selectivity", "#22c55e"),
+            ("HDX-MS (hydrogen-deuterium exchange mass spec)", "2 weeks", "Residue-level conformational dynamics. Maps allosteric communication and ligand-induced changes", "#22c55e"),
+            ("AP-MS (affinity purification + mass spec)", "2 weeks", "Unbiased interactome — ALL binding partners in one experiment. Use SAINT scoring for FDR", "#22c55e"),
+            ("NanoBRET / BRET2 proximity assay", "1 week", "Real-time kinase-substrate interaction in live cells. No fixation artefact", "#ffd60a"),
+            ("SAXS (solution small-angle X-ray scattering)", "3 days", "Solution oligomeric state and shape — captures dynamic ensemble not crystal packing", "#ffd60a"),
+            ("Cryo-EM single-particle (300 kV Titan Krios)", "6–18 months", "Near-atomic structure; especially good for large complexes >100 kDa", "#ff8c42"),
         ],
         "drug_rules": [
-            ("Kinase selectivity", "Kinome-wide panel", "KINOMEscan 468 kinases"),
-            ("ATP competition", "Type I/II/III", "Allosteric > ATP-competitive for selectivity"),
-            ("Substrate competition", "PPI inhibitor", "Docking groove blocking peptides"),
-            ("PROTAC", "Degrade target", "Bypass resistance mutations"),
-            ("Covalent", "Irreversible Cys", "High potency, low off-rate"),
-            ("Fragment", "Starting point", "Ligand efficiency > 0.3"),
+            ("Kinome selectivity", "KINOMEscan 468 kinases", "Off-target kinase inhibition = toxicity"),
+            ("DFG conformation", "In=Type I, Out=Type II", "Type II more selective but slower binding"),
+            ("Covalent warhead", "Cys or Lys near ATP site", "Irreversible — high potency, resistance-prone"),
+            ("PROTAC", "E3 ligase + target binder", "Degrade target entirely — bypass resistance mutations"),
+            ("Allosteric site", "Remote from active site", "Highest selectivity; myristate site (ABL), PIF pocket (PDK1)"),
+            ("Fragment FBDD", "MW<300, LE>0.3", "Start with weak binders, grow into leads"),
         ],
-        "animal_models": ["Conditional knockout (Cre-lox)", "Knock-in mutation (CRISPR)", "Inducible expression (Tet-on)", "Phospho-dead/mimetic knock-in", "Domain-swap chimeras"],
-        "insight": "★ PHOSPHORYLATION FIRST: Before any wet-lab, map all Ser/Thr/Tyr in the protein against PhosphoSitePlus curated sites. Cross-reference with STRING for kinase partners. Pathogenic variants that alter phosphorylation site consensus (e.g. p.Ser→Ala at annotated PKA site) are high-priority functional candidates.",
+        "animal_models": [
+            "Conditional KO (Cre-lox/ERT2)", "Phospho-dead knock-in (Ser→Ala)", "Phospho-mimic knock-in (Ser→Asp/Glu)",
+            "CRISPR activation/interference (CRISPRa/i)", "Auxin-inducible degron (AID tag)", "Domain-swap chimera mouse"
+        ],
+        "insight": "★ PHOSPHORYLATION SITE FIRST: Before any wet-lab, map all S/T/Y against PhosphoSitePlus. Pathogenic variants that alter kinase recognition consensus (e.g. p.Arg→Gln at [RK]-xx-[ST] motif) are highest-priority functional candidates. Cross-reference kinase by STRING network — then validate by ADP-Glo kinase assay with specific synthetic peptide substrate.",
     },
 }
 
+# ── Domain selection page ──────────────────────────────────────────────────────
 # ── Domain selection page ──────────────────────────────────────────────────────
 if not st.session_state.get("research_domain"):
     # Animated hero
@@ -4849,9 +4960,60 @@ if not st.session_state.get("research_domain"):
                 )
                 st.markdown(f"<div style='margin-bottom:.5rem;'>{db_str}</div>", unsafe_allow_html=True)
 
+                # ── Domain-specific unique panels ─────────────────────────────────
+                if dk == "Oncology":
+                    st.markdown(f"<div style='color:{dm['color']};font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin:.6rem 0 .3rem;'>Cancer Types & Drivers</div>", unsafe_allow_html=True)
+                    cancer_types_list = list(dm.get("cancer_types",{}).keys())
+                    sel_ct = st.selectbox("Select cancer type for tailored analysis:", ["— select —"] + cancer_types_list, key=f"ct_sel_{dk}")
+                    if sel_ct and sel_ct != "— select —":
+                        ct_data = dm["cancer_types"][sel_ct]
+                        c_a, c_b = st.columns(2)
+                        with c_a:
+                            st.markdown(f"<div style='color:#ff2d55;font-size:.68rem;font-weight:700;margin-bottom:3px;'>🔬 Driver genes</div>", unsafe_allow_html=True)
+                            st.markdown(" ".join(f"<span style='background:#ff2d5518;color:#ff2d55;border:1px solid #ff2d5530;border-radius:5px;padding:1px 7px;font-size:.67rem;margin:2px;display:inline-block;'>{g}</span>" for g in ct_data["drivers"]), unsafe_allow_html=True)
+                            st.markdown(f"<div style='color:#ffd60a;font-size:.68rem;font-weight:700;margin:5px 0 3px;'>🩺 Early detection markers</div>", unsafe_allow_html=True)
+                            for m in ct_data["early_markers"]: st.markdown(f"<div style='color:#4a7090;font-size:.7rem;padding:1px 0;'>◆ {m}</div>", unsafe_allow_html=True)
+                            st.markdown(f"<div style='color:#22c55e;font-size:.68rem;font-weight:700;margin:5px 0 3px;'>🏥 Metastasis sites</div>", unsafe_allow_html=True)
+                            for ms in ct_data.get("metastasis_sites",[]): st.markdown(f"<div style='color:#4a7090;font-size:.7rem;'>→ {ms}</div>", unsafe_allow_html=True)
+                        with c_b:
+                            st.markdown(f"<div style='color:#ff8c42;font-size:.68rem;font-weight:700;margin-bottom:3px;'>⚠ Causes & risk factors</div>", unsafe_allow_html=True)
+                            for c_cause in ct_data["causes"]: st.markdown(f"<div style='color:#4a7090;font-size:.7rem;padding:1px 0;'>• {c_cause}</div>", unsafe_allow_html=True)
+                            st.markdown(f"<div style='color:#00e5ff;font-size:.68rem;font-weight:700;margin:5px 0 3px;'>💊 Treatments</div>", unsafe_allow_html=True)
+                            for tx in ct_data["treatments"]: st.markdown(f"<div style='color:#4a7090;font-size:.7rem;padding:1px 0;'>→ {tx}</div>", unsafe_allow_html=True)
+                    # Early detection panel
+                    st.markdown(f"<div style='color:{dm['color']};font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin:.6rem 0 .3rem;'>Early Detection Methods</div>", unsafe_allow_html=True)
+                    for ed_name, ed_desc in dm.get("early_detection",[]):
+                        st.markdown(f"<div style='background:#010810;border:1px solid #071828;border-radius:7px;padding:6px 10px;margin:2px 0;'><span style='color:#ff2d55;font-size:.7rem;font-weight:700;'>{ed_name}</span><div style='color:#3a6080;font-size:.7rem;margin-top:2px;line-height:1.5;'>{ed_desc}</div></div>", unsafe_allow_html=True)
+                    # Metastasis cascade
+                    st.markdown(f"<div style='color:{dm['color']};font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin:.6rem 0 .3rem;'>Metastasis Cascade</div>", unsafe_allow_html=True)
+                    for step, mech, marker, mclr in dm.get("metastasis_cascade",[]):
+                        st.markdown(f"<div style='display:flex;gap:8px;padding:3px 0;border-bottom:1px solid #050e18;'><span style='color:{mclr};font-size:.67rem;font-weight:700;min-width:110px;'>{step}</span><span style='color:#3a6080;font-size:.67rem;'>{mech}</span><span style='color:#1e4060;font-size:.65rem;margin-left:auto;white-space:nowrap;'>Marker: {marker}</span></div>", unsafe_allow_html=True)
+
+                elif dk == "Neuroscience":
+                    st.markdown(f"<div style='color:{dm['color']};font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin:.6rem 0 .3rem;'>Neural Protein Networks</div>", unsafe_allow_html=True)
+                    for circuit, proteins_list in dm.get("neural_proteins",{}).items():
+                        with st.expander(f"⚡ {circuit}", expanded=False):
+                            st.markdown(" ".join(f"<span style='background:#6366f118;color:#818cf8;border:1px solid #6366f130;border-radius:5px;padding:1px 7px;font-size:.67rem;cursor:pointer;' title='Click to analyse'>{p}</span>" for p in proteins_list), unsafe_allow_html=True)
+                            for pi2, p2 in enumerate(proteins_list[:3]):
+                                if st.button(f"→ Analyse {p2}", key=f"neuro_prot_{dk}_{circuit[:8]}_{pi2}"):
+                                    st.session_state["research_domain"] = dk; st.session_state["_trigger_search"] = p2; st.session_state["domain_expanded"] = None; st.rerun()
+                    st.markdown(f"<div style='color:{dm['color']};font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin:.6rem 0 .3rem;'>Disease → Key Proteins</div>", unsafe_allow_html=True)
+                    for dis_n, dis_prots in dm.get("disease_protein_map",{}).items():
+                        st.markdown(f"<div style='display:flex;gap:8px;padding:3px 0;border-bottom:1px solid #050e18;align-items:center;'><span style='color:#6366f1;font-size:.67rem;min-width:130px;font-weight:600;'>{dis_n}</span>" + " ".join(f"<span style='color:#3a6080;font-size:.65rem;'>{p}</span>" for p in dis_prots[:5]) + "</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='color:{dm['color']};font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin:.6rem 0 .3rem;'>BBB Drug Rules</div>", unsafe_allow_html=True)
+                    bbb = dm.get("bbb_rules",{})
+                    st.markdown("<div style='display:flex;gap:6px;flex-wrap:wrap;'>" + "".join(f"<div style='background:#010810;border:1px solid #071828;border-radius:6px;padding:4px 9px;'><div style='color:#6366f1;font-size:.65rem;font-weight:700;'>{k}</div><div style='color:#3a6080;font-size:.67rem;'>{v}</div></div>" for k,v in bbb.items()) + "</div>", unsafe_allow_html=True)
+
+                elif dk == "Microbiome":
+                    st.markdown(f"<div style='color:{dm['color']};font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin:.6rem 0 .3rem;'>AI Annotation Preview</div>", unsafe_allow_html=True)
+                    examples = [("biosynthesis","→ FASII (FabB EC 2.3.1.41, FabG EC 1.1.1.100) — lipid chain elongation 2C/cycle → C16:0 palmitate"),("chemosynthesis","→ AMO (EC 1.14.99.39) + HAO (EC 1.7.2.6) — ammonia oxidation (AOB) OR Sox system (SOB)"),("protein aggregation","→ Curli: CsgA+CsgB → biofilm amyloid → TLR2/TLR1 innate immunity trigger"),("hypothetical protein","→ AlphaFold+Foldseek → eggNOG-mapper v2 → InterProScan → subcellular localisation")]
+                    for vague, specific in examples:
+                        st.markdown(f"<div style='display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #050e18;'><span style='color:#ff2d55;font-size:.67rem;min-width:120px;font-weight:600;'>❌ {vague}</span><span style='color:#22c55e;font-size:.67rem;line-height:1.4;'>{specific}</span></div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='color:#22c55e;font-size:.7rem;margin-top:6px;font-style:italic;'>Enter any annotation in the Microbiome workspace → AI expands it to EC-numbered pathways with experimental validation strategies.</div>", unsafe_allow_html=True)
+
                 # Animal models
                 st.markdown(
-                    f"<div style='color:#1e4060;font-size:.69rem;margin-bottom:.5rem;'>"
+                    f"<div style='color:#1e4060;font-size:.69rem;margin:.5rem 0;'>"
                     f"<span style='color:{dm['color']};font-weight:600;font-size:.68rem;'>Animal models: </span>"
                     + " · ".join(f"<span style='color:#3a6080;'>{m}</span>" for m in dm["animal_models"])
                     + "</div>",
@@ -6217,10 +6379,10 @@ if _rd_now and _rd_meta_now and st.session_state.get("pdata"):
     domain_specific_note = ""
     if _rd_now == "Neuroscience":
         domain_specific_note = (
-            f"🧠 <b>Neuroscience lens:</b> BBB requirements active (MW<450, cLogP 1–3, PSA<90Å²). "
-            f"Allen Brain Atlas cross-reference recommended. Validate in iPSC-neurons (NGN2) before animal models."
+            f"🧠 <b>Neuroscience lens:</b> Synaptic protein context active. BBB rules (MW<450, cLogP 1–3, PSA<90Å²). "
+            f"Neural circuit network + disease→protein map in Explorer tab. Allen Brain Atlas cross-reference recommended."
         )
-    elif _rd_now == "Cancer Biology":
+    elif _rd_now == "Oncology":
         domain_specific_note = (
             f"🎗 <b>Cancer Biology lens:</b> Somatic/germline split applied. Check COSMIC for hotspot co-occurrence. "
             f"ClinVar pathogenic = germline risk; COSMIC = somatic driver. ctDNA companion Dx assessed."
@@ -9129,12 +9291,15 @@ dr();
 try{{
   var viewer=$3Dmol.createViewer(document.getElementById('v'),{{backgroundColor:'#010306'}});
   viewer.addModel(`{pdb_esc}`,'pdb');
-  viewer.setStyle({{}},{{surface:{{opacity:.72,colorfunc:function(a){{
-    if(['LYS','ARG','HIS'].includes(a.resn)) return '#4a90d9';
-    if(['ASP','GLU'].includes(a.resn)) return '#ff2d55';
-    return '#3a5a7a';
-  }}}}}});
-  viewer.setStyle({{}},{{cartoon:{{opacity:.25,color:'spectrum'}}}});
+  viewer.setStyle({{}},{{cartoon:{{color:'spectrum',opacity:0.45}}}});
+  viewer.addSurface($3Dmol.SurfaceType.VDW,{{opacity:0.80,colorfunc:function(a){{
+    var pos=['LYS','ARG','HIS'];
+    var neg=['ASP','GLU'];
+    if(pos.indexOf(a.resn)>=0) return '#00aaff';
+    if(neg.indexOf(a.resn)>=0) return '#ff3355';
+    if(['PHE','TRP','TYR'].indexOf(a.resn)>=0) return '#ff9900';
+    return '#00cc77';
+  }}}});
   viewer.zoomTo();viewer.render();
 }}catch(e){{document.getElementById('v').innerHTML='<p style="color:#ff8c42;padding:14px;">'+e.message+'</p>';}}
 </script></body></html>"""
@@ -10143,27 +10308,56 @@ _rd_final = st.session_state.get("research_domain","")
 _pdata_f = st.session_state.get("pdata",{})
 _gene_f = st.session_state.get("gene","")
 
-if _rd_final == "Microbiome" and not _pdata_f:
-    # Microbiome domain — no protein needed
-    render_microbiome_page()
+# ── Domain landing pages (shown before or alongside protein analysis) ──────
+if _rd_final == "Oncology":
+    if not _pdata_f:
+        # No protein loaded → show full Oncology workspace
+        render_oncology_landing()
+    else:
+        # Protein loaded → show domain landing in expander + oncology panel in tab0
+        with st.expander(f"🎗 Oncology Workspace — {_gene_f}", expanded=False):
+            render_oncology_landing()
+        with tab0:
+            st.markdown("<hr class='dv'>", unsafe_allow_html=True)
+            render_oncology_panel(
+                _gene_f, _pdata_f,
+                st.session_state.get("cv",{}),
+                st.session_state.get("scored",[]),
+                st.session_state.get("gi",{}),
+                st.session_state.get("gnomad",{}),
+                st.session_state.get("ot",{}),
+                st.session_state.get("am",{}),
+                st.session_state.get("string",[]),
+                st.session_state.get("patients",{}),
+            )
 
-elif _rd_final in ("Cancer Biology","Oncology") and _pdata_f and _gene_f:
-    # Show oncology panel in a dedicated expander after the summary tab
-    with tab0:
-        st.markdown("<hr class='dv'>", unsafe_allow_html=True)
-        _is_gpcr9 = g_gpcr(_pdata_f)
-        _is_kin9_f = any("kinase" in k.lower() for k in [kw.get("value","") for kw in _pdata_f.get("keywords",[])])
-        render_oncology_panel(
-            _gene_f, _pdata_f,
-            st.session_state.get("cv",{}),
-            st.session_state.get("scored",[]),
-            st.session_state.get("gi",{}),
-            st.session_state.get("gnomad",{}),
-            st.session_state.get("ot",{}),
-            st.session_state.get("am",{}),
-            st.session_state.get("string",[]),
-            st.session_state.get("patients",{}),
-        )
+elif _rd_final == "Neuroscience":
+    if not _pdata_f:
+        render_neuroscience_landing()
+    else:
+        with st.expander("🧠 Neuroscience Workspace", expanded=False):
+            render_neuroscience_landing()
+
+elif _rd_final == "Microbiome":
+    if not _pdata_f:
+        render_microbiome_page()
+    else:
+        with st.expander("🦠 Microbiome Workspace", expanded=False):
+            render_microbiome_page()
+
+elif _rd_final == "Pharmaceuticals":
+    if not _pdata_f:
+        render_pharma_landing()
+    else:
+        with st.expander("💊 Pharmaceuticals Workspace", expanded=False):
+            render_pharma_landing()
+
+elif _rd_final == "Molecular Biology":
+    if not _pdata_f:
+        render_molbio_landing()
+    else:
+        with st.expander("⚛️ Molecular Biology Workspace", expanded=False):
+            render_molbio_landing()
 
 # Chemical backbone in Chemistry tab
 if _pdata_f and _gene_f:
@@ -10198,4 +10392,391 @@ if _pdata_f and _gene_f:
                 _gene_f,
                 _gnomad_hook.get("pLI",0) or 0,
             )
+
+# ════════════════════════════════════════════════════════════════════════════
+#  DOMAIN LANDING PAGES — shown when domain is selected, no protein loaded
+# ════════════════════════════════════════════════════════════════════════════
+
+def render_oncology_landing():
+    """Full Oncology workspace — patient intake, cancer type profiler, metastasis cascade."""
+    st.markdown("""
+    <style>
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+    .onc-header{background:linear-gradient(135deg,#0a0002,#12000a);border:1px solid #f43f5e33;
+      border-radius:14px;padding:1.1rem 1.4rem;margin-bottom:1rem;}
+    .stage-badge{display:inline-block;padding:2px 10px;border-radius:12px;font-size:.68rem;
+      font-weight:700;margin:2px;}
+    </style>
+    <div class="onc-header">
+      <div style="font-size:1.3rem;font-weight:800;color:#f43f5e;margin-bottom:4px;">
+        🎗 Oncology Intelligence Platform</div>
+      <div style="color:#5a2030;font-size:.82rem;line-height:1.6;">
+        Patient-first cancer analysis. Select cancer type for immediate personalised profile —
+        drivers, causes, early detection, metastasis biology, and treatment algorithm.
+        Search a protein in the sidebar for deep variant/druggability analysis.
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ── Patient intake form ────────────────────────────────────────────────
+    with st.expander("👤 Patient Context — Enter for personalised analysis", expanded=True):
+        pc1, pc2, pc3 = st.columns(3)
+        with pc1:
+            pt_cancer = st.selectbox("Cancer type", [
+                "Lung adenocarcinoma (LUAD)", "Breast cancer (HR+/HER2−)",
+                "Breast cancer (TNBC)", "Colorectal cancer (CRC)",
+                "Glioblastoma (GBM)", "Pancreatic ductal adenocarcinoma (PDAC)",
+                "Ovarian high-grade serous", "Melanoma",
+                "Hepatocellular carcinoma (HCC)", "Prostate adenocarcinoma",
+                "Renal clear-cell (ccRCC)", "Bladder urothelial",
+                "Oesophageal adenocarcinoma", "Gastric (HER2+)",
+                "AML (acute myeloid leukaemia)", "CLL", "DLBCL (diffuse large B-cell)",
+                "Cervical (HPV-associated)", "Endometrial (MMR-deficient)",
+                "Head & neck SCC (HPV+/−)", "Thyroid (papillary/follicular)",
+                "Sarcoma (undifferentiated/leiomyo)", "Neuroendocrine tumour (NET)",
+                "Other / Unknown primary",
+            ], key="onc_pt_cancer")
+            pt_stage = st.selectbox("Stage at diagnosis", [
+                "Stage 0 (carcinoma in situ)", "Stage I (localised)",
+                "Stage II (regional spread)", "Stage III (extensive regional)",
+                "Stage IV (distant metastasis)", "Recurrent / Progressive",
+                "MRD (minimal residual disease)", "Unknown"
+            ], key="onc_pt_stage")
+        with pc2:
+            pt_variant = st.text_input("Key somatic/germline variant", placeholder="e.g. KRAS G12C · BRCA2 p.Trp31* · TP53 R175H", key="onc_pt_var")
+            pt_origin = st.radio("Variant origin", ["Somatic", "Germline", "Unknown"], horizontal=True, key="onc_pt_origin")
+            pt_msi = st.selectbox("MSI/MMR status", ["Unknown", "MSS (stable)", "MSI-H (unstable)", "MSI-L (low)"], key="onc_pt_msi")
+        with pc3:
+            pt_tmb = st.number_input("TMB (mut/Mb, 0=unknown)", 0, 500, 0, key="onc_pt_tmb")
+            pt_pdl1 = st.selectbox("PD-L1 TPS", ["Unknown", "<1% (negative)", "1–49%", "≥50% (high)"], key="onc_pt_pdl1")
+            pt_age = st.number_input("Age (0=unknown)", 0, 120, 0, key="onc_pt_age")
+
+    # ── Instant treatment algorithm ────────────────────────────────────────
+    is_msih = "MSI-H" in pt_msi
+    is_germline = pt_origin == "Germline"
+    is_met = "IV" in pt_stage or "Metastasis" in pt_stage
+    high_tmb = pt_tmb >= 10
+    high_pdl1 = "≥50%" in pt_pdl1
+
+    recs = []
+    v_low = pt_variant.lower()
+    if "kras g12c" in v_low:
+        recs.append(("Sotorasib / Adagrasib", "#22c55e", "KRAS G12C covalent inhibitor — FDA approved NSCLC (sotorasib) + CRC (adagrasib+cetuximab). Resistance via KRAS amp or secondary G12D — monitor ctDNA."))
+    if "egfr" in v_low and any(x in v_low for x in ["ex19","l858r","exon 19","exon19"]):
+        recs.append(("Osimertinib 80 mg/day", "#22c55e", "3rd-gen EGFR TKI — 1st line for ex19del/L858R. Crosses BBB → brain mets. Resistance: C797S, MET amp — liquid biopsy at progression."))
+    if any(x in v_low for x in ["brca1","brca2"]) and is_germline:
+        recs.append(("PARP inhibitor (olaparib/niraparib)", "#22c55e", "Germline BRCA1/2 = confirmed HRD. Olaparib FDA-approved breast, ovarian, prostate, PDAC (BRCA germline). HRD score (Myriad ≥42) = responder."))
+    if "braf v600" in v_low:
+        recs.append(("Dabrafenib + Trametinib", "#22c55e", "BRAF V600E/K — BRAF+MEK combination prevents paradoxical ERK activation from BRAF monotherapy. Melanoma 1st line. CRC: add cetuximab (triple combo)."))
+    if any(x in v_low for x in ["alk","ros1","ret","ntrk"]):
+        recs.append(("Targeted kinase inhibitor (gene-matched)", "#22c55e", "ALK→alectinib, ROS1→entrectinib, RET→selpercatinib, NTRK1/2/3→larotrectinib (tumour-agnostic). Check resistance mutation before 2nd TKI."))
+    if is_msih or high_tmb:
+        recs.append(("Pembrolizumab (PD-1 blockade)", "#a855f7", f"{'MSI-H' if is_msih else 'TMB='+str(pt_tmb)+' mut/Mb (high)'} — FDA approved tumour-agnostic pembrolizumab. RR ~40% MSI-H CRC. Combine with chemotherapy for MSI-H PDAC."))
+    if high_pdl1 and "LUAD" in pt_cancer:
+        recs.append(("Pembrolizumab monotherapy", "#a855f7", "PD-L1 TPS ≥50% NSCLC — 1st line pembrolizumab monotherapy (KEYNOTE-024). Better PFS than chemotherapy. Exclude EGFR/ALK mutations first."))
+    if not recs:
+        recs.append(("Standard-of-care + biomarker panel", "#ffd60a", f"No specific targeted mutation identified for {pt_cancer}. Order comprehensive NGS (FoundationOne/MSK-IMPACT). Check ClinicalTrials.gov for basket trials (NCI-MATCH, TAPUR, MyPathway). Consider enrolment in tumour-agnostic trial."))
+
+    st.markdown("<div style='color:#f43f5e;font-size:.78rem;font-weight:700;margin-bottom:.5rem;text-transform:uppercase;letter-spacing:.08em;'>💊 Treatment Recommendations</div>", unsafe_allow_html=True)
+    for rname, rclr, rdesc in recs:
+        st.markdown(f"<div style='background:#010810;border-left:3px solid {rclr};border-radius:0 8px 8px 0;padding:9px 13px;margin:.35rem 0;'><div style='color:{rclr};font-weight:700;font-size:.82rem;'>{rname}</div><div style='color:#3a6080;font-size:.77rem;line-height:1.6;margin-top:2px;'>{rdesc}</div></div>", unsafe_allow_html=True)
+
+    # ── Cancer type full profile ────────────────────────────────────────────
+    st.markdown("<hr class='dv'>", unsafe_allow_html=True)
+    sh("🔬", "Cancer Type Profile")
+    CANCER_PROFILES = {
+        "Lung adenocarcinoma (LUAD)": {
+            "drivers": [("EGFR","ex19del/L858R → osimertinib. T790M resistance → continue osimertinib."),("KRAS G12C","sotorasib 960mg/day. G12D/V → no approved therapy yet."),("ALK","alectinib 600mg BD → lorlatinib at resistance."),("ROS1","entrectinib or crizotinib."),("MET exon14","capmatinib or tepotinib."),("BRAF V600E","dabrafenib+trametinib."),("RET","selpercatinib."),("NTRK","larotrectinib.")],
+            "causes": ["Smoking (KRAS G12C, TP53 — transversion signature SBS4)", "Radon (>4 pCi/L home exposure)", "Asbestos exposure", "Air pollution PM2.5 (SBS2/13 signature)", "Non-smoker: EGFR/ALK/ROS1 — adenocarcinoma specific"],
+            "early_detect": ["Low-dose CT (LDCT) annually — smokers 50–80y, 20 pack-year history (USPSTF A)", "Liquid biopsy panel (Guardant360, FoundationOne Liquid) — detect early recurrence", "Sputum cytology (low sensitivity, not standard)", "PET-CT for staging only (not screening)"],
+            "survival": "5-yr OS: Stage I 85% → Stage IV 6% (SEER 2023). EGFR+ Stage IV: median OS 38mo (osimertinib).",
+        },
+        "Colorectal cancer (CRC)": {
+            "drivers": [("APC","driver in >85% CRC. LoF → uncontrolled Wnt/β-catenin. FAP germline."),("KRAS","G12D/V/C in 40%. RAS WT = cetuximab eligible."),("TP53","late event. TP53 GoF mutations → gain oncogenic function."),("BRAF V600E","right-sided CRC 10%. Poor prognosis unless MSI-H. BEACON-CRC: enco+bini+cetux."),("MSI-H/MMR-d","15% sporadic (MLH1 silencing) or Lynch. → pembrolizumab 1st line."),("PIK3CA","alpelisib not approved CRC. E545K/H1047R. Co-occurs with KRAS."),("HER2 (ERBB2)","amplification 2–5%. Trastuzumab+tucatinib (MOUNTAINEER)."),("NTRK","rare <1%. Larotrectinib tumour-agnostic.")],
+            "causes": ["Diet: red processed meat >50g/day (RR 1.4)", "Obesity (BMI>30 → RR 1.5)", "Alcohol >2 drinks/day", "Lynch syndrome (MLH1/MSH2/MSH6/PMS2/EPCAM germline) — 70% lifetime risk", "FAP (APC germline) — polyposis → near 100% risk without colectomy", "IBD (UC 30y duration → 18% risk)", "Aspirin reduces risk 30% (CAPP2)"],
+            "early_detect": ["FIT (faecal immunochemical test) annually — sensitivity 79%, specificity 94% (NHS Bowel Cancer Screening)", "Colonoscopy every 10y from age 45 (USPSTF)", "Stool DNA (Cologuard) — sensitivity 92% CRC, 42% advanced adenoma", "ctDNA (SHIELD trial — cfDNA methylation, 83% sensitivity Stage I–III)"],
+            "survival": "5-yr OS: Stage I 90% → Stage IV 16%. MSI-H Stage IV on pembrolizumab: median PFS 16.5mo (KEYNOTE-177).",
+        },
+    }
+
+    profile = CANCER_PROFILES.get(pt_cancer)
+    if profile:
+        pr_c1, pr_c2 = st.columns(2)
+        with pr_c1:
+            st.markdown("<div style='color:#f43f5e;font-size:.72rem;font-weight:700;text-transform:uppercase;margin-bottom:.4rem;'>Driver genes & targeted therapy</div>", unsafe_allow_html=True)
+            for driver, desc in profile["drivers"][:6]:
+                st.markdown(f"<div style='background:#0a0002;border:1px solid #f43f5e22;border-radius:7px;padding:5px 9px;margin:3px 0;'><span style='color:#f43f5e;font-weight:700;font-size:.74rem;'>{driver}</span> <span style='color:#3a6080;font-size:.72rem;'>{desc}</span></div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='color:#ffd60a;font-size:.7rem;margin-top:7px;'><b>Survival:</b> {profile['survival']}</div>", unsafe_allow_html=True)
+        with pr_c2:
+            st.markdown("<div style='color:#ff8c42;font-size:.72rem;font-weight:700;text-transform:uppercase;margin-bottom:.4rem;'>Causes & risk factors</div>", unsafe_allow_html=True)
+            for c in profile["causes"]:
+                st.markdown(f"<div style='color:#4a7090;font-size:.73rem;padding:2px 0;border-bottom:1px solid #050e18;'>• {c}</div>", unsafe_allow_html=True)
+            st.markdown("<div style='color:#22c55e;font-size:.72rem;font-weight:700;text-transform:uppercase;margin:.5rem 0 .3rem;'>Early detection</div>", unsafe_allow_html=True)
+            for ed in profile["early_detect"]:
+                st.markdown(f"<div style='color:#4a7090;font-size:.73rem;padding:2px 0;border-bottom:1px solid #050e18;'>◆ {ed}</div>", unsafe_allow_html=True)
+    else:
+        st.markdown(f"<div style='color:#1e4060;font-size:.8rem;'>Select a cancer type above for its full profile. Currently showing: <b style='color:#f43f5e;'>{pt_cancer}</b>. Search a gene in the sidebar for molecular analysis.</div>", unsafe_allow_html=True)
+
+    # ── Metastasis cascade ─────────────────────────────────────────────────
+    st.markdown("<hr class='dv'>", unsafe_allow_html=True)
+    sh("🔴", "Metastasis Cascade — Step-by-Step Biology")
+    cascade = [
+        ("1 · EMT", "Epithelial–Mesenchymal Transition", "E-cadherin↓, vimentin↑, N-cadherin↑", "TWIST1/2, SNAIL, ZEB1/2, TGF-β", "#ff2d55", "Inhibit: TGF-β receptor (galunisertib), TWIST siRNA, ZEB1 antisense. Marker: circulating vimentin+/EpCAM− cells."),
+        ("2 · Invasion", "Local extracellular matrix degradation", "MMP-2, MMP-9, uPA/uPAR, MT1-MMP", "TIMP1/2 loss, COX-2, LOX crosslinking", "#ff4465", "Assay: Matrigel transwell invasion 24h. Inhibit: marimastat (MMP broad, failed), selective MMP14 inhibitor."),
+        ("3 · Intravasation", "Tumour cell entry into blood/lymph", "EpCAM+ CTCs, CTC clusters (22× more metastatic)", "VEGF-A, CXCR4, Ang2", "#ff6080", "Detect: CellSearch (EpCAM+/CK+/CD45−) FDA-cleared. Count: >5 CTCs/7.5mL = poor prognosis (breast, CRC, prostate)."),
+        ("4 · Circulation", "Survival in bloodstream", "Platelet coating protects from NK cells", "TRAIL resistance, platelet P-selectin", "#ff8c42", "Quantify: ddPCR ctDNA at 0.01% VAF. CTC clusters: plakoglobin (GJB2) junction proteins."),
+        ("5 · Extravasation", "Organ-specific arrest & exit", "CXCR4→CXCL12 axis (bone), CCRL1 (lung), ANGPTL4 (brain)", "Organ-tropic selection over multiple passages", "#ffd60a", "Block: AMD3100 (CXCR4 antagonist) — prevents bone met in preclinical. Experimental: anti-ANGPTL4 antibody."),
+        ("6 · Pre-met niche", "Primary tumour prepares distant organ BEFORE CTCs arrive", "Tumour exosomes (ITGβ4/ITGα6 → lung; ITGβ5 → liver)", "Fibronectin+, LOX crosslinking, VEGF-R1+ BMDCs", "#22c55e", "Detect: plasma exosome integrin profiling (organ tropism predictor). Inhibit: LOX inhibitor BAPN (clinical trials)."),
+        ("7 · Colonisation", "Metastatic outgrowth at distant site", "Dormancy (DEC2+/p27+) → proliferative (VCAM1+)", "Bone: RANKL/OPG osteolytic; Brain: BBB breach; Liver: Kupffer cell education", "#22c55e", "Treat: bisphosphonates/denosumab for bone. Prophylactic cranial irradiation (SCLC). Liver: HAI chemotherapy."),
+    ]
+    for step, title, molecular, regulators, clr, intervention in cascade:
+        with st.expander(f"{step} — {title}"):
+            cc1, cc2 = st.columns([1.2, 0.8])
+            with cc1:
+                st.markdown(f"<div style='color:{clr};font-weight:700;font-size:.78rem;margin-bottom:4px;'>Molecular drivers</div><div style='color:#3a6080;font-size:.76rem;'>{molecular}</div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='color:#ff8c42;font-weight:700;font-size:.75rem;margin:.5rem 0 3px;'>Regulators</div><div style='color:#3a6080;font-size:.75rem;'>{regulators}</div>", unsafe_allow_html=True)
+            with cc2:
+                st.markdown(f"<div style='background:#010810;border:1px solid {clr}33;border-left:3px solid {clr};border-radius:0 8px 8px 0;padding:8px 11px;font-size:.73rem;color:#4a7090;line-height:1.6;'><b style='color:{clr};'>Clinical relevance:</b> {intervention}</div>", unsafe_allow_html=True)
+
+
+def render_neuroscience_landing():
+    """Neuroscience workspace — neural circuit browser, synaptic proteins, disease maps."""
+    st.markdown("""
+    <div style='background:linear-gradient(135deg,#03020f,#0a0820);border:1px solid #6366f133;
+      border-radius:14px;padding:1.1rem 1.4rem;margin-bottom:1rem;'>
+      <div style='font-size:1.3rem;font-weight:800;color:#818cf8;margin-bottom:4px;'>
+        🧠 Neuroscience Intelligence Platform</div>
+      <div style='color:#3a3060;font-size:.82rem;line-height:1.6;'>
+        Synaptic proteins, neural circuit architecture, neurodegeneration cascades, and BBB drug rules.
+        Browse the protein network below — click any protein to analyse it. 
+        Search via sidebar for full variant + structural analysis.
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ── Neural circuit protein browser ────────────────────────────────────
+    sh("⚡", "Synaptic Protein Network — Click Any Protein to Analyse")
+
+    NEURAL_CIRCUITS = {
+        "🫧 Synaptic vesicle cycle": {
+            "color": "#a855f7",
+            "desc": "Presynaptic vesicle docking, priming, fusion, and recycling. Core of neurotransmitter release.",
+            "proteins": {
+                "SYT1": "Synaptotagmin-1 — Ca²⁺ sensor for synchronous NT release. C2A/C2B domains bind Ca²⁺ → vesicle fusion. Mutations → intellectual disability, epilepsy.",
+                "VAMP2": "SNARE protein (v-SNARE). Forms SNARE complex with STX1A+SNAP25. Cleaved by BoNT/B. Essential for all fast NT release.",
+                "STX1A": "Syntaxin-1A (t-SNARE). Habc domain autoinhibition relieved by Munc18. Mutations → Rett-like syndrome, West syndrome.",
+                "SNAP25": "t-SNARE. Palmitoylated membrane anchor. SNARE complex assembly with STX1A+VAMP2. Associated with ADHD, schizophrenia.",
+                "SYN1": "Synapsin-1. Tethers vesicles to actin cytoskeleton. PKA/CaMKII-phosphorylated → release tether → vesicle mobilisation. SYN1 mutations → autism + epilepsy.",
+                "STXBP1": "Munc18-1. Chaperone for STX1A. STXBP1 haploinsufficiency = Ohtahara syndrome — early infantile epilepsy.",
+            }
+        },
+        "📡 Glutamate receptors (excitatory)": {
+            "color": "#ff2d55",
+            "desc": "Fast excitatory synaptic transmission. NMDA receptors require both ligand and depolarisation — Mg²⁺ block. AMPA receptors mediate basal excitation.",
+            "proteins": {
+                "GRIN1": "GluN1 — obligatory NMDA subunit. Glycine co-agonist binding site. All NMDA receptors contain 2× GluN1. GoF → hyperexcitability; LoF → hypoexcitability.",
+                "GRIN2A": "GluN2A — adult NMDA subunit. Long channel open time. GoF mutations → epilepsy-aphasia spectrum (rolandic epilepsy). GRIN2A variants → LTP deficit.",
+                "GRIN2B": "GluN2B — neonatal/synaptic plasticity subunit. Binds CaMKII at Ser1303. GoF → West syndrome, EIEE; LoF → severe intellectual disability.",
+                "GRIA1": "GluA1 — AMPA receptor subunit. Ser845 (PKA) + Ser831 (CaMKII) phosphorylation → LTP. Synaptic incorporation of GluA1 = LTP expression.",
+                "GRIA2": "GluA2 — AMPA subunit. Q/R editing at codon 607 = Ca²⁺ impermeability. Loss of editing → excitotoxicity. Almost always Q/R edited in healthy brain.",
+                "GRM1": "mGluR1 — Group I metabotropic. Gq → IP3/DAG → PKC. Purkinje cell dominant. Mutations → cerebellar ataxia. Target for Fragile X therapy (mGluR5).",
+            }
+        },
+        "🔇 GABA receptors (inhibitory)": {
+            "color": "#22c55e",
+            "desc": "Fast inhibitory synaptic transmission via Cl⁻ influx (GABAA) or GIRK channel opening (GABAB). Disruption → seizure, anxiety, sedation.",
+            "proteins": {
+                "GABRA1": "α1 subunit — most abundant GABAA. Benzodiazepine-sensitive. Mutations → childhood absence epilepsy, Dravet-spectrum, JME.",
+                "GABRA2": "α2 subunit — expressed at axon initial segment (AIS) and dendrites. Associated with alcohol dependence and benzodiazepine sensitivity. GABRA2 mutations → epileptic encephalopathy.",
+                "GABRG2": "γ2 subunit — required for synaptic clustering of GABAA. p.Arg43Gln linked to GEFS+. p.Gln351X → Dravet. γ2 loss → extrasynaptic GABAA shift.",
+                "GABRB3": "β3 subunit — dominant fetal subunit, switches to α1/α3 postnatally. Angelman syndrome region (15q11-13). GABRB3 mutations → Lennox-Gastaut, childhood absence.",
+            }
+        },
+        "🏗️ Post-synaptic density (PSD)": {
+            "color": "#ffd60a",
+            "desc": "Protein scaffold organising glutamate receptors, signalling enzymes, and adhesion molecules at excitatory synapses. Mutations → autism, intellectual disability, schizophrenia.",
+            "proteins": {
+                "DLG4": "PSD-95 — master scaffold. PDZ1/2 bind NMDAR GluN2. PDZ3 binds nNOS. Organises ~100 PSD proteins. DLG4 haploinsufficiency → ASD, ID. Target of palmitoylation cycle.",
+                "SHANK3": "ProSAP2 — connects PSD-95 complex to Homer. SHANK3 mutations = Phelan-McDermid syndrome (22q13.3 deletion) → severe ASD, absent speech. mGluR5-Homer interaction regulated.",
+                "SHANK2": "SHANK2 mutations → ASD (less severe than SHANK3). Recruits GKAP/SAPAP. Controls spine morphology via cortactin-Arp2/3 actin branching.",
+                "HOMER1": "Links mGluR1/5 to IP3R and SHANK. Homer1a (short isoform, Arc-dependent) = activity-dependent dominant negative. Regulates mGluR5 surface expression.",
+                "DLGAP1": "GKAP/SAPAP1. Connects PSD-95 to SHANK. OCD-linked (DLGAP1 mutations → grooming compulsion in mice). DLGAP3 mutations → OCD in humans.",
+                "SYNGAP1": "Ras-GAP at synapse. Phosphorylated by CaMKII at Ser1116/Ser1232 during LTP → Ras activity → AMPA insertion. Haploinsufficiency → intellectual disability + autism (most common monogenic ID after Down syndrome).",
+            }
+        },
+        "🔌 Ion channels (neural firing)": {
+            "color": "#00e5ff",
+            "desc": "Voltage-gated and ligand-gated ion channels controlling action potential generation, propagation, and repolarisation. Channelopathies cause epilepsy, ataxia, and pain.",
+            "proteins": {
+                "SCN1A": "Nav1.1 — sodium channel. Predominantly interneurons (PV+). GoF → GEFS+; LoF (Dravet) → interneuron failure → circuit hyperexcitability. >1,500 pathogenic variants. Dravet: stiripentol+valproate+clobazam.",
+                "SCN2A": "Nav1.2 — soma/AIS in excitatory neurons. GoF early-onset → epilepsy (responds to Na-channel blockers). LoF late-onset → ASD/ID (avoidance of Na-channel blockers). Critical phenotype split.",
+                "SCN8A": "Nav1.6 — nodes of Ranvier. Most common GoF epileptic encephalopathy. Responds to high-dose phenytoin/carbamazepine. Persistent Na+ current → continuous firing.",
+                "KCNQ2": "Kv7.2 — M-channel. Critical for AIS repolarisation. GoF → neonatal self-limited epilepsy; LoF → KCNQ2 encephalopathy. Responds to: retigabine (Kv7 opener), now carbamazepine/phenobarb.",
+                "HCN1": "Ih current. Pacemaker channel. Expressed in pyramidal neuron dendrites → controls input resistance. GoF → Dravet-like; LoF → generalised epilepsy. Ivermectin (HCN1 block) investigational.",
+                "CACNA1A": "Cav2.1 (P/Q-type). Major presynaptic Ca²⁺ channel for NT release. Mutations → FHM1, episodic ataxia type 2, progressive ataxia. CAG repeat expansion → SCA6.",
+            }
+        },
+        "🚛 Axonal transport": {
+            "color": "#ff8c42",
+            "desc": "Bidirectional transport along microtubules. Anterograde (kinesin): mitochondria, vesicles to axon terminals. Retrograde (dynein): signalling endosomes, damaged organelles to soma. Failure → neurodegeneration.",
+            "proteins": {
+                "KIF5A": "Kinesin-1 heavy chain. Anterograde transport of neurofilaments, mitochondria, mRNA. KIF5A mutations → hereditary spastic paraplegia (SPG10), ALS, Parkinson. ALS: NES-domain mutations impair axon.",
+                "DCTN1": "Dynactin p150 subunit. Recruits dynein to microtubule plus ends for retrograde transport. Mutations → Perry syndrome (parkinsonism + depression + hypoventilation), HMN7B.",
+                "NEFL": "Neurofilament light chain. Structural axonal component. Plasma NfL = biomarker for neuroaxonal damage in ALS, MS, Alzheimer, TBI. NEFL mutations → CMT1F/2E.",
+                "TUBA4A": "α-tubulin. ALS mutations (p.Trp407* ) disrupt microtubule polymerisation. Impaired tubulin → axonal transport deficit → TDP-43 aggregation.",
+            }
+        },
+        "🧨 Neurodegeneration pathways": {
+            "color": "#ff8c42",
+            "desc": "Proteins whose aggregation or dysfunction drives progressive neuronal loss. Each has a unique cascade but converges on mitochondrial failure, proteostasis collapse, and neuroinflammation.",
+            "proteins": {
+                "APP": "Amyloid precursor protein. β-secretase (BACE1) + γ-secretase → Aβ42 (aggregation-prone). Swedish/Indiana/London mutations near cleavage sites → early-onset AD. Anti-Aβ antibodies (lecanemab/donanemab) clear plaques — modest clinical effect.",
+                "SNCA": "α-synuclein. 140aa intrinsically disordered. A53T/A30P/E46K → accelerated aggregation. SNCA triplication → early Parkinson. Prion-like spreading via exosomes. Target: SNCA ASO (BIIB101), prasinezumab (anti-SNCA antibody).",
+                "MAPT": "Tau. 441aa 6 isoforms. Stabilises microtubules. Hyperphosphorylated (at Ser202/Thr205 by GSK3β, CDK5) → NFT. MAPT mutations → frontotemporal dementia. Tau ASO (gosuranemab) and anti-tau vaccines in trials.",
+                "LRRK2": "Leucine-rich repeat kinase 2. GTPase + kinase dual domain. G2019S (most common AD PD mutation) → hyperactive kinase → Rab GTPase phosphorylation → lysosome dysfunction. LRRK2 inhibitor (DNL201, biogen) in Phase II.",
+                "TDP-43": "TARDBP. RNA-binding protein. Nuclear → cytoplasmic mislocalisation → aggregation in ALS/FTLD-TDP. Loss-of-nuclear function + gain-of-cytoplasmic toxicity. Target: antisense TDP-43 reduction or stress granule dissolution.",
+                "SOD1": "Cu/Zn SOD. GoF mutations → misfolded SOD1 → mitochondrial toxicity. ALS: >220 variants. Tofersen (SOD1-ASO, FDA approved 2023) — reduces NfL, slows progression in SOD1-ALS.",
+            }
+        },
+    }
+
+    for circuit_name, circuit_data in NEURAL_CIRCUITS.items():
+        clr = circuit_data["color"]
+        with st.expander(f"{circuit_name}", expanded=False):
+            st.markdown(f"<div style='color:#3a6080;font-size:.77rem;line-height:1.55;margin-bottom:.6rem;border-left:2px solid {clr};padding-left:10px;'>{circuit_data['desc']}</div>", unsafe_allow_html=True)
+            pr_cols = st.columns(2)
+            for pi, (prot, pdesc) in enumerate(circuit_data["proteins"].items()):
+                with pr_cols[pi % 2]:
+                    st.markdown(f"<div style='background:#010810;border:1px solid {clr}22;border-radius:8px;padding:7px 10px;margin:3px 0;'><div style='color:{clr};font-weight:700;font-size:.78rem;'>{prot}</div><div style='color:#3a5060;font-size:.7rem;line-height:1.55;margin-top:2px;'>{pdesc}</div></div>", unsafe_allow_html=True)
+                    if st.button(f"Analyse {prot}", key=f"neuro_btn_{circuit_name[:6]}_{prot}", use_container_width=True):
+                        st.session_state["_trigger_search"] = prot
+                        st.rerun()
+
+    # ── Disease → protein map ─────────────────────────────────────────────
+    st.markdown("<hr class='dv'>", unsafe_allow_html=True)
+    sh("🗺️", "Disease → Protein Map — Click to Analyse")
+    DISEASE_PROTS = {
+        "Alzheimer's disease": (["APP","PSEN1","PSEN2","APOE","TREM2","SORL1","BIN1","CLU","CR1"], "#a855f7", "Amyloid cascade + tau pathology. APOE4 strongest risk factor (3-4× RR). Lecanemab/donanemab clear Aβ — 27-35% slowing CI."),
+        "Parkinson's disease": (["SNCA","LRRK2","PINK1","PARKIN","GBA","UCHL1","VPS35","ATP13A2"], "#ff8c42", "Dopaminergic SNpc loss. α-synuclein Lewy body pathology. GBA heterozygous = 5× PD risk. LRRK2 G2019S most common genetic PD."),
+        "ALS": (["SOD1","TARDBP","FUS","C9orf72","OPTN","TBK1","VCP","HNRNPA1"], "#ff2d55", "Motor neuron loss. TDP-43 aggregation in >97% ALS. C9orf72 hexanucleotide repeat = 40% FALS. Tofersen (SOD1-ASO) approved 2023."),
+        "Epilepsy syndromes": (["SCN1A","SCN2A","SCN8A","KCNQ2","GRIN2A","GRIN2B","GABRA1","HCN1"], "#ffd60a", "Channelopathies dominate genetic epilepsy. SCN2A GoF → Na-channel blockers; LoF → AVOID. Precision medicine: match drug class to channel function."),
+        "Autism spectrum (ASD)": (["SHANK3","SYNGAP1","NRXN1","NLGN3","ADNP","FOXP1","PTEN","TSC1","TSC2"], "#22c55e", "Synaptic protein network dominant. SHANK3 haploinsufficiency = Phelan-McDermid syndrome. SYNGAP1 most common monogenic ID after Down syndrome."),
+        "Huntington's disease": (["HTT"], "#6366f1", "CAG repeat >36 = disease; >60 = juvenile onset. Polyglutamine expansion → HTT aggregation → striatal (MSN) neuronal death. ASO (tominersen) — Phase III ongoing."),
+    }
+    for dis, (prots, dclr, ddesc) in DISEASE_PROTS.items():
+        with st.expander(f"🔴 {dis}"):
+            st.markdown(f"<div style='color:#3a6080;font-size:.76rem;line-height:1.55;margin-bottom:6px;'>{ddesc}</div>", unsafe_allow_html=True)
+            prot_cols = st.columns(min(5, len(prots)))
+            for pi2, p2 in enumerate(prots):
+                with prot_cols[pi2 % len(prot_cols)]:
+                    if st.button(p2, key=f"dis_prot_{dis[:8]}_{p2}", use_container_width=True):
+                        st.session_state["_trigger_search"] = p2
+                        st.rerun()
+
+
+def render_pharma_landing():
+    """Pharmaceuticals workspace — GPCR pipeline, druggability calculator, drug development guide."""
+    st.markdown("""
+    <div style='background:linear-gradient(135deg,#000810,#001520);border:1px solid #00d4ff33;
+      border-radius:14px;padding:1.1rem 1.4rem;margin-bottom:1rem;'>
+      <div style='font-size:1.3rem;font-weight:800;color:#00d4ff;margin-bottom:4px;'>
+        💊 Drug Discovery Platform</div>
+      <div style='color:#003a50;font-size:.82rem;line-height:1.6;'>
+        GPCR Filamin piggyback assay, druggability scoring, ADMET rules, HTS pipeline, and clinical development timeline.
+        Search a protein in the sidebar for full tractability + variant analysis.
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    ph1, ph2 = st.columns(2)
+    with ph1:
+        sh("★", "Filamin Piggyback Assay Protocol")
+        steps_filamin = [
+            ("Day 1", "Co-immunoprecipitate FLNA from GPCR-expressing cells (HEK293 or native tissue). Use anti-FLNA Ig21 antibody (Millipore clone 3/F9)."),
+            ("Day 2", "Western blot for pSer2152-FLNA (anti-pSer2152; Cell Signalling #4761). Quantify pSer2152/total FLNA ratio."),
+            ("Day 3", "Add GPCR agonist dose-response (0.1nM – 10μM). Calculate EC50 for Ser2152 phosphorylation."),
+            ("Day 4", "Confirm specificity: PKA inhibitor (H89) should abolish signal. Compare to cAMP HTRF EC50 in parallel."),
+            ("Interpretation", "Ser2152 phosphorylation = proximal GPCR activation readout (more proximal than β-arrestin or cAMP). Works for ~300 Class A GPCRs carrying H8 motif."),
+        ]
+        for day, detail in steps_filamin:
+            st.markdown(f"<div style='display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #050e18;'><span style='color:#00d4ff;font-size:.68rem;font-weight:700;min-width:75px;'>{day}</span><span style='color:#3a6080;font-size:.72rem;line-height:1.55;'>{detail}</span></div>", unsafe_allow_html=True)
+        st.markdown("<a href='https://pubmed.ncbi.nlm.nih.gov/26124276/' target='_blank' style='color:#00d4ff;font-size:.7rem;'>PMID:26124276 ↗</a>", unsafe_allow_html=True)
+
+    with ph2:
+        sh("📋", "ADMET Rules & Drug Development Gates")
+        admet = [
+            ("Lipinski Ro5", "MW<500, cLogP<5, HBD≤5, HBA≤10", "Oral bioavailability gate"),
+            ("Veber", "PSA<140Å², rotatable bonds≤10", "Intestinal permeability"),
+            ("CNS (MPO)", "cLogP 1–3, MW<450, pKa<10, HBD≤3, PSA<90", "Blood-brain barrier penetrance"),
+            ("hERG", "IC50 > 30× free Cmax", "Cardiac safety — avoid QT prolongation"),
+            ("CYP3A4", "Not strong inhibitor (IC50>1μM)", "Drug-drug interaction liability"),
+            ("CYP2D6", "Not substrate if CYP2D6 metaboliser variation risk", "PGx safety"),
+            ("Plasma protein binding", "Aim fu>1%", "High PPB → low free drug"),
+            ("Caco-2 Papp", ">10×10⁻⁶ cm/s = good absorption", "Intestinal epithelial permeability"),
+            ("Microsomal stability", "t1/2 >60min (human LM)", "Metabolic stability"),
+            ("Ames test", "Negative", "Genotoxicity — IND-enabling requirement"),
+        ]
+        for rule, criteria, note in admet:
+            st.markdown(f"<div style='display:flex;gap:6px;padding:3px 0;border-bottom:1px solid #050e18;'><span style='color:#00d4ff;font-size:.67rem;min-width:120px;font-weight:600;'>{rule}</span><span style='color:#3a6080;font-size:.67rem;'>{criteria} <span style='color:#1e4060;'>({note})</span></span></div>", unsafe_allow_html=True)
+
+    sh("🗓️", "Drug Development Timeline")
+    timeline = [
+        ("Target ID + Validation", "Year 0–1", "#00e5ff", "Genomic Integrity Score, ClinVar P/LP, AlphaMissense, pLI, OpenTargets tractability. Validate with variant biochemical assay (WT vs P/LP)."),
+        ("Hit Discovery", "Year 1–3", "#4a90d9", "Fragment screen (FBDD, MW<300) OR HTS (100K–1M compounds). TSA engagement (ΔTm>3°C). SPR confirmation. Hit rate ~0.1–1%."),
+        ("Lead Optimisation", "Year 3–5", "#6366f1", "Medicinal chemistry: potency↑, selectivity↑, ADMET↑. Ro5 compliance. Selectivity panel (KINOMEscan/GPCRome). hERG safety. Rat PK (F%, t1/2, Cmax)."),
+        ("Preclinical / IND-enabling", "Year 5–7", "#a855f7", "GLP toxicology (rat+dog 28-day). GLP safety pharmacology (hERG, CNS, respiratory). CMC development. IND submission to FDA/EMA."),
+        ("Phase I (FIH safety)", "Year 7–9", "#ff8c42", "First-in-human. Dose escalation (DLT). PK/PD. MTD. ~20–80 healthy volunteers or patients. Duration: 1–2 years."),
+        ("Phase II (efficacy signal)", "Year 9–12", "#ff8c42", "Proof-of-concept in patients. Dose selection. Biomarker validation. ~100–300 patients. 2–3 years."),
+        ("Phase III (pivotal)", "Year 12–15", "#ff2d55", "Randomised controlled trial vs SoC. Regulatory endpoint. ~500–3000 patients. 3–4 years. $200–800M."),
+        ("Regulatory review → Approval", "Year 15–17", "#22c55e", "NDA/BLA/MAA filing. Priority review if rare disease/breakthrough. FDA review 10–12 months. Post-marketing commitments."),
+    ]
+    tl_cols = st.columns(4)
+    for ti, (phase, years, tclr, tdesc) in enumerate(timeline):
+        with tl_cols[ti % 4]:
+            st.markdown(f"<div style='background:#010810;border:1px solid {tclr}33;border-top:3px solid {tclr};border-radius:8px;padding:8px 10px;margin:4px 0;height:140px;overflow:hidden;'><div style='color:{tclr};font-size:.7rem;font-weight:700;'>{phase}</div><div style='color:#1e4060;font-size:.62rem;margin:2px 0;'>{years}</div><div style='color:#3a6080;font-size:.64rem;line-height:1.45;'>{tdesc[:100]}…</div></div>", unsafe_allow_html=True)
+
+
+def render_molbio_landing():
+    """Molecular Biology workspace — kinase-substrate browser, PTM atlas, structural tools."""
+    st.markdown("""
+    <div style='background:linear-gradient(135deg,#080400,#120800);border:1px solid #f9731633;
+      border-radius:14px;padding:1.1rem 1.4rem;margin-bottom:1rem;'>
+      <div style='font-size:1.3rem;font-weight:800;color:#fb923c;margin-bottom:4px;'>
+        ⚛️ Molecular Biology Platform</div>
+      <div style='color:#3a2000;font-size:.82rem;line-height:1.6;'>
+        Kinase-substrate networks, PTM landscape, structural biology tools, and mechanism dissection.
+        Search a protein via the sidebar for full phosphorylation map, structural domain cards, and interactome.
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    mb1, mb2 = st.columns(2)
+    with mb1:
+        sh("🔬", "Kinase Families & Their Substrates")
+        kinase_data = [
+            ("PKA (PRKACA/B)", "cAMP-activated. Consensus: [RK]-x-x-[ST]. Key substrates: CREB-Ser133, FLNA-Ser2152, RYR2-Ser2808, CFTR-Ser768. Inhibitor: H89 (IC50 48nM), PKI peptide (for specificity control)."),
+            ("CaMKII (α/β/γ/δ)", "Ca²⁺/CaM-activated. Autophosphorylation at Thr286 → autonomous activity. Substrates: AMPA-GluA1-Ser831, SYNGAP1-Ser1116. LTP mediator. Inhibitor: KN-93."),
+            ("GSK3β", "Constitutively active unless phospho-inhibited (Akt→Ser9). Substrates: tau-Ser396/Ser404, glycogen synthase, β-catenin. Lithium inhibits at mM. Inhibitor: SB216763 (IC50 34nM)."),
+            ("CDK2/4/6", "Cell cycle kinases. CDK4/6+cyclinD → Rb-Ser807/811. CDK2+cyclinE → Rb-Ser612. Inhibitors: palbociclib/ribociclib (CDK4/6) — breast cancer approved."),
+            ("LRRK2", "Dual GTPase+kinase. G2019S → hyperactive kinase. Rab8A-Thr72, Rab10-Thr73 as biomarker substrates. Inhibitor: DNL201/MLi-2 (Phase II Parkinson)."),
+            ("ERK1/2 (MAPK)", "RAS→RAF→MEK→ERK cascade. Substrates: RSK, Elk-1, p90RSK, c-Fos. Thr202/Tyr204 dual phosphorylation activates. Inhibitor: SCH772984 (ERK selective)."),
+            ("PI3K/AKT/mTOR", "PI3K-p110α (PIK3CA mutations → cancer). AKT: Ser473 (mTORC2) + Thr308 (PDK1). mTOR: S6K1-Thr389, 4EBP1-Thr37/46. Inhibitor: alpelisib (PI3Kα), everolimus (mTOR)."),
+            ("Src family (SRC, LCK, FYN)", "Non-receptor tyrosine kinases. Myristoylated → membrane. CagA (H. pylori) EPIYA motif phosphorylated by Src. SH2 domain = pTyr reader. Inhibitor: dasatinib (Src+BCR-ABL)."),
+        ]
+        for kname, kdesc in kinase_data:
+            with st.expander(kname):
+                st.markdown(f"<div style='color:#3a6080;font-size:.75rem;line-height:1.6;'>{kdesc}</div>", unsafe_allow_html=True)
+
+    with mb2:
+        sh("🔭", "Structural Biology Workflow")
+        sb_steps = [
+            ("1 · AlphaFold prediction", "Free. pLDDT score per residue. pLDDT>70 = reliable. IDR regions (pLDDT<50) → use IDP-specific methods. Binding site: PAE matrix for interface confidence."),
+            ("2 · fpocket druggability", "Identify pockets (volume, hydrophobicity, druggability score >0.5). Download AlphaFold PDB → run fpocket locally or fpocket-web. Classify: cryptic, allosteric, orthosteric."),
+            ("3 · Experimental structure (PDB)", "Search RCSB for existing co-crystal structures. If none: cryo-EM for large complexes (>100 kDa), X-ray for small proteins, NMR for <30 kDa IDPs."),
+            ("4 · HDX-MS for dynamics", "Maps regions of conformational flexibility. Deuterium uptake = accessible/dynamic. Ligand-protected = binding site or allosteric change. Resolution: peptide level (~10 aa)."),
+            ("5 · SAXS solution state", "Envelope model without crystallisation. Rg and Dmax from Guinier plot. P(r) distribution → oligomeric state. Combine with AlphaFold for atomic fitting (CORAL)."),
+            ("6 · Cryo-EM (>100 kDa)", "Single-particle analysis on 300kV Titan Krios. Near-atomic (2–4Å) for stable complexes. Conformational heterogeneity captured. RELION/cryoSPARC for data processing."),
+        ]
+        for step, sdesc in sb_steps:
+            st.markdown(f"<div style='background:#010810;border:1px solid #f9731622;border-radius:8px;padding:7px 10px;margin:3px 0;'><div style='color:#fb923c;font-size:.72rem;font-weight:700;'>{step}</div><div style='color:#3a6080;font-size:.7rem;line-height:1.5;margin-top:2px;'>{sdesc}</div></div>", unsafe_allow_html=True)
 
