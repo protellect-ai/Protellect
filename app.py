@@ -5894,9 +5894,21 @@ if st.session_state["csv_df"] is not None and not st.session_state["pdata"]:
         st.stop()
 
 if not st.session_state["pdata"] and st.session_state["csv_df"] is None:
-    st.markdown("""<div style='background:#040d18;border:1px solid #0c2040;border-radius:14px;padding:2rem;text-align:center;margin-top:.5rem;'>
+    _active_domain = st.session_state.get("research_domain","")
+    if _active_domain == "Oncology":
+        render_oncology_workspace()
+    elif _active_domain == "Neuroscience":
+        render_neuroscience_workspace()
+    elif _active_domain == "Microbiome":
+        render_microbiome_workspace()
+    elif _active_domain == "Pharmaceuticals":
+        render_pharma_workspace()
+    elif _active_domain == "Molecular Biology":
+        render_molbio_workspace()
+    else:
+        st.markdown("""<div style='background:#040d18;border:1px solid #0c2040;border-radius:14px;padding:2rem;text-align:center;margin-top:.5rem;'>
 <img src='data:image/svg+xml;base64,{LOGO_B64}' style='width:72px;height:72px;object-fit:contain;display:block;margin:0 auto .8rem;filter:drop-shadow(0 0 16px #2a8a5055);'>
-<div style='color:#5a8090;font-size:1rem;font-weight:600;margin-bottom:.4rem;'>Enter a protein in the sidebar, or upload a wet-lab CSV to begin</div>
+<div style='color:#5a8090;font-size:1rem;font-weight:600;margin-bottom:.4rem;'>Select a domain from the sidebar, or enter a protein to begin</div>
 <div style='color:#061828;font-size:1.02rem;margin-bottom:1.2rem;'>Try: <b style='color:#0d2840;'>TP53</b> · <b style='color:#0d2840;'>FLNC</b> · <b style='color:#0d2840;'>ACM2</b> · <b style='color:#0d2840;'>ARRB2</b> · <b style='color:#0d2840;'>P04637</b></div>
 <div style='display:flex;gap:.7rem;justify-content:center;flex-wrap:wrap;'>"""
 +"".join(f"<div style='background:#05101e;border:1px solid #0c2040;border-radius:9px;padding:.6rem .9rem;width:145px;'><div style='font-size:1.1rem;'>{ic}</div><div style='color:#5a8090;font-size:.81rem;margin-top:3px;'><b style='color:#1e4060;'>{tt}</b><br>{dd}</div></div>" for ic,tt,dd in [("🔴","Triage","Structure + hotspots"),("📋","Case Study","Tissue · GPCR"),("🔬","Explorer","Click & mutate"),("🧪","Experiments","Protocols")])
@@ -10779,4 +10791,408 @@ def render_molbio_landing():
         ]
         for step, sdesc in sb_steps:
             st.markdown(f"<div style='background:#010810;border:1px solid #f9731622;border-radius:8px;padding:7px 10px;margin:3px 0;'><div style='color:#fb923c;font-size:.72rem;font-weight:700;'>{step}</div><div style='color:#3a6080;font-size:.7rem;line-height:1.5;margin-top:2px;'>{sdesc}</div></div>", unsafe_allow_html=True)
+
+
+# ════════════════════════════════════════════════════════════════════════════
+#  DOMAIN WORKSPACE FUNCTIONS — full tab-based workspaces per domain
+#  Called when domain is selected but no protein loaded
+# ════════════════════════════════════════════════════════════════════════════
+
+def render_oncology_workspace():
+    """Full Oncology workspace with domain-specific tabs."""
+    st.markdown(f"<div style='background:linear-gradient(135deg,#0a0002,#120008);border:1px solid #f43f5e30;border-radius:12px;padding:.9rem 1.2rem;margin-bottom:.8rem;display:flex;align-items:center;gap:12px;'><span style='font-size:1.5rem;'>🎗</span><div><div style='color:#f43f5e;font-weight:800;font-size:1.1rem;'>Oncology Workspace</div><div style='color:#5a2030;font-size:.78rem;'>Metastasis · Early Detection · Patient-Specific · Driver Mutations</div></div></div>", unsafe_allow_html=True)
+
+    onc_tabs = st.tabs(["👤 Patient Profile", "🔬 Cancer Profiler", "🔴 Metastasis", "🩺 Early Detection", "💊 Treatment Guide", "🧬 Biomarkers"])
+
+    with onc_tabs[0]:  # Patient Profile
+        sh("👤", "Patient Intake & Personalised Analysis")
+        oc1, oc2, oc3 = st.columns(3)
+        with oc1:
+            pt_c = st.selectbox("Cancer type", ["Lung adenocarcinoma (LUAD)","Breast cancer (HR+/HER2−)","Breast cancer (TNBC)","Colorectal cancer (CRC)","Glioblastoma (GBM)","Pancreatic ductal adenocarcinoma (PDAC)","Ovarian high-grade serous","Melanoma","Hepatocellular carcinoma","Prostate adenocarcinoma","Renal clear-cell (ccRCC)","Bladder urothelial","AML","CLL","DLBCL","Endometrial MMR-deficient","Head & neck SCC","Thyroid papillary","Neuroendocrine (NET)","Oesophageal adenocarcinoma","Gastric HER2+","Cervical HPV-associated","Sarcoma","Unknown primary"], key="onc_ws_cancer")
+            pt_stage_ws = st.selectbox("Stage", ["Stage 0 (in situ)","Stage I (localised)","Stage II","Stage III (regional)","Stage IV (metastatic)","Recurrent","MRD"], key="onc_ws_stage")
+        with oc2:
+            pt_var_ws = st.text_input("Somatic/germline variant", placeholder="KRAS G12C · BRCA2 W31* · TP53 R175H", key="onc_ws_var")
+            pt_ori = st.radio("Origin", ["Somatic","Germline","Unknown"], horizontal=True, key="onc_ws_ori")
+            pt_msi_ws = st.selectbox("MSI/MMR", ["Unknown","MSS","MSI-H","MSI-L"], key="onc_ws_msi")
+        with oc3:
+            pt_tmb_ws = st.number_input("TMB (mut/Mb)", 0, 500, 0, key="onc_ws_tmb")
+            pt_pdl1_ws = st.selectbox("PD-L1 TPS", ["Unknown","<1%","1–49%","≥50%"], key="onc_ws_pdl1")
+            if st.button("🧬 Analyse related protein →", key="onc_ws_search", use_container_width=True):
+                v_lower = pt_var_ws.lower()
+                gene_map = {"kras":"KRAS","brca1":"BRCA1","brca2":"BRCA2","egfr":"EGFR","braf":"BRAF","alk":"ALK","tp53":"TP53","pten":"PTEN","myc":"MYC","erbb2":"ERBB2","her2":"ERBB2","apc":"APC","vhl":"VHL","idh1":"IDH1","met":"MET","ret":"RET"}
+                for k, v in gene_map.items():
+                    if k in v_lower:
+                        st.session_state["_trigger_search"] = v; st.rerun(); break
+                else:
+                    st.info("Enter a gene name in the variant field, then click again.")
+
+        st.markdown("<hr class='dv'>", unsafe_allow_html=True)
+        # Instant treatment recs
+        v_low_ws = pt_var_ws.lower()
+        recs_ws = []
+        if "kras g12c" in v_low_ws: recs_ws.append(("Sotorasib (KRAS G12C)","#22c55e","FDA-approved AMG 510. 960mg/day oral. LUAD ORR 37%. CRC combo with cetuximab (CodeBreak 300). Monitor ctDNA for acquired resistance (G12D bypass, amplification)."))
+        if "egfr" in v_low_ws and any(x in v_low_ws for x in ["ex19","l858r","exon19"]): recs_ws.append(("Osimertinib (EGFR ex19/L858R)","#22c55e","3rd-gen TKI, 80mg/day. Crosses BBB. FLAURA: mPFS 18.9mo. T790M resistance: continue osi. C797S resistance: switch to 1st-gen if T790M absent."))
+        if any(x in v_low_ws for x in ["brca1","brca2"]) and pt_ori == "Germline": recs_ws.append(("PARP inhibitor (olaparib/niraparib)","#22c55e","Synthetic lethality via HRD. Olaparib FDA-approved: breast/ovarian/PDAC/prostate (germline BRCA). HRD score ≥42 (Myriad myChoice) = responder. mPFS 7.4mo vs 4.2mo placebo (OlympiAD)."))
+        if "braf v600" in v_low_ws: recs_ws.append(("Dabrafenib + Trametinib","#22c55e","BRAF+MEK combo prevents paradoxical ERK activation. Melanoma ORR 67%, mPFS 11.1mo. CRC: add cetuximab (BEACON-CRC). Check MEK1/2 resistance."))
+        if "MSI-H" in pt_msi_ws or pt_tmb_ws >= 10: recs_ws.append(("Pembrolizumab (anti-PD1)","#a855f7",f"{'MSI-H' if 'MSI-H' in pt_msi_ws else 'TMB '+str(pt_tmb_ws)+' mut/Mb'} = tumour-agnostic pembrolizumab (FDA). MSI-H CRC: KEYNOTE-177 ORR 43.8%, mPFS 16.5mo vs 8.2mo chemo. Add bevacizumab for rapid progressors."))
+        if "≥50%" in pt_pdl1_ws and "LUAD" in pt_c: recs_ws.append(("Pembrolizumab monotherapy","#a855f7","KEYNOTE-024: TPS≥50% NSCLC 1st line pembro vs platinum. mPFS 10.3mo vs 6.0mo. Must exclude EGFR/ALK/ROS1/KRAS alterations first."))
+        if not recs_ws: recs_ws.append(("Comprehensive NGS + clinical trial","#ffd60a",f"No actionable mutation identified. Order FoundationOne CDx or MSK-IMPACT. Consider NCI-MATCH, TAPUR, or MyPathway basket trial. Tumour-agnostic: pembrolizumab (MSI-H/TMB-H), larotrectinib (NTRK), dabrafenib+trametinib (BRAF V600E any tumour)."))
+        for rn, rc, rd in recs_ws:
+            st.markdown(f"<div style='background:#010810;border-left:3px solid {rc};border-radius:0 8px 8px 0;padding:9px 13px;margin:.3rem 0;'><div style='color:{rc};font-weight:700;font-size:.81rem;'>💊 {rn}</div><div style='color:#3a6080;font-size:.75rem;line-height:1.6;margin-top:2px;'>{rd}</div></div>", unsafe_allow_html=True)
+
+    with onc_tabs[1]:  # Cancer Profiler
+        sh("🔬", "Cancer Type Profiler")
+        FULL_PROFILES = {
+            "Lung adenocarcinoma (LUAD)": {"incidence":"~250K new US cases/yr","five_yr":"Stage I: 85% · Stage IV: 6%","drivers":{"EGFR (ex19del/L858R)":"Osimertinib 1st line. mPFS 18.9mo","KRAS G12C":"Sotorasib 960mg/d. ORR 37%","ALK rearrangement":"Alectinib 600mg BD. mPFS 34.8mo","ROS1 rearrangement":"Entrectinib. ORR 77%","MET exon14 skip":"Capmatinib or tepotinib","BRAF V600E":"Dabrafenib+trametinib","RET fusion":"Selpercatinib. ORR 64%","NTRK fusion":"Larotrectinib. ORR 75%"},"causes":["Smoking (SBS4 signature — C→A transversions)","Radon (>4 pCi/L — 21K US deaths/yr)","Asbestos + silica dust","PM2.5 air pollution → de novo EGFR mutations","Passive smoke (2nd-hand)"],"early_detect":["LDCT annually: 50–80y smokers with 20 pack-yr history (USPSTF A-grade)","cfDNA EGFR (plasma) for monitoring — not primary screening","Bronchoscopy + BAL if suspicious nodule","AI-assisted lung nodule risk (Lung-RADS 4B → biopsy)"]},
+            "Colorectal cancer (CRC)": {"incidence":"~153K new US cases/yr","five_yr":"Stage I: 90% · Stage IV: 16%","drivers":{"APC (>85%)":"Wnt pathway driver. FAP germline — prophylactic colectomy","KRAS (40%)":"RAS WT → cetuximab/panitumumab eligible. G12C → sotorasib+cetuximab","BRAF V600E (10%)":"Right-sided CRC. BEACON-CRC: enco+bini+cetux ORR 26%","MSI-H/MMR-d (15%)":"→ pembrolizumab 1st line. Lynch syndrome germline","HER2 amplification (2–5%)":"Tucatinib+trastuzumab (MOUNTAINEER). RAS/BRAF WT required","PIK3CA (30%)":"No approved targeted therapy. Aspirin reduces recurrence (E5202 trial)"},"causes":["Red/processed meat >50g/day (RR 1.4)","Obesity BMI>30 (RR 1.5, especially right-sided)","Alcohol >2 drinks/day","Lynch syndrome (MLH1/MSH2/MSH6/PMS2/EPCAM)","FAP (APC germline) — near 100% lifetime risk without intervention","IBD: UC after 30y has 18% cumulative risk","Aspirin protective (30% risk reduction — CAPP2)"],"early_detect":["FIT (faecal immunochemical) annually — sensitivity 79%, specificity 94%","Colonoscopy every 10 years from age 45 (USPSTF)","Cologuard (Exact Sciences) — stool DNA, sensitivity 92% CRC","SHIELD blood test — cfDNA methylation, 83.1% sensitivity (FDA approved 2024)"]},
+            "Glioblastoma (GBM)": {"incidence":"~13K new US cases/yr","five_yr":"Stage IV: 5–10%","drivers":{"EGFR amplification/vIII (57%)":"No approved targeted Tx. Depatux-M (ABT-414) Phase III — failed OS. AMG-595 ADC in trials","IDH1 R132H (5–10% GBM)":"Vorasidenib (Servier) FDA approved 2024 for IDH1/2-mutant grade 2/3. Not active in GBM","TERT promoter (72%)":"Prognostic, not targetable. C228T/C250T → telomere maintenance","PTEN loss (36%)":"PI3K pathway activated. Ongoing trials. No approved Tx for PTEN-null GBM","MGMT promoter methylation":"Predicts temozolomide response (50% vs 20% 2yr OS). Not actionable — predictive","NF1 loss (14%)":"RAS/MAPK activation. MEK inhibitor trials ongoing"},"causes":["Ionising radiation (prior RT) — only established environmental cause","Rare germline: Li-Fraumeni (TP53), NF1, Lynch, BRCA","Majority (>90%) sporadic, no identifiable cause"],"early_detect":["No validated screening — incidental finding on MRI","Brain MRI with gadolinium for symptomatic patients (headache, seizure, focal deficit)","IDH1 R132H IHC on biopsy — best prognostic test","MGMT methylation by pyrosequencing or methylation-specific PCR"]},
+        }
+        sel_prof = st.selectbox("Select cancer type to profile:", list(FULL_PROFILES.keys()), key="onc_prof_sel")
+        if sel_prof and sel_prof in FULL_PROFILES:
+            prof = FULL_PROFILES[sel_prof]
+            st.markdown(f"<div style='display:flex;gap:16px;margin:.5rem 0;'><div style='background:#0a0002;border:1px solid #f43f5e22;border-radius:8px;padding:7px 12px;'><div style='color:#3a6080;font-size:.62rem;text-transform:uppercase;'>Incidence</div><div style='color:#f43f5e;font-size:.8rem;font-weight:700;'>{prof['incidence']}</div></div><div style='background:#0a0002;border:1px solid #ffd60a22;border-radius:8px;padding:7px 12px;'><div style='color:#3a6080;font-size:.62rem;text-transform:uppercase;'>5-yr survival</div><div style='color:#ffd60a;font-size:.8rem;font-weight:700;'>{prof['five_yr']}</div></div></div>", unsafe_allow_html=True)
+            dr_c, cause_c = st.columns(2)
+            with dr_c:
+                st.markdown("<div style='color:#f43f5e;font-size:.7rem;font-weight:700;text-transform:uppercase;margin-bottom:.3rem;'>Driver genes & targeted therapy</div>", unsafe_allow_html=True)
+                for driver, detail in prof["drivers"].items():
+                    st.markdown(f"<div style='background:#040010;border:1px solid #f43f5e18;border-radius:7px;padding:5px 9px;margin:2px 0;'><span style='color:#f43f5e;font-weight:700;font-size:.73rem;'>{driver}</span><br><span style='color:#3a6080;font-size:.7rem;'>{detail}</span></div>", unsafe_allow_html=True)
+                    gene_key = driver.split()[0].split("(")[0].strip()
+                    if st.button(f"Analyse {gene_key}", key=f"onc_prof_{gene_key}_{sel_prof[:5]}", use_container_width=True):
+                        st.session_state["_trigger_search"] = gene_key; st.rerun()
+            with cause_c:
+                st.markdown("<div style='color:#ff8c42;font-size:.7rem;font-weight:700;text-transform:uppercase;margin-bottom:.3rem;'>Causes & risk factors</div>", unsafe_allow_html=True)
+                for c in prof["causes"]: st.markdown(f"<div style='color:#4a7090;font-size:.73rem;padding:2px 0;border-bottom:1px solid #050e18;'>• {c}</div>", unsafe_allow_html=True)
+                st.markdown("<div style='color:#22c55e;font-size:.7rem;font-weight:700;text-transform:uppercase;margin:.5rem 0 .3rem;'>Early detection</div>", unsafe_allow_html=True)
+                for ed in prof["early_detect"]: st.markdown(f"<div style='color:#4a7090;font-size:.73rem;padding:2px 0;border-bottom:1px solid #050e18;'>◆ {ed}</div>", unsafe_allow_html=True)
+
+    with onc_tabs[2]:  # Metastasis
+        sh("🔴", "Metastasis Cascade — Molecular Biology & Intervention Points")
+        cascade_ws = [
+            ("EMT","Epithelial-Mesenchymal Transition","E-cadherin (CDH1)↓, vimentin↑, N-cadherin↑, fibronectin↑","TWIST1/2 (transcription), SNAIL1/2 (repressors), ZEB1/2, TGF-β signalling","Matrigel invasion assay 24h. IHC for E-cadherin/vimentin. pSMAD2/3 for TGF-β. Inhibit: TGF-βR1 inhibitor (galunisertib), ZEB1 siRNA.","#ff2d55"),
+            ("Local invasion","ECM degradation","MMP-2, MMP-9, MT1-MMP (MMP14), uPA/uPAR","TIMP1/2 loss, COX-2 upregulation, LOX-mediated ECM crosslinking","Gelatin zymography for MMP-2/9. DQ-gelatin fluorescence. Inhibit: marimastat (failed broad MMP) → selective MMP14 inhibitor (ilomastat). LOX inhibitor BAPN.","#ff4465"),
+            ("Intravasation","Entry into blood/lymphatics","EpCAM+/CK+/CD45− CTCs. CTC clusters (22× more efficient)","VEGF-A (angiogenesis), Ang-2 (vessel destabilisation), CXCR4 signalling","CellSearch assay (FDA cleared): >5 CTCs/7.5mL = poor prognosis (breast, CRC, prostate). CTC cluster detection by plakoglobin staining. Inhibit: bevacizumab (VEGF), AMD3100 (CXCR4).","#ff6080"),
+            ("Circulation","Anoikis resistance + immune evasion","Platelet coating (P-selectin+GP1b), NK cell evasion, CTC-platelet-neutrophil clusters","TRAIL resistance, CD47 'don't eat me' signal, PD-L1 on CTCs","ctDNA quantification at 0.01% VAF (ddPCR, Guardant, Foundation Liquid). Anti-platelet (aspirin) shows retrospective CTC reduction. CD47 blockade (magrolimab) investigational.","#ff8c42"),
+            ("Extravasation","Organ-specific arrest","CXCR4→CXCL12 (bone), CCRL1 (lung), ANGPTL4 (brain breach), CD44+HYAL (liver)","Organ-tropic subclone selection over serial passages","Organ-tropism exosome integrin profiling (ITGβ4→lung, ITGβ5→liver, ITGα6/β4→brain). AMD3100 (CXCR4 antagonist) prevents bone tropism in mouse models.","#ffd60a"),
+            ("Pre-metastatic niche","Tumour prepares distant organ BEFORE CTC arrival","Tumour-derived exosomes (ITG-defined), fibronectin+ VEGFR1+ BMDCs, LOX-dependent collagen crosslinking","TGF-β, TNF-α, and MIF from primary tumour","Detect: plasma exosome proteomics (ITG typing). LOX inhibitor BAPN (clinical trial NCT01199357). S100A8/A9 as pre-niche serum biomarkers.","#22c55e"),
+            ("Colonisation","Dormancy → metastatic outgrowth","Dormancy: DEC2+/p27+/NR2F1+. Outgrowth: VCAM1+/NF-κB, BMP/TGF-β switch","Bone: RANKL/OPG osteolytic; Liver: Kupffer cell re-education; Brain: astrocyte co-option (STAT3/GFAP)","Denosumab/bisphosphonates for bone mets. Prophylactic cranial irradiation (SCLC). Liver: HAI chemotherapy (FUDR) for CRC liver mets. NR2F1 agonist to maintain dormancy.","#22c55e"),
+        ]
+        for step, title, mol, reg, intervention, clr in cascade_ws:
+            with st.expander(f"{'🔴' if clr in ['#ff2d55','#ff4465','#ff6080'] else '🟠' if clr=='#ff8c42' else '🟡' if clr=='#ffd60a' else '🟢'}  {step} — {title}"):
+                ca, cb = st.columns([1.3, 0.7])
+                with ca:
+                    st.markdown(f"<div style='color:#ff2d55;font-size:.7rem;font-weight:700;margin-bottom:3px;'>Molecular drivers</div><div style='color:#3a6080;font-size:.75rem;line-height:1.55;'>{mol}</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='color:#ff8c42;font-size:.7rem;font-weight:700;margin:.5rem 0 3px;'>Key regulators</div><div style='color:#3a6080;font-size:.75rem;line-height:1.55;'>{reg}</div>", unsafe_allow_html=True)
+                with cb:
+                    st.markdown(f"<div style='background:#010810;border-left:3px solid {clr};border-radius:0 8px 8px 0;padding:9px 11px;font-size:.72rem;color:#4a7090;line-height:1.6;'><b style='color:{clr};font-size:.7rem;'>Detect + Intervene:</b><br>{intervention}</div>", unsafe_allow_html=True)
+
+    with onc_tabs[3]:  # Early Detection
+        sh("🩺", "Early Detection & Surveillance — Methods & Evidence")
+        det_methods = [
+            ("🩸 Liquid biopsy (ctDNA)","ddPCR or ultra-deep NGS (60,000× coverage)","0.01% VAF detectable — 2–5 years before symptoms in some cancers (ECLIPSE trial: 83% sensitivity Stage I CRC). Best validated for CRC, NSCLC, PDAC, breast. False-positive: clonal haematopoiesis (CHIP) — must filter. Use tumour-naïve (methylation) or tumour-informed (personalised panel) approach.","#00e5ff"),
+            ("🧬 Multi-cancer early detection (MCED)","Galleri (Grail Inc.) — methylation cfDNA","50+ cancers from single blood draw. Stage I sensitivity ~17%, Stage II ~43%, Stage III/IV ~79% (CCGA). PATHFINDER study: 1.4% positive rate, PPV 38%. Not yet FDA approved for screening. Best for cancers with no current screening (ovarian, PDAC, gastric).","#a855f7"),
+            ("🔬 Protein biomarkers","Single analyte + multi-analyte panels (CancerSEEK)","CA-125>35 U/mL (ovarian, sens 80% late/50% early), PSA>4 ng/mL (prostate — limited specificity), AFP>400 (HCC), CEA>5 (CRC/lung — late marker), CA 19-9>37 (PDAC — low sens early). CancerSEEK 8-protein + ctDNA: 70% sens Stage I-II (16 cancer types).","#ffd60a"),
+            ("🧪 Germline risk stratification","NGS panel testing (Invitae, Ambry, GeneDx)","BRCA1/2 → breast/ovarian/PDAC/prostate protocol. MLH1/MSH2/MSH6 (Lynch) → annual colonoscopy from 20–25y, endometrial surveillance. TP53 (Li-Fraumeni) → whole-body MRI annually. PALB2 → breast MRI. ATM heterozygous → 30% lifetime breast risk. Use Manchester Score or NCCN criteria for referral.","#22c55e"),
+            ("📷 AI-assisted imaging","FDA-cleared AI tools for radiology","Mammography AI (Transpara/iCAD): reduces radiologist reading by 44%, maintains sensitivity. CT colonography + AI: polyp detection ≥6mm. LungRADS AI nodule scoring. MR prostate (PI-RADS 4+5 → biopsy). AI ovarian RADS in development. Limitation: data bias — most trained on Western populations.","#ff8c42"),
+            ("💉 Methylation-based screening","MCED + targeted methylation assays","SHIELD (Exact Sciences) — CRC ctDNA methylation, 83.1% sensitivity (FDA approved 2024 for CRC screening alternative). Methylation markers: SEPT9 (CRC), SHOX2/PTGER4 (lung), SOX17 (oesophageal). False-positive rate ~10% — needs confirmatory colonoscopy/CT.","#ff2d55"),
+        ]
+        for name, method, desc, clr in det_methods:
+            with st.expander(name):
+                st.markdown(f"<div style='color:{clr};font-size:.7rem;font-weight:700;margin-bottom:4px;'>Method: {method}</div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='color:#3a6080;font-size:.76rem;line-height:1.65;'>{desc}</div>", unsafe_allow_html=True)
+
+    with onc_tabs[4]:  # Treatment Guide
+        sh("💊", "Cancer Treatment Algorithm — By Biomarker")
+        st.markdown("<div style='color:#3a6080;font-size:.8rem;margin-bottom:.6rem;'>The correct treatment depends on tumour biomarker profile, NOT just cancer type. These are FDA-approved or NCCN Category 1 recommendations.</div>", unsafe_allow_html=True)
+        tx_map = [
+            ("EGFR ex19del or L858R","Any solid (mainly NSCLC)","Osimertinib 80mg/day","T790M resistance: continue osi. C797S: switch. MET amp: add tepotinib."),
+            ("KRAS G12C","NSCLC, CRC","Sotorasib (NSCLC) · Adagrasib+cetuximab (CRC)","G12D bypass, KRAS amp, NRAS secondary → resistance. Monitor ctDNA."),
+            ("ALK / ROS1 / RET / NTRK fusion","Any solid tumour","Alectinib/lorlatinib · Entrectinib · Selpercatinib · Larotrectinib","Tumour-agnostic for NTRK. Resistance: compound mutation or bypass. Lorlatinib covers most ALK resistance."),
+            ("BRCA1/2 germline LoF","Breast, Ovarian, PDAC, Prostate","Olaparib (breast/ovarian/PDAC/prostate) · Niraparib (ovarian)","HRD score ≥42 = responder. Reversion mutation → resistance. Switch PARP inhibitor class or platinum."),
+            ("BRAF V600E","Melanoma, NSCLC, CRC, thyroid","Dabrafenib+trametinib","CRC: add cetuximab (BEACON). NRAS secondary → MEK inhibitor alone. Resistance: bypass (RAS amp, NF1 loss)."),
+            ("HER2 amplification/overexpression","Breast, gastric, CRC, NSCLC","Trastuzumab+pertuzumab (breast) · T-DM1/T-DXd · Tucatinib+trastuzumab","CRC: tucatinib+trastuzumab (MOUNTAINEER). NSCLC: T-DXd (DESTINY-Lung). Resistance: HER3, PI3KCA mutation."),
+            ("MSI-H / dMMR (any tumour)","Tumour-agnostic","Pembrolizumab monotherapy (2017 FDA approval)","Hyperprogression in rare cases. PD-L1 not required for MSI-H. PD-L1 ≥50% → also mono. PD-L1 <50% → combo option."),
+            ("TMB ≥10 mut/Mb (any tumour)","Tumour-agnostic","Pembrolizumab 200mg Q3W","Tumour-agnostic approval 2020. TMB measured by FoundationOne. Efficacy varies by tumour type — strongest in bladder, NSCLC, CRC."),
+            ("PIK3CA mutation (HR+ breast)","Breast cancer (HR+/HER2−)","Alpelisib 300mg + fulvestrant","PIK3CA mutation (exon 9/20) required. Grade 3 hyperglycaemia ~36% — manage with metformin. Skin rash manageable."),
+            ("CDK4/6 any (HR+ breast)","Breast cancer (HR+/HER2−)","Palbociclib/ribociclib/abemaciclib + endocrine","Abemaciclib: adjuvant use (monarchE). No companion Dx required. Neutropenia (palbociclib/ribociclib) + diarrhoea (abemaciclib)."),
+        ]
+        for biomarker, tumour, tx, resist in tx_map:
+            st.markdown(f"<div style='background:#010810;border:1px solid #f43f5e18;border-radius:9px;padding:8px 12px;margin:.3rem 0;display:flex;gap:10px;align-items:baseline;'><div style='min-width:180px;color:#f43f5e;font-size:.73rem;font-weight:700;'>{biomarker}</div><div style='min-width:120px;color:#1e4060;font-size:.7rem;'>{tumour}</div><div style='color:#22c55e;font-size:.73rem;font-weight:600;min-width:200px;'>{tx}</div><div style='color:#3a6080;font-size:.69rem;line-height:1.5;'>{resist}</div></div>", unsafe_allow_html=True)
+
+    with onc_tabs[5]:  # Biomarkers
+        sh("🧬", "Tumour Biomarker Panel — Detection & Clinical Use")
+        biomarkers_ws = [
+            ("CEA (carcinoembryonic antigen)","CRC, NSCLC, gastric, breast","Monitoring response and recurrence. Normal <5 ng/mL. NOT for screening (low sensitivity Stage I). Rise >30% at follow-up = recurrence flag. Doubling time < 6 months = aggressive disease."),
+            ("CA-125 (MUC16)","Ovarian, endometrial",">35 U/mL abnormal. Surgery/chemo monitoring. ROCA algorithm for screening in high-risk. NOT FDA approved for general screening. False positive: endometriosis, fibroids, ascites."),
+            ("CA 19-9 (sialyl Lewis A)","PDAC, CRC, cholangiocarcinoma","Monitoring, NOT screening. >37 U/mL. 80% PDAC sensitivity but 70-80% specificity. Lewis antigen-negative patients (~10%) cannot produce CA19-9 (false negative)."),
+            ("PSA (prostate-specific antigen)","Prostate",">4 ng/mL → biopsy discussion. 4–10 ng/mL 'grey zone' — use PSA density, free/total ratio. PSA velocity >0.75 ng/mL/yr = rising risk. PHI and 4K score improve specificity."),
+            ("LDH (lactate dehydrogenase)","Melanoma, lymphoma, germ cell, NSCLC","Prognostic, not diagnostic. Elevated LDH = high tumour burden, poor prognosis. Melanoma: LDH>ULN = IIIC staging. Not specific — any haemolysis elevates."),
+            ("AFP (alpha-fetoprotein)","HCC, germ cell tumours","HCC: >400 ng/mL highly specific. Screening in cirrhosis: AFP + US every 6 months. Germ cell: yolk sac tumour marker. Decline after treatment = response. Persistence = residual disease."),
+            ("ctDNA (tumour-specific)","Tumour-agnostic (liquid biopsy)","Detects cancer-specific mutations in plasma (VAF 0.01–10%). Best for: monitoring MRD after curative intent, early relapse detection, acquired resistance tracking. Guardant360, FoundationOne Liquid, Tempus xF."),
+            ("PD-L1 TPS/CPS","NSCLC, bladder, cervical, TNBC, HNSCC, gastric","TPS (tumour proportion score) ≥50% = pembrolizumab monotherapy NSCLC. CPS (combined positive score) ≥10 = pembro gastric. 22C3 pharmdx = companion Dx for pembrolizumab. Heterogeneous expression — biopsy site matters."),
+        ]
+        for name, tumours, desc in biomarkers_ws:
+            with st.expander(f"🔬 {name} — {tumours}"):
+                st.markdown(f"<div style='color:#3a6080;font-size:.76rem;line-height:1.65;'>{desc}</div>", unsafe_allow_html=True)
+
+
+def render_neuroscience_workspace():
+    """Neuroscience workspace with domain-specific tabs."""
+    st.markdown(f"<div style='background:linear-gradient(135deg,#03020f,#08062a);border:1px solid #6366f130;border-radius:12px;padding:.9rem 1.2rem;margin-bottom:.8rem;display:flex;align-items:center;gap:12px;'><span style='font-size:1.5rem;'>🧠</span><div><div style='color:#818cf8;font-weight:800;font-size:1.1rem;'>Neuroscience Workspace</div><div style='color:#3a3060;font-size:.78rem;'>Synaptic proteins · Neural circuits · Neurodegeneration · BBB · Ion channels</div></div></div>", unsafe_allow_html=True)
+
+    neuro_tabs = st.tabs(["⚡ Synaptic Circuit", "🔌 Ion Channels", "🧨 Neurodegeneration", "🗺 Disease Map", "💊 BBB & Drug Rules"])
+
+    SYNAPSE_DATA = {
+        "Presynaptic": {
+            "color": "#6366f1",
+            "proteins": {
+                "SYT1": ("Synaptotagmin-1","Ca²⁺ sensor for synchronous NT release","C2A/C2B bind Ca²⁺ → vesicle fusion. Clamp spontaneous release when [Ca²⁺] low. Mutations: severe intellectual disability, epilepsy. 3 SYT isoforms for different release modes."),
+                "VAMP2": ("Synaptobrevin-2","v-SNARE — core vesicle fusion","SNARE complex with STX1A+SNAP25. Cleaved by BoNT/B+D → flaccid paralysis. Required for ALL fast NT release (glutamate, GABA, ACh, DA). VAMP2 KO = neonatal lethal."),
+                "STX1A": ("Syntaxin-1A","t-SNARE — plasma membrane SNARE","Habc domain autoinhibits → Munc18-1 (STXBP1) relieves. Required for vesicle docking. STX1A mutations → West syndrome (infantile spasms), Rett-like syndrome."),
+                "SNAP25": ("SNAP-25","t-SNARE — cytoplasmic SNARE","Palmitoylated to plasma membrane. Contributes 2 SNARE motifs. Cleaved by BoNT/A/E. SNAP25 polymorphism (rs3746544) → ADHD, schizophrenia. Essential for exocytosis."),
+                "SYN1": ("Synapsin-1","Vesicle-actin tether","Tethers reserve pool vesicles to actin. PKA/CaMKII phosphorylate Ser9 → release tether → enhanced release. SYN1 mutations → X-linked epilepsy + ASD. SYN1/2 double KO → spontaneous seizures."),
+                "STXBP1": ("Munc18-1","Chaperone for syntaxin","Escorts STX1A to membrane. Required for vesicle priming. STXBP1 haploinsufficiency = Ohtahara syndrome — most severe early infantile epileptic encephalopathy (EIEE)."),
+                "NRXN1": ("Neurexin-1α/β","Presynaptic adhesion/scaffold","Binds postsynaptic NLGNs. NRXN1 deletions → ASD (strongest genetic risk factor), schizophrenia. >1000 splice variants. Determines AMPA vs NMDA receptor clustering."),
+            }
+        },
+        "Postsynaptic": {
+            "color": "#ff2d55",
+            "proteins": {
+                "DLG4": ("PSD-95","Master postsynaptic scaffold","PDZ1/2 bind NMDAR C-terminal (GluN2 ESDV motif). PDZ3 binds nNOS → NO production at synapse. Organises >100 PSD proteins. DLG4 haploinsufficiency → ASD, language delay, ID. Palmitoylation cycle controls synaptic strength."),
+                "SHANK3": ("SHANK3/ProSAP2","PSD scaffold — spine architecture","Links DLG4-complex to Homer. ANK+SH3+PDZ+ProSAP/SHANK+SAM domains. SHANK3 deletion → Phelan-McDermid syndrome (22q13.3): severe ASD, absent speech, hypotonia. SHANK3 OE → OCD-like repetitive behaviour."),
+                "SYNGAP1": ("SynGAP1","Ras-GAP at synapse — LTP gatekeeper","RasGAP domain inactivates Ras. CaMKII phospho-Ser1116/Ser1232 → SynGAP moves from spine → Ras activation → AMPA receptor insertion → LTP. SYNGAP1 haploinsufficiency = 2nd most common monogenic ID after Down syndrome."),
+                "GRIN2B": ("GluN2B","NMDA receptor subunit — synaptic plasticity","Dominant neonatal/juvenile NMDA subunit. Longer channel open time vs GluN2A. CaMKII-Ser1303 interaction during LTP. GoF → hyperexcitability (West, EIEE); LoF → severe ID, ASD, absent speech. Memantine (Alzheimer drug) blocks NMDA."),
+                "GRIA1": ("GluA1","AMPA receptor — LTP expression","PKA-Ser845 + CaMKII-Ser831 phosphorylation during LTP → synaptic insertion = LTP expression. GluA1 endocytosis = LTD. GRIA1 KO → no LTP → profound spatial memory deficit. GRIA1 phospho-Ser831 used as LTP biomarker."),
+                "HOMER1": ("Homer1","mGluR1/5 scaffold","Long Homer1b/c: crosslinks mGluR5 to IP3R and SHANKs → ER Ca²⁺ signalling. Homer1a (activity-induced short isoform) = dominant negative → uncouples mGluR5. Homer1a induction = 'synaptic tag' for late-phase LTP. Fragile X target."),
+            }
+        }
+    }
+
+    with neuro_tabs[0]:  # Synaptic Circuit
+        sh("⚡", "Synaptic Protein Network — Pre- and Post-Synaptic Machinery")
+        for comp, comp_data in SYNAPSE_DATA.items():
+            clr = comp_data["color"]
+            st.markdown(f"<div style='color:{clr};font-size:.82rem;font-weight:800;margin:.7rem 0 .4rem;text-transform:uppercase;letter-spacing:.08em;'>{'🔵' if comp=='Presynaptic' else '🔴'} {comp} proteins</div>", unsafe_allow_html=True)
+            for prot, (full_name, role, detail) in comp_data["proteins"].items():
+                with st.expander(f"{prot} — {full_name} · {role}"):
+                    st.markdown(f"<div style='color:#3a6080;font-size:.76rem;line-height:1.65;border-left:2px solid {clr};padding-left:10px;'>{detail}</div>", unsafe_allow_html=True)
+                    if st.button(f"🔬 Analyse {prot} →", key=f"syn_{comp[:3]}_{prot}", type="primary"):
+                        st.session_state["_trigger_search"] = prot; st.rerun()
+
+    with neuro_tabs[1]:  # Ion Channels
+        sh("🔌", "Ion Channel Pharmacology — Precision Medicine Guide")
+        channels = {
+            "SCN1A (Nav1.1)": ("Voltage-gated Na+ — interneurons (PV+)","GoF → GEFS+ (febrile seizures plus)\nLoF → Dravet syndrome — interneuron failure → disinhibition","LoF Dravet: stiripentol+valproate+clobazam. Quinidine for SCN1A GoF persistent current. AVOID: carbamazepine, lamotrigine, phenytoin (Na-channel blockers worsen Dravet by further reducing inhibitory interneuron firing)","#ff2d55"),
+            "SCN2A (Nav1.2)": ("Voltage-gated Na+ — excitatory neurons AIS","GoF early-onset (<3mo) → epilepsy (responds to Na-blockers)\nLoF late-onset (>3mo) → ASD/ID (AVOID Na-blockers — worsen by reducing excitatory drive)","CRITICAL PRECISION MEDICINE: GoF → phenytoin/carbamazepine effective. LoF → Na-blockers CONTRAINDICATED. Distinguish by age of onset and channel biophysics (patch-clamp or computational modelling from variant position).","#ff8c42"),
+            "SCN8A (Nav1.6)": ("Voltage-gated Na+ — nodes of Ranvier","GoF → EIEE13 (epileptic encephalopathy)\nPersistent Na+ current → continuous firing","High-dose phenytoin most effective. Carbamazepine, oxcarbazepine also effective. Quinidine investigational. Responds to Na-channel blockers (opposite to Dravet). Ketogenic diet adjunct.","#ffd60a"),
+            "KCNQ2 (Kv7.2)": ("M-channel K+ — AIS repolarisation","GoF → self-limited neonatal epilepsy (SLNE — benign)\nLoF → KCNQ2 encephalopathy (EIEE7 — severe)","GoF: usually self-resolves by 6 months. LoF encephalopathy: carbamazepine/phenobarb. Retigabine (Kv7 opener) — withdrawn from market but pharmacological proof-of-concept. Experimental: XEN496 (specific Kv7.2 opener, Phase III).","#22c55e"),
+            "HCN1 (Ih current)": ("Hyperpolarisation-activated cyclic nucleotide-gated — dendritic pacemaker","GoF → Dravet-like febrile seizures\nLoF → generalised epilepsy + cognitive deficit","Ivermectin blocks HCN1 — investigational. Standard AEDs less effective. Ketogenic diet (reduces HCN1 expression). ZD7288 (HCN blocker) — preclinical only. Lamotrigine worsens.","#4a90d9"),
+            "CACNA1A (Cav2.1)": ("P/Q-type Ca²+ — presynaptic NT release","Missense → Familial Hemiplegic Migraine type 1 (FHM1)\nExpansion → SCA6 (spinocerebellar ataxia)\nLoF → episodic ataxia type 2 (EA2)","EA2: acetazolamide 250mg TID (carbonic anhydrase inhibitor — mechanism unclear but 60-80% effective). FHM1: avoid triptans (serotonin vasoconstrictors — trigger). SCA6: no approved therapy, riluzole may slow cerebellar degeneration.","#a855f7"),
+            "GRIN2A (GluN2A)": ("NMDA receptor — adult synaptic plasticity","GoF → epilepsy-aphasia spectrum (EAS): rolandic epilepsy, CSWS, Landau-Kleffner","CSWS: carbamazepine may worsen (suppress LTP). Sulthiame first-line (carbonic anhydrase + Na-channel). Corticosteroids for language recovery in Landau-Kleffner. Memantine (NMDA blocker) investigational for GoF.","#ff8c42"),
+            "GABRG2 (GABAA γ2)": ("GABAA receptor — synaptic inhibitory clustering","GoF → thermal instability → GEFS+\nLoF → Dravet-like (GABAA dysfunction)","GEFS+: low-dose valproate for fever-triggered seizures. Avoid phenytoin/carbamazepine (Na-blockers, no benefit). Clobazam (benzodiazepine) for breakthrough. Fenfluramine (FDA approved Dravet 2020) works via serotonin-GABA pathway.","#22c55e"),
+        }
+        for ch_name, (location, gof_lof, treatment, clr) in channels.items():
+            with st.expander(f"{'🔴' if 'ff2' in clr else '🟡' if 'ffd' in clr else '🟢' if '22c' in clr else '🔵'}  {ch_name} — {location.split(' — ')[0]}"):
+                t1, t2 = st.columns([1, 1])
+                with t1:
+                    st.markdown(f"<div style='color:{clr};font-size:.7rem;font-weight:700;margin-bottom:3px;'>Location</div><div style='color:#3a6080;font-size:.74rem;'>{location}</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='color:{clr};font-size:.7rem;font-weight:700;margin:.5rem 0 3px;'>GoF / LoF phenotypes</div><div style='color:#3a6080;font-size:.74rem;white-space:pre-line;'>{gof_lof}</div>", unsafe_allow_html=True)
+                with t2:
+                    st.markdown(f"<div style='background:#010810;border-left:3px solid {clr};padding:8px 11px;border-radius:0 8px 8px 0;font-size:.73rem;color:#4a7090;line-height:1.65;'><b style='color:{clr};'>Treatment precision:</b> {treatment}</div>", unsafe_allow_html=True)
+                if st.button(f"Analyse {ch_name.split()[0]} protein", key=f"ch_{ch_name[:8]}", use_container_width=True):
+                    st.session_state["_trigger_search"] = ch_name.split()[0]; st.rerun()
+
+    with neuro_tabs[2]:  # Neurodegeneration
+        sh("🧨", "Neurodegeneration — Protein Aggregation & Disease Cascades")
+        nd_proteins = {
+            "APP → Aβ": ("Alzheimer's amyloid precursor","Sequential cleavage: ADAM10 (α) → sAPPα (non-amyloidogenic) OR BACE1 (β) → BACE1 stub → γ-secretase → Aβ40/42. Aβ42:Aβ40 ratio predicts aggregation. Familial AD mutations (Swedish K670N/M671L) near β-secretase site → increased Aβ. Lecanemab (anti-Aβ protofibrils): 27% slowing clinical decline (CLARITY-AD). Donanemab (anti-Aβ plaque): 35% slowing (TRAILBLAZER-ALZ 2).","APP"),
+            "SNCA (α-synuclein)": ("Parkinson's Lewy body protein","140aa IDP. PD mutations: A53T, A30P, E46K accelerate aggregation. Triplication → overexpression → early PD. G51D → MSA-like. Prion-like propagation via tunnelling nanotubes + exosomes. Phospho-Ser129 in 90% of Lewy body SNCA. Mitochondrial toxicity + proteasome dysfunction. ASO (BIIB101/ION464): Phase II — reduces CSF SNCA. Prasinezumab (anti-SNCA mAb): Phase II ongoing.","SNCA"),
+            "MAPT (Tau)": ("Frontotemporal dementia + Alzheimer tauopathy","441aa microtubule stabiliser. 4R vs 3R repeat isoforms. Hyperphosphorylation by GSK3β (Ser396/404) + CDK5 (Thr231/Ser235) → detaches from MT → aggregates into PHFs → NFTs. CK1 phosphorylates Ser422 → pathological. Tau spreads along neural tracts: Braak staging I–VI. MAPT mutations (P301L, R406W) → FTD. ASO (gosuranemab, LY3372689): Phase II. Anti-tau vaccine (AADvac1, ACI-35): Phase II.","MAPT"),
+            "LRRK2 (ROCO kinase)": ("Most common autosomal dominant PD protein","2527aa protein: ARM-ANK-HEAT scaffold + LRR + Roc-GTPase + COR + kinase + WD40. G2019S in DFG+1 (activation loop) → 3× kinase activity → Rab phosphorylation cascade (Rab8A-Thr72, Rab10-Thr73, Rab35-Thr72). Phospho-Rab8A/10 are pharmacodynamic biomarkers. LRRK2 inhibitors: DNL201/MLi-2 → Phase II Parkinson. Oligomerisation + filamentous inclusions with G2019S.","LRRK2"),
+            "TDP-43 (TARDBP)": ("ALS and FTLD RNA-binding protein","414aa nuclear RNA-binding protein. RRM1+RRM2 bind UG-rich RNA. Glycine-rich C-terminal = prion-like domain (most ALS mutations here). Normal: splicing regulation, miRNA biogenesis. ALS: nuclear TDP-43 lost → cytoplasmic aggregates (pSer409/410, ubiquitin+). 97% of ALS cases have TDP-43 pathology. Haploinsufficiency + gain-of-function both toxic. Target: reducing TDP-43 levels (ASO to mRNA), stress granule dissolution.","TARDBP"),
+            "SOD1": ("ALS — first identified genetic cause","153aa Cu/Zn superoxide dismutase. GoF mechanism (dominant toxicity) — not enzymatic LoF. Misfolded SOD1 binds mitochondrial outer membrane → respiratory chain dysfunction. >220 ALS mutations. p.Ala4Val most aggressive (6mo survival). SOD1-ASO (tofersen, Qalsody): FDA approved 2023 — reduces plasma NfL 55%, slows progression. SALS (sporadic ALS): SOD1 also misfolded.","SOD1"),
+        }
+        for prot_name, (subtitle, detail, gene_sym) in nd_proteins.items():
+            with st.expander(f"🧨 {prot_name} — {subtitle}"):
+                st.markdown(f"<div style='color:#3a6080;font-size:.76rem;line-height:1.65;'>{detail}</div>", unsafe_allow_html=True)
+                if st.button(f"🔬 Analyse {gene_sym}", key=f"nd_{gene_sym}", type="primary"):
+                    st.session_state["_trigger_search"] = gene_sym; st.rerun()
+
+    with neuro_tabs[3]:  # Disease Map
+        sh("🗺️", "Disease → Protein Map & Approved Therapies")
+        NEURO_DISEASE_MAP = {
+            "Alzheimer's disease": (["APP","PSEN1","PSEN2","APOE","TREM2","SORL1","BIN1","CLU"], "Lecanemab (anti-Aβ, FDA 2023) · Donanemab (anti-Aβ, FDA 2024) · Donepezil/rivastigmine (symptomatic AChEI)","#a855f7"),
+            "Parkinson's disease": (["SNCA","LRRK2","PINK1","PARKIN","GBA","VPS35","ATP13A2","UCHL1"], "Levodopa+carbidopa (gold standard) · Pramipexole (D2/D3 agonist) · Safinamide (MAO-B+Na-channel) · DBS for advanced PD · Tofersen (SOD1-ALS, not PD — clarification)","#ff8c42"),
+            "ALS": (["SOD1","TARDBP","FUS","C9orf72","OPTN","TBK1","VCP","HNRNPA1"], "Tofersen (SOD1-ASO, FDA 2023) · Riluzole (glutamate modulator) · Edaravone (antioxidant, Japan/US) · AMX0035 (mitochondria protectant, FDA 2022)","#ff2d55"),
+            "Epilepsy (genetic)": (["SCN1A","SCN2A","SCN8A","KCNQ2","GRIN2B","GABRA1","HCN1","CDKL5"], "Precision: match AED to channel function. Fenfluramine (Dravet, FDA 2020) · Stiripentol+VPA+CLB (Dravet) · Vigabatrin (tuberous sclerosis) · XEN496 (KCNQ2-specific, Phase III)","#ffd60a"),
+            "Autism spectrum (ASD)": (["SHANK3","SYNGAP1","NRXN1","ADNP","TSC1","TSC2","PTEN","CNTNAP2"], "No approved disease-modifying Tx. Everolimus (mTOR inhibitor for TSC). Behaviour therapy gold standard. Risperidone/aripiprazole (irritability). IGF-1 for Phelan-McDermid (investigational).","#22c55e"),
+            "Huntington's disease": (["HTT"], "Tetrabenazine/deutetrabenazine (chorea) · Tominersen (antisense HTT reduction — Phase III) · Branaplam (splicing modifier, Phase II) · VMAT2 inhibitors (chorea)","#6366f1"),
+            "Fragile X syndrome": (["FMR1"], "No disease-modifying Tx approved. mGluR5 antagonists (mavoglurant) failed Phase III. minocycline, memantine symptomatic. AFQ056/arbaclofen trials ongoing.","#ff8c42"),
+        }
+        for disease, (prots, treatment, dclr) in NEURO_DISEASE_MAP.items():
+            with st.expander(f"🔴 {disease}"):
+                st.markdown(f"<div style='color:#22c55e;font-size:.7rem;font-weight:700;margin-bottom:4px;'>Approved/investigational therapies</div><div style='color:#3a6080;font-size:.74rem;line-height:1.55;margin-bottom:8px;'>{treatment}</div>", unsafe_allow_html=True)
+                st.markdown("<div style='color:#6366f1;font-size:.7rem;font-weight:700;margin-bottom:4px;'>Key proteins</div>", unsafe_allow_html=True)
+                pr_cols_dm = st.columns(min(5, len(prots)))
+                for pi, p in enumerate(prots):
+                    with pr_cols_dm[pi % len(pr_cols_dm)]:
+                        if st.button(p, key=f"ndm_{disease[:6]}_{p}", use_container_width=True):
+                            st.session_state["_trigger_search"] = p; st.rerun()
+
+    with neuro_tabs[4]:  # BBB & Drug Rules
+        sh("💊", "BBB Penetrance & CNS Drug Development Rules")
+        st.markdown("""
+<div style='background:#04030f;border:1px solid #6366f120;border-radius:10px;padding:12px 16px;margin-bottom:.8rem;'>
+<div style='color:#818cf8;font-weight:700;margin-bottom:6px;'>CNS Multi-Parameter Optimisation (CNS MPO) Score</div>
+<div style='color:#3a6080;font-size:.77rem;line-height:1.65;'>Score 6 physicochemical properties (0–6 total). Score ≥4 = CNS penetrant.
+Developed by Pfizer from 1128 CNS drugs vs 1000 non-CNS drugs.</div>
+</div>""", unsafe_allow_html=True)
+        bbb_rules_ws = [
+            ("cLogP","1 – 3","Optimal lipophilicity. <1 = too hydrophilic (poor membrane transit). >3 = P-gp substrate, CYP metabolism. Target: 2."),
+            ("MW","< 450 Da","Tight junction pores ~600 Da but paracellular BBB tighter. Oral CNS drugs rarely >400 Da. Large biologics use receptor-mediated transcytosis (RMT)."),
+            ("HBD (H-bond donors)","≤ 3","Each HBD costs ~1 kcal/mol desolvation energy crossing BBB. Count NH + OH. Aim for minimum HBD."),
+            ("PSA (polar surface area)","< 90 Å²","90–140 Å² = borderline CNS. >140 Å² = excluded. Calculate from 2D structure. Amide bonds count. PSA>90 → poor passive permeability."),
+            ("pKa (basic)","< 10","Basic amines at physiological pH → protonated (cationic) → reduced membrane partitioning. pKa >10 = >99% protonated at pH 7.4."),
+            ("P-gp (MDR1/ABCB1)","Not substrate","P-gp efflux pump in brain capillary endothelium. P-gp substrate → pumped back into blood. Efflux ratio (ER) >2 = P-gp liability. Measure in MDCK-MDR1 or Caco-2 cells."),
+            ("CNS MPO score","≥ 4/6","Score each property: cLogP 1–3 = 1pt, MW<400 = 1pt, pKa<8 = 1pt, PSA<60 = 1pt, HBD≤1 = 1pt, cLogD pH7.4 between -1–2 = 1pt. ≥4 = CNS compound."),
+            ("Plasma protein binding","fu,brain > 0.1%","Total drug in brain = total. Free drug = active. High PPB (>99%) → very low fu → minimal pharmacodynamic effect. Measure by equilibrium dialysis."),
+        ]
+        bbb_cols = st.columns(2)
+        for bi, (param, target, detail) in enumerate(bbb_rules_ws):
+            with bbb_cols[bi % 2]:
+                st.markdown(f"<div style='background:#04030f;border:1px solid #6366f118;border-radius:8px;padding:8px 11px;margin:3px 0;'><div style='display:flex;justify-content:space-between;'><span style='color:#818cf8;font-weight:700;font-size:.75rem;'>{param}</span><span style='color:#22c55e;font-size:.72rem;font-weight:600;'>{target}</span></div><div style='color:#3a6080;font-size:.7rem;margin-top:3px;line-height:1.5;'>{detail}</div></div>", unsafe_allow_html=True)
+
+
+def render_microbiome_workspace():
+    """Microbiome workspace — calls existing render_microbiome_page."""
+    render_microbiome_page()
+
+
+def render_pharma_workspace():
+    """Pharmaceuticals workspace with domain-specific tabs."""
+    st.markdown(f"<div style='background:linear-gradient(135deg,#000810,#001828);border:1px solid #00d4ff28;border-radius:12px;padding:.9rem 1.2rem;margin-bottom:.8rem;display:flex;align-items:center;gap:12px;'><span style='font-size:1.5rem;'>💊</span><div><div style='color:#00d4ff;font-weight:800;font-size:1.1rem;'>Pharmaceuticals Workspace</div><div style='color:#003a50;font-size:.78rem;'>GPCR Biology · Druggability · HTS Pipeline · ADMET · Clinical Development</div></div></div>", unsafe_allow_html=True)
+
+    ph_tabs = st.tabs(["★ Filamin Assay", "📋 ADMET Rules", "🔬 Target Classes", "🗓 Drug Timeline", "🧪 HTS Pipeline"])
+
+    with ph_tabs[0]:
+        sh("★", "Filamin Ser2152-P IP Assay — Primary GPCR Readout")
+        st.markdown("<div style='background:#000a14;border:1px solid #00d4ff18;border-radius:10px;padding:11px 15px;margin-bottom:.8rem;color:#3a6080;font-size:.78rem;line-height:1.65;'>~300 Class A GPCRs carry an H8 helix Filamin-Binding Motif. Agonist binding → H8 conformational change → FLNA Ig21 domain displaced → PKA phosphorylates FLNA Ser2152. This is the most proximal available GPCR readout — more receptor-specific than cAMP, IP3, or β-arrestin. PMID: 26124276.</div>", unsafe_allow_html=True)
+        steps = [("Day 1 — Cell preparation","Seed HEK293 cells at 1×10⁶/well (6-well plate) with GPCR of interest (transient or stable expression). Include untransfected control and β2AR positive control. Grow 24h in DMEM+10% FBS."),("Day 2 — Agonist treatment","Serum-starve 2h before agonist. Add dose-response (0.1nM–10μM) of GPCR agonist in HBSS + HEPES buffer. Include PKA inhibitor H89 (10μM, 30min pre-treatment) in parallel wells as specificity control. Treat 15 min at 37°C."),("Day 3 — Lysis + IP","Lyse in RIPA buffer + PhosSTOP + protease inhibitor cocktail. Immunoprecipitate with anti-FLNA Ig21 antibody (Millipore clone 3/F9) at 1:200, 4°C overnight + Protein A/G beads."),("Day 4 — Western blot","Elute IP proteins, run 4–12% Bis-Tris SDS-PAGE. Western: (1) anti-pSer2152-FLNA (Cell Signalling #4761) — chemiluminescent. (2) Strip and re-probe with anti-total FLNA. Quantify pSer2152/total FLNA by densitometry."),("Day 5 — EC50 calculation","Plot % max pSer2152 vs log[agonist]. Fit 4-parameter logistic curve (GraphPad Prism). Compare EC50 to parallel cAMP HTRF assay. H89 should abolish pSer2152 signal — confirms PKA-dependent mechanism."),("Interpretation","EC50 pSer2152 < EC50 cAMP = receptor-proximal (expected). H89-insensitive residual signal = off-target PKA-independent effect (flag). Absence of pSer2152 response in GPCR-expressing cells = GPCR lacks H8 motif or different Gs coupling.")]
+        for step, detail in steps:
+            st.markdown(f"<div style='display:flex;gap:10px;padding:6px 0;border-bottom:1px solid #050e18;'><div style='min-width:160px;color:#00d4ff;font-size:.72rem;font-weight:700;'>{step}</div><div style='color:#3a6080;font-size:.72rem;line-height:1.55;'>{detail}</div></div>", unsafe_allow_html=True)
+        st.markdown("<a href='https://pubmed.ncbi.nlm.nih.gov/26124276/' target='_blank' style='color:#00d4ff;font-size:.72rem;margin-top:6px;display:block;'>📄 Read PMID:26124276 — Bhatt et al. 2015 ↗</a>", unsafe_allow_html=True)
+
+    with ph_tabs[1]:
+        sh("📋", "ADMET Rules & Gates — Fail Early, Fail Cheap")
+        admet_detailed = [
+            ("Lipinski Ro5","MW<500 · cLogP<5 · HBD≤5 · HBA≤10","Oral bioavailability. Clinical candidates: 90% comply. Natural products and biologics exempt. cLogP>5 → metabolic liability + P-gp substrate risk."),
+            ("Veber rules","PSA<140Å² · rotatable bonds≤10","Intestinal permeability complement to Ro5. Each rotatable bond reduces oral bioavailability by ~10%. PSA>140 → excluded from GI absorption."),
+            ("Solubility","Kinetic solubility >1μg/mL (HTS) · thermodynamic >10μg/mL","Low solubility → dissolution-limited absorption. Measure: nephelometry (kinetic) or miniaturised shake-flask (thermodynamic). FaSSIF/FeSSIF for GI-relevant conditions."),
+            ("Caco-2 Papp","A→B >10×10⁻⁶ cm/s","Intestinal epithelial permeability (absorptive direction). Efflux ratio (B→A / A→B) <2 = no significant P-gp efflux. Run in triplicate at 10μM. Lucifer yellow <1% = no monolayer damage."),
+            ("CYP3A4 inhibition","IC50 >10μM (reversible) · no TDI (time-dependent)","CYP3A4 metabolises 50% of drugs. Strong inhibitor (<1μM) → drug-drug interaction → unexpected Cmax rise in combo. TDI (mechanism-based) irreversible — worst case (grapefruit example)."),
+            ("CYP2D6 substrate","Avoid if pm-sensitive","CYP2D6 poor metabolisers (7-10% Caucasians) → 5× AUC increase for CYP2D6 substrates → toxicity. Check early with CYP2D6 genotyped panel or recombinant CYP assay."),
+            ("hERG IC50","≥30× free Cmax in clinical","Potassium channel (cardiac repolarisation). Block → QT prolongation → torsades de pointes → cardiac arrest. Patch-clamp gold standard. Safety margin: hERG IC50 ÷ free plasma Cmax >30-fold."),
+            ("Plasma protein binding","fu >0.1%","Only free drug crosses membranes and reaches target. >99% PPB not necessarily liability if fu is consistent and predictable. Measure by equilibrium dialysis (RED assay). High PPB + low fu → large apparent Vd."),
+            ("Microsomal stability","t1/2 >60min (human LM, 0.5mg/mL protein)","Predict hepatic clearance. CL_int = 0.693/t1/2. Intrinsic clearance <10 μL/min/mg = low clearance. Add NADPH to activate CYPs; no NADPH = phase-II only."),
+            ("Genotoxicity (Ames)","Negative in S. typhimurium strains TA98/TA100","IND-enabling requirement. Positive Ames → abandon compound class (rare exceptions). Mini-Ames (GreenScreen HC) for early screening. Structural alerts: nitro groups, Michael acceptors, epoxides."),
+        ]
+        for param, criteria, detail in admet_detailed:
+            with st.expander(f"📊 {param} — {criteria}"):
+                st.markdown(f"<div style='color:#3a6080;font-size:.76rem;line-height:1.65;'>{detail}</div>", unsafe_allow_html=True)
+
+    with ph_tabs[2]:
+        sh("🔬", "Drug Target Classes — Tractability & Approach")
+        target_classes = [
+            ("Class A GPCRs","~115 non-olfactory receptors","34% of all FDA-approved drugs (2023). Proven tractability. H8 Filamin motif in ~300 members. HTS → SAR → ADMET → IND. Biased agonism: G-protein vs β-arrestin selective ligands. Allosteric modulators (PAM/NAM) for selectivity.","#00d4ff","HIGH"),
+            ("Protein kinases","~518 human kinome","30% of small-molecule cancer drugs target kinases. ATP-competitive (Type I/II) vs allosteric (Type III/IV). KINOMEscan (468 kinases) for selectivity. DFG-out (Type II) more selective but slower kinetics. Covalent (Type VI) irreversible — EGFR osimertinib model.","#22c55e","HIGH"),
+            ("Ion channels","~230 human ion channels","~15% of FDA drugs. GPCRs often regulate channels. Patch-clamp gold standard. Automated platforms (Sophion QPatch, Nanion) increase throughput. Subunit selectivity challenging. Nav/Kv most drugged.","#4a90d9","MEDIUM"),
+            ("Nuclear receptors","~48 human NRs","Ligand-binding domain easily drugged (ER → tamoxifen/fulvestrant). Coactivator interface harder (PPI). PROTAC approach effective for ER degradation (ARV-471 Phase III). SAR from existing ligand scaffolds.","#a855f7","HIGH"),
+            ("E3 ligases (PROTAC targets)","~600 human E3 ligases","Newly tractable via PROTAC (bifunctional). CRBN/VHL/MDM2/cIAP most used. PROTAC: warhead+linker+E3-binder. Target any protein — even undruggable. TPD 0.01–10nM hook effect. Degradation not just inhibition.","#ffd60a","EMERGING"),
+            ("Transcription factors","~1600 human TFs","Classically undruggable (no cavity). Approaches: (1) PPI inhibitor (p53-MDM2 → nutlin), (2) DNA minor groove binder, (3) PROTAC degradation (BET bromodomain), (4) Enhancer RNA targeting (ORCA platform).","#ff8c42","LOW-MEDIUM"),
+            ("PPI interfaces","~650,000 estimated PPIs","Large flat interfaces (>1000 Å²) — historically undruggable. Hot spot residues (<10 AAs drive binding energy) = actual target. Fragment-based approach. Stapled peptides mimic helix. BCL-2 (venetoclax) = landmark success.","#ff2d55","EMERGING"),
+        ]
+        for tname, count, detail, tclr, tractability in target_classes:
+            tclr_tract = "#22c55e" if tractability=="HIGH" else "#ffd60a" if tractability=="MEDIUM" else "#ff8c42" if tractability=="EMERGING" else "#ff2d55"
+            with st.expander(f"{tname} ({count}) — Tractability: {tractability}"):
+                st.markdown(f"<div style='display:inline-block;background:{tclr_tract}15;color:{tclr_tract};border:1px solid {tclr_tract}33;border-radius:6px;padding:2px 10px;font-size:.7rem;font-weight:700;margin-bottom:7px;'>Tractability: {tractability}</div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='color:#3a6080;font-size:.76rem;line-height:1.65;'>{detail}</div>", unsafe_allow_html=True)
+
+    with ph_tabs[3]:
+        sh("🗓", "Drug Development Timeline — From Target to Approval")
+        timeline_phases = [
+            ("Target ID & Validation","Year 0–1","~$2M","Genetic validation (ClinVar, GWAS, pLI), biochemical assay, AlphaMissense triage, AlphaFold structure, fpocket druggability, OpenTargets tractability score.","#00e5ff"),
+            ("Hit Discovery","Year 1–3","~$5–15M","FBDD (fragment screen, MW<300, LE>0.3) OR HTS (1M compounds, 0.1% hit rate). TSA engagement (ΔTm>3°C). SPR confirmation. Selectivity pilot. 5–50 validated hits.","#4a90d9"),
+            ("Lead Identification","Year 2–4","~$10–25M","SAR around hits. Selectivity panel (KINOMEscan / GPCRome). Caco-2, PPB, metabolic stability. In vitro ADMET pass: hERG >30×, CYP3A4 IC50>10μM. 2–5 lead series.","#6366f1"),
+            ("Lead Optimisation","Year 4–6","~$25–50M","Medicinal chemistry: potency↑, selectivity↑, ADMET↑. Rat PK (F%, t1/2, Cmax, Vd). In vivo efficacy (disease-relevant model). 1 preclinical candidate nominated.","#a855f7"),
+            ("IND-enabling studies","Year 6–8","~$30–60M","GLP toxicology: 28-day rat+dog. Safety pharm (hERG/ICH S7B, CNS/ICH S7A, respiratory). Genotoxicity (Ames, MN). CMC development. IND/CTA filing to FDA/EMA.","#ff8c42"),
+            ("Phase I (safety)","Year 8–10","~$15–40M","First-in-human. Dose escalation (3+3 design). PK/PD. MTD or MAD. Single + multiple ascending dose. Biomarker qualification. ~20–80 subjects. 2yr duration.","#ff8c42"),
+            ("Phase II (efficacy)","Year 10–13","~$50–150M","Proof-of-concept. Dose selection (Phase IIb). Biomarker-enriched if possible. ~100–400 patients. Go/no-go decision. Partnership/licensing typically here.","#ffd60a"),
+            ("Phase III (pivotal)","Year 13–16","~$200–800M","Randomised vs SoC. Regulatory primary endpoint. 500–3000 patients. Statistical power: 80–90% for 5–10% effect size. NDA/BLA filing on completion.","#ff2d55"),
+            ("Regulatory review → Approval","Year 16–18","~$10–20M","FDA standard review 12 months; Priority Review 6 months; Breakthrough Therapy Designation = rolling review. EMA similar. Post-marketing studies (Phase IV, REMS if safety risk).","#22c55e"),
+        ]
+        for phase, yr, cost, detail, pclr in timeline_phases:
+            st.markdown(f"<div style='background:#010810;border:1px solid {pclr}22;border-left:3px solid {pclr};border-radius:0 8px 8px 0;padding:8px 12px;margin:.3rem 0;display:flex;gap:10px;align-items:baseline;'><div style='min-width:180px;'><div style='color:{pclr};font-size:.74rem;font-weight:700;'>{phase}</div><div style='color:#1e4060;font-size:.65rem;'>{yr} · {cost}</div></div><div style='color:#3a6080;font-size:.72rem;line-height:1.5;'>{detail}</div></div>", unsafe_allow_html=True)
+
+    with ph_tabs[4]:
+        sh("🧪", "HTS Pipeline — Assay Format & Hit Selection")
+        hts_steps = [("Primary HTS","1M+ compound library, biochemical or cell-based assay, single concentration (10μM), Z'>0.5, signal:background >3:1. Hit rate 0.1–1%. Duplicates for hits."),("Counter-screen","Remove assay artefacts: fluorescent compounds (AlphaScreen), aggregators (add Triton 0.01%), pan-assay interference (PAINS filter). Remove Ames-positives (structural alerts)."),("Dose-response confirmation","10-point CRC for all hits (0.001–100μM). IC50 or EC50. Selectivity ratio vs counter-screen. Eliminate IC50>50μM or Hill slope>2 (aggregation)."),("Structural clustering","Cluster hits by chemical scaffold (Tanimoto >0.7 = same cluster). Prioritise: (a) multiple independent confirmations, (b) ligand efficiency LE>0.3, (c) novelty (Scifinder check), (d) synthesisability."),("SPR confirmation","Surface plasmon resonance for direct binding confirmation (KD, kinetics). Removes false-positives from fluorescence-based primary. Biotinylated target on chip, compound in flow."),("Selectivity pilot","Test top 5–10 hits against 10–20 closest off-targets. Kinase inhibitors: KINOMEscan 97 kinase pilot panel. GPCR: PRISM 167 GPCR panel. Selectivity ratio >100× for advancement."),("FBDD alternative","Fragment screen: MW<300, LE>0.3, weak affinity (KD 10μM–10mM). SPR or STD-NMR for detection. Grow fragment → lead via structure-guided med-chem. Advantages: higher hit rate, novel IP.")]
+        for i, (step, detail) in enumerate(hts_steps):
+            st.markdown(f"<div style='background:#010810;border:1px solid #00d4ff15;border-radius:8px;padding:8px 12px;margin:.3rem 0;'><div style='color:#00d4ff;font-size:.72rem;font-weight:700;'>Step {i+1}: {step}</div><div style='color:#3a6080;font-size:.72rem;line-height:1.5;margin-top:2px;'>{detail}</div></div>", unsafe_allow_html=True)
+
+
+def render_molbio_workspace():
+    """Molecular Biology workspace with domain-specific tabs."""
+    st.markdown(f"<div style='background:linear-gradient(135deg,#080300,#120800);border:1px solid #f9731628;border-radius:12px;padding:.9rem 1.2rem;margin-bottom:.8rem;display:flex;align-items:center;gap:12px;'><span style='font-size:1.5rem;'>⚛️</span><div><div style='color:#fb923c;font-weight:800;font-size:1.1rem;'>Molecular Biology Workspace</div><div style='color:#3a2000;font-size:.78rem;'>Kinase-substrate networks · PTM atlas · Structural biology · Mechanism dissection</div></div></div>", unsafe_allow_html=True)
+
+    mb_tabs = st.tabs(["🔬 Kinase Networks", "🔭 Structural Biology", "📊 PTM Atlas", "🧬 Key Techniques", "🔗 Interaction Networks"])
+
+    with mb_tabs[0]:
+        sh("🔬", "Kinase-Substrate Browser")
+        kinases_detail = {
+            "PKA (PRKACA/B)": {"consensus":"[RK]-x-x-[ST] (phosphorylation) · [RK]-[RK]-x-[ST] (strong)","substrates":[("CREB","Ser133","Transcriptional activation — CRE-driven genes. PKA→CREB→BDNF pathway"),("FLNA","Ser2152","GPCR→PKA→Ser2152. Filamin displacement from H8. PMID:26124276"),("RYR2","Ser2808","Cardiac ryanodine receptor. PKA phospho → Ca2+ leak → arrhythmia (Marks lab)"),("VASP","Ser157","Cytoskeletal remodelling. Platelet aggregation inhibition"),("HSL","Ser563/659/660","Hormone-sensitive lipase — lipolysis. Adipose tissue"),],"inhibitors":[("H89","IC50 48nM — non-selective, good in-cell control"),("PKI peptide","Highly selective cell-permeable inhibitor — specificity control"),("Rp-cAMPS","cAMP antagonist — inhibits PKA activation upstream")],"color":"#4a90d9"},
+            "CaMKII (α/β/γ/δ)": {"consensus":"R-x-x-S/T · hydrophobic at -5/-3","substrates":[("AMPA GluA1","Ser831","LTP — increases channel conductance. Synaptic strengthening"),("SYNGAP1","Ser1116/Ser1232","CaMKII phospho-SynGAP → moves from spine → Ras-GTP → AMPA insertion → LTP"),("RYR2","Ser2814","Cardiac Ca2+ spark frequency — pathological in heart failure"),("eNOS","Ser1177","Endothelial NO synthase activation — vasodilation"),],"inhibitors":[("KN-93","IC50 380nM — CaM-binding site inhibitor, not isoform selective"),("AIP (autocamtide-2-related inhibitory peptide)","Substrate-competitive, highly selective"),("Tatlin peptide","Tat-fused CaMKII inhibitor for in vivo CNS studies")],"color":"#a855f7"},
+            "GSK3β": {"consensus":"x-x-x-pS-P-x-x-x (pre-phosphorylated priming) OR S/T-x-x-x-S/T (non-primed)","substrates":[("Tau","Ser396/404 (primed) + Thr231/Ser235 (non-primed)","PHF formation — Alzheimer. CDK5 primes → GSK3β completes"),("β-catenin","Ser33/Ser37/Thr41/Ser45","Wnt-OFF: GSK3β phospho → proteasomal degradation via APC complex"),("eIF2B","Ser540","Translation factor — GSK3β phospho → inhibits global translation"),("Glycogen synthase","Ser641/645/649/653/657","Multiple sequential phosphorylations — allosteric inhibition of GS"),],"inhibitors":[("SB216763","IC50 34nM — ATP-competitive, not selective enough for in vivo"),("CHIR99021","IC50 10nM — highly selective GSK3α/β. Used for iPSC culture (Wnt activation)"),("Lithium","IC50 ~2mM — competes with Mg2+. Psychiatric use (bipolar) via GSK3β")],"color":"#22c55e"},
+            "LRRK2": {"consensus":"x-T-x-x-W/G (Rab GTPase switch II loop)","substrates":[("Rab8A","Thr72","Primary biomarker substrate. Phospho-Rab8A measurable in PBMC by Simoa/MSD"),("Rab10","Thr73","Second primary biomarker. Both Rab8A and Rab10 measure LRRK2 activity in patients"),("Rab35","Thr72","Endosomal trafficking. LRRK2 activity gates vesicle sorting"),("NSF","Thr645","ATPase — vesicle fusion. LRRK2 phospho-NSF impairs SNARE disassembly"),],"inhibitors":[("DNL201","Phase II clinical — selective, CNS-penetrant. Reduces pRab8A/10 in CSF"),("MLi-2","Highly selective research tool. 100% reduction in pRab10 in mouse brain"),("BIIB122/DNL151","Selective LRRK2 kinase inhibitor — Phase II for LRRK2-PD and idiopathic PD")],"color":"#ff8c42"},
+        }
+        for kname, kdata in kinases_detail.items():
+            with st.expander(f"🔬 {kname}"):
+                st.markdown(f"<div style='background:#010810;border:1px solid {kdata['color']}18;border-radius:8px;padding:8px 12px;margin-bottom:6px;'><div style='color:{kdata['color']};font-size:.7rem;font-weight:700;margin-bottom:3px;'>Recognition consensus</div><div style='color:#3a6080;font-size:.75rem;font-family:JetBrains Mono,monospace;'>{kdata['consensus']}</div></div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='color:{kdata['color']};font-size:.7rem;font-weight:700;margin-bottom:4px;'>Key substrates (biologically validated)</div>", unsafe_allow_html=True)
+                for sub, site, detail in kdata["substrates"]:
+                    _kc = kdata["color"]
+                    st.markdown(f"<div style='display:flex;gap:8px;padding:3px 0;border-bottom:1px solid #050e18;'><span style='color:#b0d8f0;font-size:.72rem;min-width:80px;font-weight:600;'>{sub}</span><span style='color:{_kc};font-size:.69rem;font-family:JetBrains Mono;min-width:100px;'>{site}</span><span style='color:#3a6080;font-size:.7rem;'>{detail}</span></div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='color:{kdata['color']};font-size:.7rem;font-weight:700;margin:.5rem 0 4px;'>Inhibitors</div>", unsafe_allow_html=True)
+                for iname, idesc in kdata["inhibitors"]:
+                    st.markdown(f"<div style='color:#3a6080;font-size:.7rem;padding:2px 0;border-bottom:1px solid #050e18;'><span style='color:#b0d8f0;font-weight:600;'>{iname}</span> — {idesc}</div>", unsafe_allow_html=True)
+                gene_sym = kname.split()[0].split("(")[0].rstrip("α/β")
+                if st.button(f"Analyse {gene_sym}", key=f"kin_{kname[:8]}", use_container_width=True):
+                    st.session_state["_trigger_search"] = gene_sym; st.rerun()
+
+    with mb_tabs[1]:
+        sh("🔭", "Structural Biology Workflow")
+        sb_workflow = [("1 · AlphaFold structure prediction","Free. RRID:SCR_021683. pLDDT per residue: >90=very high confidence, 70–90=confident, 50–70=low, <50=disordered/flexible. Predicted aligned error (PAE) matrix = interface confidence for multimers. Download PDB from https://alphafold.ebi.ac.uk. Use PyMOL/ChimeraX for visualisation.","Free · Hours"),("2 · Pocket druggability (fpocket)","Identifies cavities from Voronoi tessellation. Druggability score: >0.5 = likely druggable (cutoff from training on known drug targets vs non-targets). Volume >300 Å³ + hydrophobicity ratio >0.5 = high priority. Run: `fpocket -f protein.pdb`. Web server: fpocket-web.","Free · Hours"),("3 · Homology modelling (if AlphaFold pLDDT<50)","SWISS-MODEL, MODELLER, ESMFold (language model-based, no alignment needed). Use if AlphaFold IDR. Template search: HHpred (remote homology, E-value<0.001). Build 5 models + DOPE score selection. Validate: PROCHECK, ERRAT, MolProbity Ramachandran plot >95% favoured.","Free · Days"),("4 · HDX-MS (conformational dynamics)","Exposure to D2O → deuterium exchange rate = solvent accessibility + H-bond protection. Rapid exchange = flexible/disordered. Slow exchange = buried/rigid. Resolution: peptide level (~5–15 aa). Ligand binding → protection increase at binding site + allosteric changes elsewhere. Instrument: Synapt G2-Si or Orbitrap Eclipse. Data: MSTools or DynamX.","$$$ · 2–4 weeks"),("5 · SAXS (solution state)","No crystallisation required. Rg from Guinier: ln(I) vs q² → slope = -Rg²/3. P(r) = distance distribution → Dmax. EOM (ensemble optimisation method) for disordered proteins. Combine with AlphaFold: CORAL for atomic fitting. Detect oligomerisation, domain movements. Synchrotron beamline (ALS 12.3.1, NSLS-II LIX) or Xenocs Xeuss.","$$ · Days"),("6 · Cryo-EM (near-atomic resolution)","Sample: >0.5mg/mL, monodisperse. Grids: UltraAuFoil R1.2/1.3. Vitrification: Vitrobot or Chameleon. Data: 300kV Titan Krios, K3 direct detector. 2000–5000 micrographs, 100K–1M particles. Processing: cryoSPARC (fast) or RELION4 (flexible). Resolution 2–4Å for stable complexes. Model building: Coot + PHENIX refinement. MolProbity validation.","$$$$ · 6–18 months"),("7 · X-ray crystallography","Protein >10mg/mL (need crystal). Hampton Research screen conditions (sparse matrix). Crystal optimisation weeks–months. Data at synchrotron (APS, ESRF, Diamond). Phasing: SAD (SeMet) or MR (known homolog). Refinement: REFMAC/PHENIX. Resolution routinely 1.5–3Å. Co-crystal with ligand: soak or co-crystallise.","$$$$ · 1–24 months")]
+        for step, detail, time in sb_workflow:
+            with st.expander(step):
+                st.markdown(f"<div style='color:#3a6080;font-size:.76rem;line-height:1.65;'>{detail}</div><div style='color:#fb923c;font-size:.69rem;margin-top:5px;font-weight:600;'>⏱ {time}</div>", unsafe_allow_html=True)
+
+    with mb_tabs[2]:
+        sh("📊", "PTM Atlas — Post-Translational Modifications")
+        ptms = [("Phosphorylation (pSer/pThr/pTyr)","~70% of proteins","~200,000 known sites (PhosphoSitePlus)","Kinase-dependent. Reversible via phosphatases (PP1/PP2A/PP2B). Creates docking sites for SH2 (pTyr), 14-3-3 (pSer/pThr), WW, FHA domains. Single phospho-event can alter conformation, activity, localisation, stability. Largest PTM dataset — most tractable for drug discovery.","#f97316"),("Ubiquitylation","Virtually all proteins","~320,000 known sites","E1→E2→E3 cascade. K48-linked = proteasomal degradation. K63-linked = DNA repair/endosomal. M1-linked = NF-κB. Mono-ubiquitylation = DNA repair (PCNA-K164). De-ubiquitylases (DUBs) are drug targets (USP7, USP30, OTUB1).","#ff8c42"),("SUMOylation","~3,500 proteins","~15,000 known sites","SUMO1/2/3 modify nuclear proteins. ψKxE consensus. Enhances protein interactions (SIM domain readers). Regulates: PML bodies, DNA repair, centromere cohesion, mRNA processing. Reversible by SENPs. Cancer: SUMO pathway hyperactivation.","#a855f7"),("Acetylation (Lys, N-terminal)","~5,000 proteins","~75,000 sites","HATs add acetyl-CoA; HDACs remove. Chromatin (H3K9ac = active, H3K27ac = enhancer). Non-histone: p53-K382 (MDM2 regulation), α-tubulin-K40 (stability), HSP90-K294. HDAC inhibitors (vorinostat, panobinostat) approved cancer therapy.","#22c55e"),("Glycosylation (N-/O-linked)","~50% of secreted/membrane proteins","N-Asn (N-X-S/T sequon), O-Ser/Thr (mucin-type) · ~7,000 N-glycoprotein sites","N-glycans regulate protein folding (calnexin/calreticulin ER quality control). O-GlcNAc: nuclear/cytoplasmic, nutrient sensor, competes with phosphorylation (same Ser/Thr sites). Aberrant glycosylation = cancer biomarker.","#4a90d9"),("Methylation (Arg/Lys)","~5,000 proteins","~50,000 sites","PRMTs methylate Arg. EZH2/SETD2 methylate H3K27/H3K36. H3K4me3 = active promoter. H3K9me3 = heterochromatin. Lys can be mono-, di-, tri-methylated = different readers (HP1-H3K9me3, ING2-H3K4me3). KDMs demethylate. EZH2 inhibitor (tazemetostat) FDA approved lymphoma.","#ffd60a"),]
+        for ptm_name, prevalence, scale, detail, pclr in ptms:
+            with st.expander(f"📌 {ptm_name}"):
+                st.markdown(f"<div style='display:flex;gap:12px;margin-bottom:6px;'><div style='background:{pclr}15;color:{pclr};border:1px solid {pclr}33;border-radius:6px;padding:2px 10px;font-size:.68rem;font-weight:700;'>Prevalence: {prevalence}</div><div style='background:#010810;color:#3a6080;border:1px solid #071828;border-radius:6px;padding:2px 10px;font-size:.68rem;'>Scale: {scale}</div></div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='color:#3a6080;font-size:.76rem;line-height:1.65;'>{detail}</div>", unsafe_allow_html=True)
+
+    with mb_tabs[3]:
+        sh("🧬", "Key Biochemical Techniques")
+        techniques = [("ADP-Glo kinase assay (Promega)","Measures ADP produced by kinase reaction (proportional to kinase activity). Luminescent readout. Dynamic range: 0.01–1 μM ATP (substrate depletion assay). Use at Km ATP for sensitivity. Run: 30min kinase reaction → ADP detection reagent → luminescence. Ideal for: Km and Vmax determination, IC50 for inhibitors, substrate specificity mapping with peptide arrays.","#f97316"),("HDX-MS","Label protein in D2O (0.5–1000 seconds). Quench at 0°C pH 2.5. Pepsin digest. LC-MS analysis. Uptake = % deuterium. Differential HDX: apo vs holo vs inhibitor-bound. Advantages: no crystal required, native-like solution conditions, captures dynamics. Limitations: peptide-level resolution (not single residue), expensive instrument.","#fb923c"),("AP-MS (affinity purification + mass spectrometry)","Pull down bait protein (GFP-tag or endogenous with specific antibody) → elute interactors → LC-MS/MS. SAINT (significance analysis of interactome) or CompPASS for scoring. Identify >100 interactors in one experiment. Stable interactions (co-IP) + transient (crosslinking AP-MS). BioID (proximity labelling) for transient/membrane interactions.","#22c55e"),("NanoBRET / BRET2","BRET = bioluminescence resonance energy transfer. Donor: NanoLuc (NLuc, 11kDa). Acceptor: HaloTag-NovoBiSci dye OR GFP2. Distance-dependent (<10nm). Live-cell, no fixation. Kinase-substrate: donor-substrate + acceptor-kinase. Real-time kinetics. Displacement assay: NanoBRET target engagement (TracerID). IC50 in cells not just biochemically.","#4a90d9"),("SAXS","Small-angle X-ray scattering. Solution-state — no crystals. Size exclusion chromatography coupled SAXS (SEC-SAXS) removes aggregates. Output: Rg (radius of gyration), Dmax (maximum dimension), P(r) (pair distance distribution), Kratky plot (folded vs disordered). Ab initio shape: DAMMIF/GASBOR. Multi-component fitting: OLIGOMER. Benchmark: validate against AlphaFold shape.","#6366f1"),("BioLayer Interferometry (BLI — Octet)","Label-free binding kinetics. Biosensor tip: biotinylated target immobilised. Measure interference pattern shift = association (kon) + dissociation (koff) → KD = koff/kon. Fast (30min vs 2h SPR). Lower sensitivity but easier to run. Good for: rank-ordering fragments, QC of protein batches, BMS (biologics selectivity). SPR more accurate for KD below 10nM.","#ffd60a"),]
+        for tname, tdesc, tclr in techniques:
+            with st.expander(f"🔬 {tname}"):
+                st.markdown(f"<div style='color:#3a6080;font-size:.76rem;line-height:1.65;'>{tdesc}</div>", unsafe_allow_html=True)
+
+    with mb_tabs[4]:
+        sh("🔗", "Protein Interaction Networks — Databases & Analysis")
+        st.markdown("<div style='color:#3a6080;font-size:.8rem;margin-bottom:.6rem;'>All interactions should be validated with at least 2 orthogonal methods before committing to drug target hypothesis.</div>", unsafe_allow_html=True)
+        interaction_dbs = [("STRING-DB","string-db.org","Functional interaction network. Score 0–1000 (>700 = high confidence). Channels: co-expression, co-occurrence, fusion, neighbourhood, experimental, text-mining, databases. Download full network → Cytoscape for visualisation. Identify shortest path between two proteins → indicates mechanistic connection."),("BioGRID","thebiogrid.org","Physical and genetic interactions. 1.7M curated from literature. Two-hybrid (genetic), Co-IP/AP-MS, FRET, BioID methods. Filter by organism, interaction type, method, year. Used by UniProt for interaction evidence."),("PhosphoSitePlus","phosphosite.org","PTM sites with kinase annotations. Human curated + HTP datasets. Filter: curated = high confidence. Kinase-substrate: click gene → 'Substrates' tab → all kinases targeting the protein. Use for: find all known phosphosites, kinase upstream, substrate downstream."),("AlphaFold-Multimer","https://alphafold.ebi.ac.uk/multimer","Predicts protein complex structures. PAE (predicted aligned error) matrix: low PAE at interface = high confidence. Identify which domain mediates the interaction. Starting point for PPI inhibitor design."),("ELM (Eukaryotic Linear Motif)","elm.eu.org","Short linear motifs (SLiMs) mediating transient interactions. SH2 binding, 14-3-3 binding, nuclear export signals, etc. Input: protein sequence → all predicted motifs. Filter by experimental evidence. Key for finding phospho-dependent interactions."),]
+        for dbname, url, desc in interaction_dbs:
+            st.markdown(f"<div style='background:#010810;border:1px solid #f9731618;border-radius:9px;padding:9px 12px;margin:.35rem 0;'><div style='display:flex;justify-content:space-between;align-items:baseline;'><span style='color:#fb923c;font-weight:700;font-size:.78rem;'>{dbname}</span><a href='https://{url}' target='_blank' style='color:#3a6080;font-size:.68rem;'>{url} ↗</a></div><div style='color:#3a6080;font-size:.74rem;line-height:1.55;margin-top:4px;'>{desc}</div></div>", unsafe_allow_html=True)
 
