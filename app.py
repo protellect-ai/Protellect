@@ -10631,11 +10631,11 @@ _gene_f = st.session_state.get("gene","")
 if _rd_final == "Oncology":
     if not _pdata_f:
         # No protein loaded → show full Oncology workspace
-        render_oncology_landing()
+        render_oncology_workspace()
     else:
         # Protein loaded → show domain landing in expander + oncology panel in tab0
         with st.expander(f"🎗 Oncology Workspace — {_gene_f}", expanded=False):
-            render_oncology_landing()
+            render_oncology_workspace()
         with tab0:
             st.markdown("<hr class='dv'>", unsafe_allow_html=True)
             render_oncology_panel(
@@ -10652,10 +10652,10 @@ if _rd_final == "Oncology":
 
 elif _rd_final == "Neuroscience":
     if not _pdata_f:
-        render_neuroscience_landing()
+        render_neuroscience_workspace()
     else:
         with st.expander("🧠 Neuroscience Workspace", expanded=False):
-            render_neuroscience_landing()
+            render_neuroscience_workspace()
 
 elif _rd_final == "Microbiome":
     if not _pdata_f:
@@ -10666,17 +10666,17 @@ elif _rd_final == "Microbiome":
 
 elif _rd_final == "Pharmaceuticals":
     if not _pdata_f:
-        render_pharma_landing()
+        render_pharma_workspace()
     else:
         with st.expander("💊 Pharmaceuticals Workspace", expanded=False):
-            render_pharma_landing()
+            render_pharma_workspace()
 
 elif _rd_final == "Molecular Biology":
     if not _pdata_f:
-        render_molbio_landing()
+        render_molbio_workspace()
     else:
         with st.expander("⚛️ Molecular Biology Workspace", expanded=False):
-            render_molbio_landing()
+            render_molbio_workspace()
 
 # Chemical backbone in Chemistry tab
 if _pdata_f and _gene_f:
@@ -10716,7 +10716,7 @@ if _pdata_f and _gene_f:
 #  DOMAIN LANDING PAGES — shown when domain is selected, no protein loaded
 # ════════════════════════════════════════════════════════════════════════════
 
-def render_oncology_landing():
+def render_oncology_workspace():
     """Full Oncology workspace — patient intake, cancer type profiler, metastasis cascade."""
     st.markdown("""
     <style>
@@ -10858,7 +10858,7 @@ def render_oncology_landing():
                 st.markdown(f"<div style='background:#010810;border:1px solid {clr}33;border-left:3px solid {clr};border-radius:0 8px 8px 0;padding:8px 11px;font-size:.73rem;color:#4a7090;line-height:1.6;'><b style='color:{clr};'>Clinical relevance:</b> {intervention}</div>", unsafe_allow_html=True)
 
 
-def render_neuroscience_landing():
+def render_neuroscience_workspace():
     """Neuroscience workspace — neural circuit browser, synaptic proteins, disease maps."""
     st.markdown("""
     <div style='background:linear-gradient(135deg,#03020f,#0a0820);border:1px solid #6366f133;
@@ -10993,7 +10993,7 @@ def render_neuroscience_landing():
                         st.rerun()
 
 
-def render_pharma_landing():
+def render_pharma_workspace():
     """Pharmaceuticals workspace — GPCR pipeline, druggability calculator, drug development guide."""
     st.markdown("""
     <div style='background:linear-gradient(135deg,#000810,#001520);border:1px solid #00d4ff33;
@@ -11055,7 +11055,7 @@ def render_pharma_landing():
             st.markdown(f"<div style='background:#010810;border:1px solid {tclr}33;border-top:3px solid {tclr};border-radius:8px;padding:8px 10px;margin:4px 0;height:140px;overflow:hidden;'><div style='color:{tclr};font-size:.7rem;font-weight:700;'>{phase}</div><div style='color:#1e4060;font-size:.62rem;margin:2px 0;'>{years}</div><div style='color:#3a6080;font-size:.64rem;line-height:1.45;'>{tdesc[:100]}…</div></div>", unsafe_allow_html=True)
 
 
-def render_molbio_landing():
+def render_molbio_workspace():
     """Molecular Biology workspace — kinase-substrate browser, PTM atlas, structural tools."""
     st.markdown("""
     <div style='background:linear-gradient(135deg,#080400,#120800);border:1px solid #f9731633;
