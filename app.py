@@ -370,7 +370,9 @@ html,body,[class*="css"]{font-family:'Inter',sans-serif!important;font-size:15px
 .bM{background:rgba(255,214,10,.1);color:#ffd60a;border:1px solid #ffd60a35;}
 .bN{background:rgba(58,90,122,.2);color:#3a6080;border:1px solid #1e404050;}
 .stTabs{position:sticky;top:0;z-index:100;background:#000308;padding-top:3px;}
-.stTabs [data-baseweb="tab-list"]{background:#000308!important;gap:3px;border-bottom:1px solid #071828;}
+.stTabs [data-baseweb="tab-list"]{background:#000308!important;gap:3px;border-bottom:1px solid #071828;overflow:hidden!important;user-select:none!important;}
+.stTabs [data-baseweb="tab-list"] *{user-select:none!important;}
+.stTabs [data-baseweb="tab-highlight"]{transition:none!important;}
 .stTabs [data-baseweb="tab"]{background:transparent;border-radius:8px 8px 0 0;
   padding:6px 14px;color:#0d2a40!important;font-weight:600;font-size:1.02rem;}
 .stTabs [aria-selected="true"]{background:#06111e!important;color:#00e5ff!important;border-bottom:2px solid #00e5ff!important;}
@@ -5059,7 +5061,7 @@ def render_microbiome_page():
     """Comprehensive microbiome intelligence — annotation engine + taxonomy KB."""
     sh("🦠", "Microbiome Intelligence Platform")
     
-    _mic_mode = st.radio("", ["🔬 Annotation Engine", "🌳 Taxonomy Intelligence", "🔗 Host-Microbe Interactions", "🧪 BGC Analysis"], horizontal=True, key="mic_page_mode")
+    _mic_mode = st.radio("", ["🔬 Annotation Engine", "🌳 Taxonomy Intelligence", "🔗 Host-Microbe Interactions", "🧪 BGC Analysis"], horizontal=True, key=f"mic_page_mode_{st.session_state.get('research_domain','M')}")
 
     # ── Tab 1: Annotation Engine ─────────────────────────────────────────────
     if _mic_mode == "🔬 Annotation Engine":
