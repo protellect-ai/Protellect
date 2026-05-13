@@ -5915,6 +5915,9 @@ with st.sidebar:
 
 
 # ─── Handle click-to-analyse from workspace buttons ──────────────────
+# These may be overridden below by the sidebar widgets — ensure defaults exist
+if "search" not in dir(): search = False
+if "query" not in dir(): query = ""
 if st.session_state.get("_trigger_search"):
     _tq = st.session_state.pop("_trigger_search")
     if _tq and _tq != st.session_state.get("last",""):
@@ -5929,7 +5932,7 @@ _gene_f = st.session_state.get("gene","")
 
 # ── Domain landing pages (shown before or alongside protein analysis) ──────
 if _rd_final == "Oncology":
-    if not _pdata_f:
+    if not _pdata_f and not search:
         # No protein loaded → show full Oncology workspace
         render_oncology_workspace()
     else:
@@ -5951,28 +5954,28 @@ if _rd_final == "Oncology":
             )
 
 elif _rd_final == "Neuroscience":
-    if not _pdata_f:
+    if not _pdata_f and not search:
         render_neuroscience_workspace(); st.stop()
     else:
         with st.expander("🧠 Neuroscience Workspace", expanded=False):
             render_neuroscience_workspace()
 
 elif _rd_final == "Microbiome":
-    if not _pdata_f:
+    if not _pdata_f and not search:
         render_microbiome_workspace(); st.stop()
     else:
         with st.expander("🦠 Microbiome Workspace", expanded=False):
             render_microbiome_workspace()
 
 elif _rd_final == "Pharmaceuticals":
-    if not _pdata_f:
+    if not _pdata_f and not search:
         render_pharma_workspace(); st.stop()
     else:
         with st.expander("💊 Pharmaceuticals Workspace", expanded=False):
             render_pharma_workspace()
 
 elif _rd_final == "Molecular Biology":
-    if not _pdata_f:
+    if not _pdata_f and not search:
         render_molbio_workspace(); st.stop()
     else:
         with st.expander("⚛️ Molecular Biology Workspace", expanded=False):
