@@ -6968,6 +6968,336 @@ if _rd_now and _rd_meta_now and st.session_state.get("pdata"):
         )
 
 # ─── TABS ─────────────────────────────────────────────────────────────
+def render_chemical_backbone(seq, cv_variants, phospho_sites, binding_sites, gene, pLI=0.0):
+    """
+    Molecular structure renderer — actual C-N-Cα-C=O peptide backbone,
+    R-group chemical formulas, phosphosites, binding sites, disulfide bonds.
+    """
+    if not seq:
+        st.info("No sequence available."); return
+
+    import json as _jj
+    from collections import Counter as _Ctr
+
+    # Amino acid chemical data
+    AA_CHEM_DATA = {
+        "G":{"name":"Glycine","formula":"H","full":"C₂H₅NO₂","type":"special","mw":75.03},
+        "A":{"name":"Alanine","formula":"CH₃","full":"C₃H₇NO₂","type":"nonpolar","mw":89.09},
+        "V":{"name":"Valine","formula":"CH(CH₃)₂","full":"C₅H₁₁NO₂","type":"nonpolar","mw":117.15},
+        "L":{"name":"Leucine","formula":"CH₂CH(CH₃)₂","full":"C₆H₁₃NO₂","type":"nonpolar","mw":131.17},
+        "I":{"name":"Isoleucine","formula":"CH(CH₃)C₂H₅","full":"C₆H₁₃NO₂","type":"nonpolar","mw":131.17},
+        "P":{"name":"Proline","formula":"cyclic-(CH₂)₃-","full":"C₅H₉NO₂","type":"special","mw":115.13},
+        "F":{"name":"Phenylalanine","formula":"CH₂-C₆H₅","full":"C₉H₁₁NO₂","type":"aromatic","mw":165.19},
+        "W":{"name":"Tryptophan","formula":"CH₂-indole","full":"C₁₁H₁₂N₂O₂","type":"aromatic","mw":204.23},
+        "M":{"name":"Methionine","formula":"(CH₂)₂-S-CH₃","full":"C₅H₁₁NO₂S","type":"nonpolar","mw":149.21},
+        "S":{"name":"Serine","formula":"CH₂OH ★","full":"C₃H₇NO₃","type":"polar","mw":105.09},
+        "T":{"name":"Threonine","formula":"CH(OH)CH₃ ★","full":"C₄H₉NO₃","type":"polar","mw":119.12},
+        "C":{"name":"Cysteine","formula":"CH₂SH ⟺","full":"C₃H₇NO₂S","type":"polar","mw":121.16},
+        "Y":{"name":"Tyrosine","formula":"CH₂-C₆H₄-OH ★","full":"C₉H₁₁NO₃","type":"aromatic","mw":181.19},
+        "N":{"name":"Asparagine","formula":"CH₂CONH₂","full":"C₄H₈N₂O₃","type":"polar","mw":132.12},
+        "Q":{"name":"Glutamine","formula":"(CH₂)₂CONH₂","full":"C₅H₁₀N₂O₃","type":"polar","mw":146.15},
+        "D":{"name":"Aspartate","formula":"CH₂COO⁻","full":"C₄H₇NO₄","type":"negative","mw":133.10},
+        "E":{"name":"Glutamate","formula":"(CH₂)₂COO⁻","full":"C₅H₉NO₄","type":"negative","mw":147.13},
+        "K":{"name":"Lysine","formula":"(CH₂)₄NH₃⁺","full":"C₆H₁₄N₂O₂","type":"positive","mw":146.19},
+        "R":{"name":"Arginine","formula":"(CH₂)₃-guanidinium","full":"C₆H₁₄N₄O₂","type":"positive","mw":174.20},
+        "H":{"name":"Histidine","formula":"CH₂-imidazole","full":"C₆H₉N₃O₂","type":"positive","mw":155.16},
+    }
+    TYPE_COLS={"nonpolar":"#ff8c42","aromatic":"#a855f7","polar":"#22c55e",
+               "positive":"#4a90d9","negative":"#ff2d55","special":"#ffd60a"}
+
+    # Compute molecular formula
+    AA_ATOMS={"G":{"C":2,"H":5,"N":1,"O":2},"A":{"C":3,"H":7,"N":1,"O":2},
+              "V":{"C":5,"H":11,"N":1,"O":2},"L":{"C":6,"H":13,"N":1,"O":2},
+              "I":{"C":6,"H":13,"N":1,"O":2},"P":{"C":5,"H":9,"N":1,"O":2},
+              "F":{"C":9,"H":11,"N":1,"O":2},"W":{"C":11,"H":12,"N":2,"O":2},
+              "M":{"C":5,"H":11,"N":1,"O":2,"S":1},"S":{"C":3,"H":7,"N":1,"O":3},
+              "T":{"C":4,"H":9,"N":1,"O":3},"C":{"C":3,"H":7,"N":1,"O":2,"S":1},
+              "Y":{"C":9,"H":11,"N":1,"O":3},"N":{"C":4,"H":8,"N":2,"O":3},
+              "Q":{"C":5,"H":10,"N":2,"O":3},"D":{"C":4,"H":7,"N":1,"O":4},
+              "E":{"C":5,"H":9,"N":1,"O":4},"K":{"C":6,"H":14,"N":2,"O":2},
+              "R":{"C":6,"H":14,"N":4,"O":2},"H":{"C":6,"H":9,"N":3,"O":2}}
+    MW_ATOMS={"C":12.011,"H":1.008,"N":14.007,"O":15.999,"S":32.06,"P":30.974}
+    atm=_Ctr()
+    for aa in seq:
+        for el,n in AA_ATOMS.get(aa,{"C":3,"H":7,"N":1,"O":2}).items(): atm[el]+=n
+    atm["H"]-=2*(len(seq)-1); atm["O"]-=(len(seq)-1)
+    mw_total=sum(atm[e]*MW_ATOMS.get(e,0) for e in atm)/1000
+    mol_html="".join(f"{e}<sub>{atm[e]}</sub>" if atm.get(e,0)>1 else e for e in ["C","H","N","O","S","P"] if atm.get(e,0)>0)
+
+    # Kinase motifs
+    km={}
+    for i in range(len(seq)-4):
+        s4=seq[i:i+4]
+        if s4[0] in "RK" and s4[3] in "ST": km[i+3]="PKA/PKC: [RK]-xx-[ST]"
+        elif s4[0] in "ST" and s4[3] in "DE": km[i]="CK2: [ST]-xx-[DE]"
+
+    path_pos={int(v.get("start",0) or 0) for v in cv_variants if str(v.get("start","0")).lstrip("-").isdigit() and v.get("score",0)>=4}
+    phos_pos={int(p.get("position",0) or 0) for p in (phospho_sites or []) if p.get("position")}
+    bind_pos={int(b.get("start",0) or 0) for b in (binding_sites or []) if b.get("start")}
+
+    aa_data=[{
+        "pos":i+1,"aa":aa,
+        "name":AA_CHEM_DATA.get(aa,{"name":"Unknown"})["name"],
+        "formula":AA_CHEM_DATA.get(aa,{"formula":"?"})["formula"],
+        "full":AA_CHEM_DATA.get(aa,{"full":"C₃H₇NO₂"})["full"],
+        "type":AA_CHEM_DATA.get(aa,{"type":"nonpolar"})["type"],
+        "color":TYPE_COLS.get(AA_CHEM_DATA.get(aa,{"type":"nonpolar"})["type"],"#3a6080"),
+        "mw":AA_CHEM_DATA.get(aa,{"mw":110.0})["mw"],
+        "isPhospho":aa in "STY","isAnnotPhos":(i+1) in phos_pos,
+        "isPath":(i+1) in path_pos,"isBind":(i+1) in bind_pos,
+        "isKin":(i+1) in km,"kinType":km.get(i+1,""),
+        "isCys":aa=="C","isPro":aa=="P",
+    } for i,aa in enumerate(seq)]
+
+    aa_js=_jj.dumps(aa_data)
+
+    # Molecular formula panel
+    st.markdown(f"""
+<div style='background:#010810;border:1px solid #071828;border-radius:10px;padding:11px 16px;
+  margin-bottom:10px;display:flex;gap:20px;flex-wrap:wrap;align-items:center;'>
+  <div><div style='color:#3a6080;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;'>Molecular Formula</div>
+    <div style='color:#00e5ff;font-size:.9rem;font-weight:700;font-family:JetBrains Mono,monospace;'>{mol_html}</div></div>
+  <div><div style='color:#3a6080;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;'>MW</div>
+    <div style='color:#ffd60a;font-size:.88rem;font-weight:700;font-family:JetBrains Mono,monospace;'>{mw_total:.1f} kDa</div></div>
+  <div><div style='color:#3a6080;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;'>Length</div>
+    <div style='color:#b0d8f0;font-size:.88rem;font-weight:700;font-family:JetBrains Mono,monospace;'>{len(seq):,} aa</div></div>
+  <div><div style='color:#3a6080;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;'>P/LP variants</div>
+    <div style='color:#ff2d55;font-size:.88rem;font-weight:700;font-family:JetBrains Mono,monospace;'>{len(path_pos)}</div></div>
+  <div><div style='color:#3a6080;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;'>Cys/SS bonds</div>
+    <div style='color:#ffd60a;font-size:.88rem;font-weight:700;font-family:JetBrains Mono,monospace;'>{seq.count("C")} / ~{seq.count("C")//2}</div></div>
+</div>""", unsafe_allow_html=True)
+
+    components.html(f"""<!DOCTYPE html><html><head>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>*{{margin:0;padding:0;box-sizing:border-box;}}body{{background:#000205;overflow:hidden;}}
+canvas{{display:block;}}
+#info{{position:absolute;top:8px;left:8px;background:rgba(0,2,8,.97);border:1px solid #071828;
+  border-radius:10px;padding:10px 14px;color:#b0d8f0;font-size:11px;
+  font-family:'JetBrains Mono',monospace;display:none;z-index:20;pointer-events:none;
+  min-width:240px;line-height:1.75;}}
+#ctrl{{position:absolute;top:8px;right:8px;display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;}}
+.btn{{background:#010810;border:1px solid #071828;color:#3a6080;border-radius:6px;
+  padding:4px 9px;font-size:10px;cursor:pointer;transition:all .12s;font-family:Inter,sans-serif;}}
+.btn:hover,.btn.on{{border-color:rgba(0,229,255,.35);color:#00e5ff;}}
+#nav{{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:5px;align-items:center;}}
+#winlabel{{color:#1e4060;font-size:9px;font-family:'JetBrains Mono',monospace;}}
+#hint{{position:absolute;bottom:8px;left:8px;color:#071828;font-size:9px;font-family:'JetBrains Mono',monospace;}}
+#leg{{position:absolute;bottom:30px;right:8px;background:rgba(0,2,8,.9);border:1px solid #071828;
+  border-radius:8px;padding:7px 10px;}}
+.li{{display:flex;align-items:center;gap:5px;font-size:9px;color:#3a6080;margin:2px 0;}}
+.ld{{width:8px;height:8px;border-radius:2px;flex-shrink:0;}}
+</style></head><body>
+<canvas id="cv"></canvas>
+<div id="info"></div>
+<div id="ctrl">
+  <button class="btn on" id="b_struct" onclick="vm='structure';upBtns()">⛓ Chain</button>
+  <button class="btn" id="b_formula" onclick="vm='formula';upBtns()">🧪 Formulas</button>
+  <button class="btn" id="b_hydro" onclick="vm='hydro';upBtns()">🌊 Hydropathy</button>
+  <button class="btn on" id="b_sig" onclick="sig=!sig;this.classList.toggle('on');this.textContent=sig?'◎ Signal':'◎ Off'">◎ Signal</button>
+  <button class="btn" onclick="zm=Math.min(3,zm*1.22)">＋</button>
+  <button class="btn" onclick="zm=Math.max(.28,zm/1.22)">－</button>
+  <button class="btn" onclick="zm=1;px=0;py=0;">⛶ Reset</button>
+</div>
+<div id="nav">
+  <button class="btn" onclick="scroll(-20)">◀</button>
+  <span id="winlabel">1–60</span>
+  <button class="btn" onclick="scroll(20)">▶</button>
+  <button class="btn" onclick="hotspot()">⚠ Hotspot</button>
+</div>
+<div id="hint">Drag pan · Scroll zoom · ◀▶ navigate · Hover for chemistry · H = jump to hotspot</div>
+<div id="leg">
+  <div class="li"><div class="ld" style="background:#ff8c42"></div>Nonpolar</div>
+  <div class="li"><div class="ld" style="background:#a855f7"></div>Aromatic</div>
+  <div class="li"><div class="ld" style="background:#22c55e"></div>Polar</div>
+  <div class="li"><div class="ld" style="background:#4a90d9"></div>Basic(+)</div>
+  <div class="li"><div class="ld" style="background:#ff2d55"></div>Acidic(−)</div>
+  <div class="li"><div class="ld" style="background:#ffd60a"></div>Special</div>
+  <div class="li"><div class="ld" style="background:#ff2d55;border:1.5px solid #fff"></div>P/LP variant</div>
+  <div class="li"><div class="ld" style="background:#f97316"></div>Phosphosite★</div>
+  <div class="li"><div class="ld" style="background:#ffd60a;border:1px dashed #fff"></div>Binding</div>
+  <div class="li"><div class="ld" style="background:#22c55e;border:1px dashed #fff"></div>Kinase</div>
+</div>
+<script>
+const cv=document.getElementById('cv'),x=cv.getContext('2d');
+cv.width=window.innerWidth||900; cv.height=(window.innerHeight||500)-8;
+const W=cv.width,H=cv.height;
+const AAS={aa_js};
+const TOT=AAS.length;
+let vm='structure',sig=true,zm=1,px=0,py=0;
+let ws=0; // window start
+const WIN=Math.max(30,Math.floor((W-80)/18));
+let hov=null,sigT=0,drag=false,dsx=0,dsy=0;
+
+function upBtns(){{['b_struct','b_formula','b_hydro'].forEach(id=>document.getElementById(id).classList.remove('on'));document.getElementById('b_'+vm.replace('structure','struct')).classList.add('on');}}
+function scroll(d){{ws=Math.max(0,Math.min(TOT-WIN,ws+d));document.getElementById('winlabel').textContent=(ws+1)+'–'+Math.min(TOT,ws+WIN);}}
+function hotspot(){{const i=AAS.findIndex(r=>r.isPath);if(i>=0){{ws=Math.max(0,Math.min(TOT-WIN,i-Math.floor(WIN/2)));scroll(0);}}}}
+function gwin(){{return AAS.slice(ws,ws+WIN);}}
+
+function gpos(i,n){{
+  const sp=Math.max(14,Math.min(24,(W-80)/n));
+  const xb=40+i*sp;
+  const yb=H/2+(i%2===0?-32:32);
+  return{{x:xb,y:yb,sp}};
+}}
+
+const HYDRO={{G:-.4,A:1.8,V:4.2,L:3.8,I:4.5,P:-1.6,F:2.8,W:-.9,M:1.9,
+             S:-.8,T:-.7,C:2.5,Y:-1.3,N:-3.5,Q:-3.5,D:-3.5,E:-3.5,K:-3.9,R:-4.5,H:-3.2}};
+
+function drawRes(r,pos,n,isH){{
+  const{{x:cx,y:cy,sp}}=pos;
+  const rv=Math.max(5,Math.min(11,sp*0.42));
+  const col=r.isPath?'#ff2d55':r.isAnnotPhos?'#f97316':r.isBind?'#ffd60a':r.isKin?'#22c55e':r.color;
+
+  // Aura
+  if(r.isPath){{const g=x.createRadialGradient(cx,cy,0,cx,cy,rv*3);g.addColorStop(0,'rgba(255,45,85,.2)');g.addColorStop(1,'transparent');x.beginPath();x.arc(cx,cy,rv*3,0,Math.PI*2);x.fillStyle=g;x.fill();}}
+  else if(r.isBind){{const g=x.createRadialGradient(cx,cy,0,cx,cy,rv*2.5);g.addColorStop(0,'rgba(255,214,10,.14)');g.addColorStop(1,'transparent');x.beginPath();x.arc(cx,cy,rv*2.5,0,Math.PI*2);x.fillStyle=g;x.fill();}}
+
+  if(vm==='structure'){{
+    // N atom
+    const nx=cx-rv*.9,ny=cy-rv*.9;
+    x.beginPath();x.arc(nx,ny,rv*.42,0,Math.PI*2);x.fillStyle='#4a90d9';x.fill();
+    // Cα
+    x.beginPath();x.arc(cx,cy,rv,0,Math.PI*2);x.fillStyle=col+'22';x.fill();x.strokeStyle=col;x.lineWidth=isH?2.5:1.5;x.stroke();
+    // C
+    const ccx=cx+rv*1.1,ccy=cy-rv*.7;
+    x.beginPath();x.arc(ccx,ccy,rv*.38,0,Math.PI*2);x.fillStyle='#777';x.fill();
+    // O (double bond)
+    const ox=ccx+rv*.7,oy=ccy-rv*.5;
+    x.beginPath();x.arc(ox,oy,rv*.35,0,Math.PI*2);x.fillStyle='#ff4444';x.fill();
+    x.beginPath();x.moveTo(ccx,ccy);x.lineTo(ox,oy);x.strokeStyle='#ff444488';x.lineWidth=1.2;x.stroke();
+    x.beginPath();x.moveTo(ccx-1,ccy+1);x.lineTo(ox-1,oy+1);x.strokeStyle='#ff444444';x.lineWidth=0.8;x.stroke();
+    // bonds
+    x.beginPath();x.moveTo(nx,ny);x.lineTo(cx,cy);x.strokeStyle='#4a90d988';x.lineWidth=1.2;x.stroke();
+    x.beginPath();x.moveTo(cx,cy);x.lineTo(ccx,ccy);x.strokeStyle='#77777788';x.lineWidth=1.2;x.stroke();
+    // R group
+    if(r.aa!=='G'){{
+      const yd=cy>H/2?-1:1;const rsx=cx,rsy=cy+yd*rv*1.7;
+      x.beginPath();x.moveTo(cx,cy);x.lineTo(rsx,rsy);x.strokeStyle=col+'55';x.lineWidth=1;x.stroke();
+      if(r.aa==='C'){{x.beginPath();x.arc(rsx,rsy,rv*.45,0,Math.PI*2);x.fillStyle='#ffd60acc';x.fill();}}
+      else if(r.aa==='P'){{x.beginPath();x.arc(rsx,rsy,rv*.65,0,Math.PI*2);x.strokeStyle=col+'88';x.lineWidth=1.2;x.stroke();}}
+      else{{x.beginPath();x.arc(rsx,rsy,rv*.38,0,Math.PI*2);x.fillStyle='#888';x.fill();}}
+      // Phospho tag
+      if(r.isAnnotPhos){{
+        const px2=rsx+rv,py2=rsy-rv;
+        x.beginPath();x.arc(px2,py2,rv*.45,0,Math.PI*2);x.fillStyle='#f97316';x.fill();
+        x.beginPath();x.moveTo(rsx,rsy);x.lineTo(px2,py2);x.strokeStyle='#f9731688';x.lineWidth=1;x.stroke();
+      }}
+    }}
+    // Pro ring special
+    if(r.aa==='P'){{x.beginPath();x.arc(cx,cy,rv*1.3,0,Math.PI*2);x.strokeStyle='#ffd60a44';x.lineWidth=1;x.setLineDash([2,2]);x.stroke();x.setLineDash([]);}}
+  }} else {{
+    // Simple circle
+    x.beginPath();x.arc(cx,cy,rv,0,Math.PI*2);
+    if(vm==='hydro'){{
+      const h=HYDRO[r.aa]||0,t=(h+4.5)/9;
+      x.fillStyle=`rgb(${{Math.round(255*t)}},60,${{Math.round(255*(1-t))}})`;
+    }} else {{ x.fillStyle=col+'44'; }}
+    x.fill(); x.strokeStyle=col;x.lineWidth=isH?2.5:1.5;x.stroke();
+  }}
+
+  // Cα label
+  x.fillStyle=isH?'#fff':col; x.font=`bold ${{Math.max(7,Math.min(10,rv))}}px JetBrains Mono`;
+  x.textAlign='center';x.textBaseline='middle';x.fillText(r.aa,cx,cy);
+
+  // Position number every 10
+  if(r.pos%10===0||r.pos===1){{x.fillStyle='#1e4060';x.font='7px JetBrains Mono';x.fillText(r.pos,cx,cy>H/2?cy+rv+9:cy-rv-9);}}
+
+  // Formula (in formula mode or hover)
+  if(vm==='formula'||isH){{
+    const yd=cy>H/2?-1:1;const fs=Math.max(6,Math.min(9,rv*.9));
+    x.fillStyle=col+'cc';x.font=fs+'px JetBrains Mono';x.textAlign='center';
+    const fstr=r.formula.length>12?r.formula.slice(0,11)+'…':r.formula;
+    x.fillText(fstr,cx,cy-yd*rv*2.4);
+  }}
+}}
+
+function draw(){{
+  x.clearRect(0,0,W,H);
+  x.save();x.translate(px,py);x.scale(zm,zm);
+  const sl=gwin();const n=sl.length;
+
+  // Backbone bonds
+  for(let i=0;i<n-1;i++){{
+    const p1=gpos(i,n),p2=gpos(i+1,n);
+    x.beginPath();x.moveTo(p1.x,p1.y);x.lineTo(p2.x,p2.y);
+    x.strokeStyle=(sl[i].isPath||sl[i+1].isPath)?'#ff2d5566':'#0d2035';x.lineWidth=1.5;x.stroke();
+  }}
+
+  // Disulfide bonds
+  const cys=sl.filter(r=>r.isCys);
+  for(let i=0;i<cys.length-1;i+=2){{
+    const i1=sl.indexOf(cys[i]),i2=sl.indexOf(cys[i+1]);
+    const p1=gpos(i1,n),p2=gpos(i2,n);
+    const cpx=(p1.x+p2.x)/2,cpy=Math.min(p1.y,p2.y)-38;
+    x.beginPath();x.moveTo(p1.x,p1.y);x.bezierCurveTo(p1.x,cpy,p2.x,cpy,p2.x,p2.y);
+    x.strokeStyle='rgba(255,214,10,.35)';x.lineWidth=1.5;x.setLineDash([3,3]);x.stroke();x.setLineDash([]);
+    x.fillStyle='rgba(255,214,10,.6)';x.font='8px Inter';x.textAlign='center';x.fillText('S─S',cpx,cpy+7);
+  }}
+
+  // Residue nodes
+  sl.forEach((r,i)=>drawRes(r,gpos(i,n),n,i===hov));
+
+  // Signal
+  if(sig){{
+    const si=Math.floor(sigT*n)%Math.max(1,n);const sp=gpos(si,n);
+    const g=x.createRadialGradient(sp.x,sp.y,0,sp.x,sp.y,22);
+    g.addColorStop(0,'rgba(0,229,255,.8)');g.addColorStop(1,'transparent');
+    x.beginPath();x.arc(sp.x,sp.y,22,0,Math.PI*2);x.fillStyle=g;x.fill();
+    x.beginPath();x.arc(sp.x,sp.y,6,0,Math.PI*2);x.fillStyle='#00e5ff';x.fill();
+    sigT+=0.005;
+  }}
+  x.restore();
+  requestAnimationFrame(draw);
+}}
+
+// Events
+cv.addEventListener('mousemove',e=>{{
+  const r=cv.getBoundingClientRect();
+  const mx=(e.clientX-r.left-px)/zm,my=(e.clientY-r.top-py)/zm;
+  const sl=gwin();const n=sl.length;hov=null;let md=18;
+  sl.forEach((res,i)=>{{const p=gpos(i,n),d=Math.hypot(mx-p.x,my-p.y);if(d<md){{md=d;hov=i;}}  }});
+  const el=document.getElementById('info');
+  if(hov!==null){{
+    const res=sl[hov];el.style.display='block';
+    el.innerHTML=`<b style="color:#00e5ff">Pos ${{res.pos}} — ${{res.aa}} (${{res.name}})</b><br>`
+      +`<span style="color:#3a6080">Molecular formula: </span><b>${{res.full}}</b><br>`
+      +`<span style="color:#3a6080">R-group: </span><b style="color:${{res.color}}">${{res.formula}}</b><br>`
+      +`<span style="color:#3a6080">Residue MW: </span>${{res.mw}} Da · Type: <span style="color:${{res.color}}">${{res.type}}</span><br>`
+      +(res.isPath?'<span style="color:#ff2d55">⚠ Pathogenic/LP — ClinVar disease variant</span><br>':'')
+      +(res.isAnnotPhos?'<span style="color:#f97316">⚡ UniProt phosphosite — PKA/PKC/CK2 substrate</span><br>':'')
+      +(res.isPhospho&&!res.isAnnotPhos?'<span style="color:#f97316a0">○ S/T/Y — potential phosphorylation target</span><br>':'')
+      +(res.isBind?'<span style="color:#ffd60a">🔗 Chemical binding/active site</span><br>':'')
+      +(res.isKin?'<span style="color:#22c55e">🔬 Kinase recognition motif: '+res.kinType+'</span><br>':'')
+      +(res.isCys?'<span style="color:#ffd60a">⟺ Cys — disulfide bond participant</span><br>':'')
+      +(res.isPro?'<span style="color:#ffd60a">⚡ Pro — disrupts α-helix, backbone rigidity</span><br>':'');
+  }} else {{ el.style.display='none'; }}
+  if(drag){{px=e.clientX-dsx;py=e.clientY-dsy;}}
+}});
+cv.addEventListener('mousedown',e=>{{drag=true;dsx=e.clientX-px;dsy=e.clientY-py;}});
+cv.addEventListener('mouseup',()=>drag=false);
+cv.addEventListener('mouseleave',()=>{{drag=false;document.getElementById('info').style.display='none';}});
+cv.addEventListener('wheel',e=>{{zm=Math.max(.25,Math.min(4,zm*(e.deltaY<0?1.15:.87)));e.preventDefault();}},{{passive:false}});
+document.addEventListener('keydown',e=>{{
+  if(e.key==='ArrowRight'||e.key==='.')scroll(10);
+  if(e.key==='ArrowLeft'||e.key===',')scroll(-10);
+  if(e.key==='h'||e.key==='H')hotspot();
+}});
+draw();scroll(0);
+</script></body></html>""", height=490, scrolling=False)
+
+    # Type legend
+    type_cols={"nonpolar":"#ff8c42","aromatic":"#a855f7","polar":"#22c55e","positive":"#4a90d9","negative":"#ff2d55","special":"#ffd60a"}
+    st.markdown("<div style='display:flex;gap:7px;flex-wrap:wrap;margin-top:5px;'>"+
+        "".join(f"<span style='background:{c}15;color:{c};border:1px solid {c}30;border-radius:6px;padding:2px 9px;font-size:.67rem;'>{t.title()}</span>" for t,c in type_cols.items())+
+        "<span style='color:#1e4060;font-size:.67rem;margin-left:4px;'>★ phosphorylatable · ⟺ disulfide · ⬡ aromatic ring · ◀▶ navigate · H = jump to hotspot</span></div>",
+        unsafe_allow_html=True)
+
+
+# ════════════════════════════════════════════════════════════════════════════
+#  MICROBIOME ANNOTATION ENGINE — The PI's specific request
+#  Vague annotation → Specific EC-numbered pathway annotation using LLM+rules
+# ════════════════════════════════════════════════════════════════════════════
+
 tab0,tab1,tab2,tab3,tab4,tab5,tab6,tab7,tab8,tab9=st.tabs(["📋  Summary","🔴  Triage","📋  Case Study","🔬  Explorer","🧪  Experiments","🤖  AI Report","🗂️  Workspace","🔗  Disease Link","⚗️  Chemistry","💊  Pharma"])
 
 # Chemical backbone in Chemistry tab
@@ -10703,333 +11033,4 @@ dr();
 
 # ════════════════════════════════════════════════════════════════════════════
 #  ENHANCED CHEMICAL BACKBONE RENDERER (injected at top of Chemistry tab)
-# ════════════════════════════════════════════════════════════════════════════
-def render_chemical_backbone(seq, cv_variants, phospho_sites, binding_sites, gene, pLI=0.0):
-    """
-    Molecular structure renderer — actual C-N-Cα-C=O peptide backbone,
-    R-group chemical formulas, phosphosites, binding sites, disulfide bonds.
-    """
-    if not seq:
-        st.info("No sequence available."); return
-
-    import json as _jj
-    from collections import Counter as _Ctr
-
-    # Amino acid chemical data
-    AA_CHEM_DATA = {
-        "G":{"name":"Glycine","formula":"H","full":"C₂H₅NO₂","type":"special","mw":75.03},
-        "A":{"name":"Alanine","formula":"CH₃","full":"C₃H₇NO₂","type":"nonpolar","mw":89.09},
-        "V":{"name":"Valine","formula":"CH(CH₃)₂","full":"C₅H₁₁NO₂","type":"nonpolar","mw":117.15},
-        "L":{"name":"Leucine","formula":"CH₂CH(CH₃)₂","full":"C₆H₁₃NO₂","type":"nonpolar","mw":131.17},
-        "I":{"name":"Isoleucine","formula":"CH(CH₃)C₂H₅","full":"C₆H₁₃NO₂","type":"nonpolar","mw":131.17},
-        "P":{"name":"Proline","formula":"cyclic-(CH₂)₃-","full":"C₅H₉NO₂","type":"special","mw":115.13},
-        "F":{"name":"Phenylalanine","formula":"CH₂-C₆H₅","full":"C₉H₁₁NO₂","type":"aromatic","mw":165.19},
-        "W":{"name":"Tryptophan","formula":"CH₂-indole","full":"C₁₁H₁₂N₂O₂","type":"aromatic","mw":204.23},
-        "M":{"name":"Methionine","formula":"(CH₂)₂-S-CH₃","full":"C₅H₁₁NO₂S","type":"nonpolar","mw":149.21},
-        "S":{"name":"Serine","formula":"CH₂OH ★","full":"C₃H₇NO₃","type":"polar","mw":105.09},
-        "T":{"name":"Threonine","formula":"CH(OH)CH₃ ★","full":"C₄H₉NO₃","type":"polar","mw":119.12},
-        "C":{"name":"Cysteine","formula":"CH₂SH ⟺","full":"C₃H₇NO₂S","type":"polar","mw":121.16},
-        "Y":{"name":"Tyrosine","formula":"CH₂-C₆H₄-OH ★","full":"C₉H₁₁NO₃","type":"aromatic","mw":181.19},
-        "N":{"name":"Asparagine","formula":"CH₂CONH₂","full":"C₄H₈N₂O₃","type":"polar","mw":132.12},
-        "Q":{"name":"Glutamine","formula":"(CH₂)₂CONH₂","full":"C₅H₁₀N₂O₃","type":"polar","mw":146.15},
-        "D":{"name":"Aspartate","formula":"CH₂COO⁻","full":"C₄H₇NO₄","type":"negative","mw":133.10},
-        "E":{"name":"Glutamate","formula":"(CH₂)₂COO⁻","full":"C₅H₉NO₄","type":"negative","mw":147.13},
-        "K":{"name":"Lysine","formula":"(CH₂)₄NH₃⁺","full":"C₆H₁₄N₂O₂","type":"positive","mw":146.19},
-        "R":{"name":"Arginine","formula":"(CH₂)₃-guanidinium","full":"C₆H₁₄N₄O₂","type":"positive","mw":174.20},
-        "H":{"name":"Histidine","formula":"CH₂-imidazole","full":"C₆H₉N₃O₂","type":"positive","mw":155.16},
-    }
-    TYPE_COLS={"nonpolar":"#ff8c42","aromatic":"#a855f7","polar":"#22c55e",
-               "positive":"#4a90d9","negative":"#ff2d55","special":"#ffd60a"}
-
-    # Compute molecular formula
-    AA_ATOMS={"G":{"C":2,"H":5,"N":1,"O":2},"A":{"C":3,"H":7,"N":1,"O":2},
-              "V":{"C":5,"H":11,"N":1,"O":2},"L":{"C":6,"H":13,"N":1,"O":2},
-              "I":{"C":6,"H":13,"N":1,"O":2},"P":{"C":5,"H":9,"N":1,"O":2},
-              "F":{"C":9,"H":11,"N":1,"O":2},"W":{"C":11,"H":12,"N":2,"O":2},
-              "M":{"C":5,"H":11,"N":1,"O":2,"S":1},"S":{"C":3,"H":7,"N":1,"O":3},
-              "T":{"C":4,"H":9,"N":1,"O":3},"C":{"C":3,"H":7,"N":1,"O":2,"S":1},
-              "Y":{"C":9,"H":11,"N":1,"O":3},"N":{"C":4,"H":8,"N":2,"O":3},
-              "Q":{"C":5,"H":10,"N":2,"O":3},"D":{"C":4,"H":7,"N":1,"O":4},
-              "E":{"C":5,"H":9,"N":1,"O":4},"K":{"C":6,"H":14,"N":2,"O":2},
-              "R":{"C":6,"H":14,"N":4,"O":2},"H":{"C":6,"H":9,"N":3,"O":2}}
-    MW_ATOMS={"C":12.011,"H":1.008,"N":14.007,"O":15.999,"S":32.06,"P":30.974}
-    atm=_Ctr()
-    for aa in seq:
-        for el,n in AA_ATOMS.get(aa,{"C":3,"H":7,"N":1,"O":2}).items(): atm[el]+=n
-    atm["H"]-=2*(len(seq)-1); atm["O"]-=(len(seq)-1)
-    mw_total=sum(atm[e]*MW_ATOMS.get(e,0) for e in atm)/1000
-    mol_html="".join(f"{e}<sub>{atm[e]}</sub>" if atm.get(e,0)>1 else e for e in ["C","H","N","O","S","P"] if atm.get(e,0)>0)
-
-    # Kinase motifs
-    km={}
-    for i in range(len(seq)-4):
-        s4=seq[i:i+4]
-        if s4[0] in "RK" and s4[3] in "ST": km[i+3]="PKA/PKC: [RK]-xx-[ST]"
-        elif s4[0] in "ST" and s4[3] in "DE": km[i]="CK2: [ST]-xx-[DE]"
-
-    path_pos={int(v.get("start",0) or 0) for v in cv_variants if str(v.get("start","0")).lstrip("-").isdigit() and v.get("score",0)>=4}
-    phos_pos={int(p.get("position",0) or 0) for p in (phospho_sites or []) if p.get("position")}
-    bind_pos={int(b.get("start",0) or 0) for b in (binding_sites or []) if b.get("start")}
-
-    aa_data=[{
-        "pos":i+1,"aa":aa,
-        "name":AA_CHEM_DATA.get(aa,{"name":"Unknown"})["name"],
-        "formula":AA_CHEM_DATA.get(aa,{"formula":"?"})["formula"],
-        "full":AA_CHEM_DATA.get(aa,{"full":"C₃H₇NO₂"})["full"],
-        "type":AA_CHEM_DATA.get(aa,{"type":"nonpolar"})["type"],
-        "color":TYPE_COLS.get(AA_CHEM_DATA.get(aa,{"type":"nonpolar"})["type"],"#3a6080"),
-        "mw":AA_CHEM_DATA.get(aa,{"mw":110.0})["mw"],
-        "isPhospho":aa in "STY","isAnnotPhos":(i+1) in phos_pos,
-        "isPath":(i+1) in path_pos,"isBind":(i+1) in bind_pos,
-        "isKin":(i+1) in km,"kinType":km.get(i+1,""),
-        "isCys":aa=="C","isPro":aa=="P",
-    } for i,aa in enumerate(seq)]
-
-    aa_js=_jj.dumps(aa_data)
-
-    # Molecular formula panel
-    st.markdown(f"""
-<div style='background:#010810;border:1px solid #071828;border-radius:10px;padding:11px 16px;
-  margin-bottom:10px;display:flex;gap:20px;flex-wrap:wrap;align-items:center;'>
-  <div><div style='color:#3a6080;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;'>Molecular Formula</div>
-    <div style='color:#00e5ff;font-size:.9rem;font-weight:700;font-family:JetBrains Mono,monospace;'>{mol_html}</div></div>
-  <div><div style='color:#3a6080;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;'>MW</div>
-    <div style='color:#ffd60a;font-size:.88rem;font-weight:700;font-family:JetBrains Mono,monospace;'>{mw_total:.1f} kDa</div></div>
-  <div><div style='color:#3a6080;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;'>Length</div>
-    <div style='color:#b0d8f0;font-size:.88rem;font-weight:700;font-family:JetBrains Mono,monospace;'>{len(seq):,} aa</div></div>
-  <div><div style='color:#3a6080;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;'>P/LP variants</div>
-    <div style='color:#ff2d55;font-size:.88rem;font-weight:700;font-family:JetBrains Mono,monospace;'>{len(path_pos)}</div></div>
-  <div><div style='color:#3a6080;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;'>Cys/SS bonds</div>
-    <div style='color:#ffd60a;font-size:.88rem;font-weight:700;font-family:JetBrains Mono,monospace;'>{seq.count("C")} / ~{seq.count("C")//2}</div></div>
-</div>""", unsafe_allow_html=True)
-
-    components.html(f"""<!DOCTYPE html><html><head>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-<style>*{{margin:0;padding:0;box-sizing:border-box;}}body{{background:#000205;overflow:hidden;}}
-canvas{{display:block;}}
-#info{{position:absolute;top:8px;left:8px;background:rgba(0,2,8,.97);border:1px solid #071828;
-  border-radius:10px;padding:10px 14px;color:#b0d8f0;font-size:11px;
-  font-family:'JetBrains Mono',monospace;display:none;z-index:20;pointer-events:none;
-  min-width:240px;line-height:1.75;}}
-#ctrl{{position:absolute;top:8px;right:8px;display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;}}
-.btn{{background:#010810;border:1px solid #071828;color:#3a6080;border-radius:6px;
-  padding:4px 9px;font-size:10px;cursor:pointer;transition:all .12s;font-family:Inter,sans-serif;}}
-.btn:hover,.btn.on{{border-color:rgba(0,229,255,.35);color:#00e5ff;}}
-#nav{{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:5px;align-items:center;}}
-#winlabel{{color:#1e4060;font-size:9px;font-family:'JetBrains Mono',monospace;}}
-#hint{{position:absolute;bottom:8px;left:8px;color:#071828;font-size:9px;font-family:'JetBrains Mono',monospace;}}
-#leg{{position:absolute;bottom:30px;right:8px;background:rgba(0,2,8,.9);border:1px solid #071828;
-  border-radius:8px;padding:7px 10px;}}
-.li{{display:flex;align-items:center;gap:5px;font-size:9px;color:#3a6080;margin:2px 0;}}
-.ld{{width:8px;height:8px;border-radius:2px;flex-shrink:0;}}
-</style></head><body>
-<canvas id="cv"></canvas>
-<div id="info"></div>
-<div id="ctrl">
-  <button class="btn on" id="b_struct" onclick="vm='structure';upBtns()">⛓ Chain</button>
-  <button class="btn" id="b_formula" onclick="vm='formula';upBtns()">🧪 Formulas</button>
-  <button class="btn" id="b_hydro" onclick="vm='hydro';upBtns()">🌊 Hydropathy</button>
-  <button class="btn on" id="b_sig" onclick="sig=!sig;this.classList.toggle('on');this.textContent=sig?'◎ Signal':'◎ Off'">◎ Signal</button>
-  <button class="btn" onclick="zm=Math.min(3,zm*1.22)">＋</button>
-  <button class="btn" onclick="zm=Math.max(.28,zm/1.22)">－</button>
-  <button class="btn" onclick="zm=1;px=0;py=0;">⛶ Reset</button>
-</div>
-<div id="nav">
-  <button class="btn" onclick="scroll(-20)">◀</button>
-  <span id="winlabel">1–60</span>
-  <button class="btn" onclick="scroll(20)">▶</button>
-  <button class="btn" onclick="hotspot()">⚠ Hotspot</button>
-</div>
-<div id="hint">Drag pan · Scroll zoom · ◀▶ navigate · Hover for chemistry · H = jump to hotspot</div>
-<div id="leg">
-  <div class="li"><div class="ld" style="background:#ff8c42"></div>Nonpolar</div>
-  <div class="li"><div class="ld" style="background:#a855f7"></div>Aromatic</div>
-  <div class="li"><div class="ld" style="background:#22c55e"></div>Polar</div>
-  <div class="li"><div class="ld" style="background:#4a90d9"></div>Basic(+)</div>
-  <div class="li"><div class="ld" style="background:#ff2d55"></div>Acidic(−)</div>
-  <div class="li"><div class="ld" style="background:#ffd60a"></div>Special</div>
-  <div class="li"><div class="ld" style="background:#ff2d55;border:1.5px solid #fff"></div>P/LP variant</div>
-  <div class="li"><div class="ld" style="background:#f97316"></div>Phosphosite★</div>
-  <div class="li"><div class="ld" style="background:#ffd60a;border:1px dashed #fff"></div>Binding</div>
-  <div class="li"><div class="ld" style="background:#22c55e;border:1px dashed #fff"></div>Kinase</div>
-</div>
-<script>
-const cv=document.getElementById('cv'),x=cv.getContext('2d');
-cv.width=window.innerWidth||900; cv.height=(window.innerHeight||500)-8;
-const W=cv.width,H=cv.height;
-const AAS={aa_js};
-const TOT=AAS.length;
-let vm='structure',sig=true,zm=1,px=0,py=0;
-let ws=0; // window start
-const WIN=Math.max(30,Math.floor((W-80)/18));
-let hov=null,sigT=0,drag=false,dsx=0,dsy=0;
-
-function upBtns(){{['b_struct','b_formula','b_hydro'].forEach(id=>document.getElementById(id).classList.remove('on'));document.getElementById('b_'+vm.replace('structure','struct')).classList.add('on');}}
-function scroll(d){{ws=Math.max(0,Math.min(TOT-WIN,ws+d));document.getElementById('winlabel').textContent=(ws+1)+'–'+Math.min(TOT,ws+WIN);}}
-function hotspot(){{const i=AAS.findIndex(r=>r.isPath);if(i>=0){{ws=Math.max(0,Math.min(TOT-WIN,i-Math.floor(WIN/2)));scroll(0);}}}}
-function gwin(){{return AAS.slice(ws,ws+WIN);}}
-
-function gpos(i,n){{
-  const sp=Math.max(14,Math.min(24,(W-80)/n));
-  const xb=40+i*sp;
-  const yb=H/2+(i%2===0?-32:32);
-  return{{x:xb,y:yb,sp}};
-}}
-
-const HYDRO={{G:-.4,A:1.8,V:4.2,L:3.8,I:4.5,P:-1.6,F:2.8,W:-.9,M:1.9,
-             S:-.8,T:-.7,C:2.5,Y:-1.3,N:-3.5,Q:-3.5,D:-3.5,E:-3.5,K:-3.9,R:-4.5,H:-3.2}};
-
-function drawRes(r,pos,n,isH){{
-  const{{x:cx,y:cy,sp}}=pos;
-  const rv=Math.max(5,Math.min(11,sp*0.42));
-  const col=r.isPath?'#ff2d55':r.isAnnotPhos?'#f97316':r.isBind?'#ffd60a':r.isKin?'#22c55e':r.color;
-
-  // Aura
-  if(r.isPath){{const g=x.createRadialGradient(cx,cy,0,cx,cy,rv*3);g.addColorStop(0,'rgba(255,45,85,.2)');g.addColorStop(1,'transparent');x.beginPath();x.arc(cx,cy,rv*3,0,Math.PI*2);x.fillStyle=g;x.fill();}}
-  else if(r.isBind){{const g=x.createRadialGradient(cx,cy,0,cx,cy,rv*2.5);g.addColorStop(0,'rgba(255,214,10,.14)');g.addColorStop(1,'transparent');x.beginPath();x.arc(cx,cy,rv*2.5,0,Math.PI*2);x.fillStyle=g;x.fill();}}
-
-  if(vm==='structure'){{
-    // N atom
-    const nx=cx-rv*.9,ny=cy-rv*.9;
-    x.beginPath();x.arc(nx,ny,rv*.42,0,Math.PI*2);x.fillStyle='#4a90d9';x.fill();
-    // Cα
-    x.beginPath();x.arc(cx,cy,rv,0,Math.PI*2);x.fillStyle=col+'22';x.fill();x.strokeStyle=col;x.lineWidth=isH?2.5:1.5;x.stroke();
-    // C
-    const ccx=cx+rv*1.1,ccy=cy-rv*.7;
-    x.beginPath();x.arc(ccx,ccy,rv*.38,0,Math.PI*2);x.fillStyle='#777';x.fill();
-    // O (double bond)
-    const ox=ccx+rv*.7,oy=ccy-rv*.5;
-    x.beginPath();x.arc(ox,oy,rv*.35,0,Math.PI*2);x.fillStyle='#ff4444';x.fill();
-    x.beginPath();x.moveTo(ccx,ccy);x.lineTo(ox,oy);x.strokeStyle='#ff444488';x.lineWidth=1.2;x.stroke();
-    x.beginPath();x.moveTo(ccx-1,ccy+1);x.lineTo(ox-1,oy+1);x.strokeStyle='#ff444444';x.lineWidth=0.8;x.stroke();
-    // bonds
-    x.beginPath();x.moveTo(nx,ny);x.lineTo(cx,cy);x.strokeStyle='#4a90d988';x.lineWidth=1.2;x.stroke();
-    x.beginPath();x.moveTo(cx,cy);x.lineTo(ccx,ccy);x.strokeStyle='#77777788';x.lineWidth=1.2;x.stroke();
-    // R group
-    if(r.aa!=='G'){{
-      const yd=cy>H/2?-1:1;const rsx=cx,rsy=cy+yd*rv*1.7;
-      x.beginPath();x.moveTo(cx,cy);x.lineTo(rsx,rsy);x.strokeStyle=col+'55';x.lineWidth=1;x.stroke();
-      if(r.aa==='C'){{x.beginPath();x.arc(rsx,rsy,rv*.45,0,Math.PI*2);x.fillStyle='#ffd60acc';x.fill();}}
-      else if(r.aa==='P'){{x.beginPath();x.arc(rsx,rsy,rv*.65,0,Math.PI*2);x.strokeStyle=col+'88';x.lineWidth=1.2;x.stroke();}}
-      else{{x.beginPath();x.arc(rsx,rsy,rv*.38,0,Math.PI*2);x.fillStyle='#888';x.fill();}}
-      // Phospho tag
-      if(r.isAnnotPhos){{
-        const px2=rsx+rv,py2=rsy-rv;
-        x.beginPath();x.arc(px2,py2,rv*.45,0,Math.PI*2);x.fillStyle='#f97316';x.fill();
-        x.beginPath();x.moveTo(rsx,rsy);x.lineTo(px2,py2);x.strokeStyle='#f9731688';x.lineWidth=1;x.stroke();
-      }}
-    }}
-    // Pro ring special
-    if(r.aa==='P'){{x.beginPath();x.arc(cx,cy,rv*1.3,0,Math.PI*2);x.strokeStyle='#ffd60a44';x.lineWidth=1;x.setLineDash([2,2]);x.stroke();x.setLineDash([]);}}
-  }} else {{
-    // Simple circle
-    x.beginPath();x.arc(cx,cy,rv,0,Math.PI*2);
-    if(vm==='hydro'){{
-      const h=HYDRO[r.aa]||0,t=(h+4.5)/9;
-      x.fillStyle=`rgb(${{Math.round(255*t)}},60,${{Math.round(255*(1-t))}})`;
-    }} else {{ x.fillStyle=col+'44'; }}
-    x.fill(); x.strokeStyle=col;x.lineWidth=isH?2.5:1.5;x.stroke();
-  }}
-
-  // Cα label
-  x.fillStyle=isH?'#fff':col; x.font=`bold ${{Math.max(7,Math.min(10,rv))}}px JetBrains Mono`;
-  x.textAlign='center';x.textBaseline='middle';x.fillText(r.aa,cx,cy);
-
-  // Position number every 10
-  if(r.pos%10===0||r.pos===1){{x.fillStyle='#1e4060';x.font='7px JetBrains Mono';x.fillText(r.pos,cx,cy>H/2?cy+rv+9:cy-rv-9);}}
-
-  // Formula (in formula mode or hover)
-  if(vm==='formula'||isH){{
-    const yd=cy>H/2?-1:1;const fs=Math.max(6,Math.min(9,rv*.9));
-    x.fillStyle=col+'cc';x.font=fs+'px JetBrains Mono';x.textAlign='center';
-    const fstr=r.formula.length>12?r.formula.slice(0,11)+'…':r.formula;
-    x.fillText(fstr,cx,cy-yd*rv*2.4);
-  }}
-}}
-
-function draw(){{
-  x.clearRect(0,0,W,H);
-  x.save();x.translate(px,py);x.scale(zm,zm);
-  const sl=gwin();const n=sl.length;
-
-  // Backbone bonds
-  for(let i=0;i<n-1;i++){{
-    const p1=gpos(i,n),p2=gpos(i+1,n);
-    x.beginPath();x.moveTo(p1.x,p1.y);x.lineTo(p2.x,p2.y);
-    x.strokeStyle=(sl[i].isPath||sl[i+1].isPath)?'#ff2d5566':'#0d2035';x.lineWidth=1.5;x.stroke();
-  }}
-
-  // Disulfide bonds
-  const cys=sl.filter(r=>r.isCys);
-  for(let i=0;i<cys.length-1;i+=2){{
-    const i1=sl.indexOf(cys[i]),i2=sl.indexOf(cys[i+1]);
-    const p1=gpos(i1,n),p2=gpos(i2,n);
-    const cpx=(p1.x+p2.x)/2,cpy=Math.min(p1.y,p2.y)-38;
-    x.beginPath();x.moveTo(p1.x,p1.y);x.bezierCurveTo(p1.x,cpy,p2.x,cpy,p2.x,p2.y);
-    x.strokeStyle='rgba(255,214,10,.35)';x.lineWidth=1.5;x.setLineDash([3,3]);x.stroke();x.setLineDash([]);
-    x.fillStyle='rgba(255,214,10,.6)';x.font='8px Inter';x.textAlign='center';x.fillText('S─S',cpx,cpy+7);
-  }}
-
-  // Residue nodes
-  sl.forEach((r,i)=>drawRes(r,gpos(i,n),n,i===hov));
-
-  // Signal
-  if(sig){{
-    const si=Math.floor(sigT*n)%Math.max(1,n);const sp=gpos(si,n);
-    const g=x.createRadialGradient(sp.x,sp.y,0,sp.x,sp.y,22);
-    g.addColorStop(0,'rgba(0,229,255,.8)');g.addColorStop(1,'transparent');
-    x.beginPath();x.arc(sp.x,sp.y,22,0,Math.PI*2);x.fillStyle=g;x.fill();
-    x.beginPath();x.arc(sp.x,sp.y,6,0,Math.PI*2);x.fillStyle='#00e5ff';x.fill();
-    sigT+=0.005;
-  }}
-  x.restore();
-  requestAnimationFrame(draw);
-}}
-
-// Events
-cv.addEventListener('mousemove',e=>{{
-  const r=cv.getBoundingClientRect();
-  const mx=(e.clientX-r.left-px)/zm,my=(e.clientY-r.top-py)/zm;
-  const sl=gwin();const n=sl.length;hov=null;let md=18;
-  sl.forEach((res,i)=>{{const p=gpos(i,n),d=Math.hypot(mx-p.x,my-p.y);if(d<md){{md=d;hov=i;}}  }});
-  const el=document.getElementById('info');
-  if(hov!==null){{
-    const res=sl[hov];el.style.display='block';
-    el.innerHTML=`<b style="color:#00e5ff">Pos ${{res.pos}} — ${{res.aa}} (${{res.name}})</b><br>`
-      +`<span style="color:#3a6080">Molecular formula: </span><b>${{res.full}}</b><br>`
-      +`<span style="color:#3a6080">R-group: </span><b style="color:${{res.color}}">${{res.formula}}</b><br>`
-      +`<span style="color:#3a6080">Residue MW: </span>${{res.mw}} Da · Type: <span style="color:${{res.color}}">${{res.type}}</span><br>`
-      +(res.isPath?'<span style="color:#ff2d55">⚠ Pathogenic/LP — ClinVar disease variant</span><br>':'')
-      +(res.isAnnotPhos?'<span style="color:#f97316">⚡ UniProt phosphosite — PKA/PKC/CK2 substrate</span><br>':'')
-      +(res.isPhospho&&!res.isAnnotPhos?'<span style="color:#f97316a0">○ S/T/Y — potential phosphorylation target</span><br>':'')
-      +(res.isBind?'<span style="color:#ffd60a">🔗 Chemical binding/active site</span><br>':'')
-      +(res.isKin?'<span style="color:#22c55e">🔬 Kinase recognition motif: '+res.kinType+'</span><br>':'')
-      +(res.isCys?'<span style="color:#ffd60a">⟺ Cys — disulfide bond participant</span><br>':'')
-      +(res.isPro?'<span style="color:#ffd60a">⚡ Pro — disrupts α-helix, backbone rigidity</span><br>':'');
-  }} else {{ el.style.display='none'; }}
-  if(drag){{px=e.clientX-dsx;py=e.clientY-dsy;}}
-}});
-cv.addEventListener('mousedown',e=>{{drag=true;dsx=e.clientX-px;dsy=e.clientY-py;}});
-cv.addEventListener('mouseup',()=>drag=false);
-cv.addEventListener('mouseleave',()=>{{drag=false;document.getElementById('info').style.display='none';}});
-cv.addEventListener('wheel',e=>{{zm=Math.max(.25,Math.min(4,zm*(e.deltaY<0?1.15:.87)));e.preventDefault();}},{{passive:false}});
-document.addEventListener('keydown',e=>{{
-  if(e.key==='ArrowRight'||e.key==='.')scroll(10);
-  if(e.key==='ArrowLeft'||e.key===',')scroll(-10);
-  if(e.key==='h'||e.key==='H')hotspot();
-}});
-draw();scroll(0);
-</script></body></html>""", height=490, scrolling=False)
-
-    # Type legend
-    type_cols={"nonpolar":"#ff8c42","aromatic":"#a855f7","polar":"#22c55e","positive":"#4a90d9","negative":"#ff2d55","special":"#ffd60a"}
-    st.markdown("<div style='display:flex;gap:7px;flex-wrap:wrap;margin-top:5px;'>"+
-        "".join(f"<span style='background:{c}15;color:{c};border:1px solid {c}30;border-radius:6px;padding:2px 9px;font-size:.67rem;'>{t.title()}</span>" for t,c in type_cols.items())+
-        "<span style='color:#1e4060;font-size:.67rem;margin-left:4px;'>★ phosphorylatable · ⟺ disulfide · ⬡ aromatic ring · ◀▶ navigate · H = jump to hotspot</span></div>",
-        unsafe_allow_html=True)
-
-
-# ════════════════════════════════════════════════════════════════════════════
-#  MICROBIOME ANNOTATION ENGINE — The PI's specific request
-#  Vague annotation → Specific EC-numbered pathway annotation using LLM+rules
 # ════════════════════════════════════════════════════════════════════════════
