@@ -5713,7 +5713,7 @@ with st.sidebar:
     active_goal=goal_custom if "Custom" in goal_label else goal_label
 
     st.markdown("<div class='sb-t'>🔍 Protein Search</div>", unsafe_allow_html=True)
-    query=st.text_input("Gene / UniProt ID",placeholder="TP53 · BRCA1 · P04637 · FLNC · ACM2",label_visibility="collapsed")
+    query=st.text_input("Gene / UniProt ID",placeholder="TP53 · BRCA1 · P04637 · FLNC · ACM2",label_visibility="collapsed",value=st.session_state.get("protein_query_val",""),key="protein_query_box")
     search=st.button("🔬 Analyse Protein",use_container_width=True)
 
     st.markdown("<div class='sb-t'>🏥 Disease → Proteins</div>", unsafe_allow_html=True)
@@ -5912,6 +5912,16 @@ with st.sidebar:
                 use_container_width=True, key='xl_dl')
 
 
+
+
+# ─── Handle click-to-analyse from workspace buttons ──────────────────
+if st.session_state.get("_trigger_search"):
+    _tq = st.session_state.pop("_trigger_search")
+    if _tq and _tq != st.session_state.get("last",""):
+        st.session_state["last"] = ""
+        st.session_state["protein_query_val"] = _tq
+        query = _tq
+        search = True
 
 _rd_final = st.session_state.get("research_domain","")
 _pdata_f = st.session_state.get("pdata",{})
@@ -6580,14 +6590,7 @@ if st.session_state["disease_proteins"]:
                     st.session_state["_trigger_search"] = gn
                     st.rerun()
 
-# ─── Data loading ────────────────────────────────────────────────────
-# Handle click-to-analyse from disease protein list
-if st.session_state.get("_trigger_search"):
-    _tq = st.session_state.pop("_trigger_search")
-    if _tq and _tq != st.session_state.get("last",""):
-        st.session_state["last"] = ""
-        query = _tq
-        search = True
+# [_trigger_search handler moved above routing]
 
 if search and query and query!=st.session_state["last"]:
     if not check_search_limit():
