@@ -6317,6 +6317,31 @@ if st.session_state.get("_trigger_search"):
         query = _tq
         search = True
 
+# ─── Header ─────────────────────────────────────────────────────────
+st.markdown(
+    "<div class='ph'>"
+    "<div style='display:flex;align-items:center;gap:14px;'>"
+    f"<img src='{_logo_src}' style='width:52px;height:52px;object-fit:contain;filter:drop-shadow(0 0 14px #00e5ff66);animation:spinDNA 12s linear infinite;'>"
+    f"<div>"
+    f"<div class='pt'>Protellect</div>"
+    f"<div class='ps'>AI-powered protein triage · Genetics-first · Eliminate wasted experiments</div>"
+    f"</div></div></div>",
+    unsafe_allow_html=True,
+)
+
+# ─── Tutorial trigger ────────────────────────────────────────────────
+if st.session_state.get("show_tutorial", True):
+    show_tutorial_dialog()
+
+# Persistent tutorial button in header area
+with st.container():
+    _, btn_col = st.columns([10, 1])
+    with btn_col:
+        if st.button("📖 Tutorial", key="tut_btn", help="Open the tutorial"):
+            st.session_state["show_tutorial"] = True
+            st.rerun()
+
+
 tab0,tab1,tab2,tab3,tab4,tab5,tab6,tab7,tab8,tab9=st.tabs(["📋  Summary","🔴  Triage","📋  Case Study","🔬  Explorer","🧪  Experiments","🤖  AI Report","🗂️  Workspace","🔗  Disease Link","⚗️  Chemistry","💊  Pharma"])
 
 _rd_final = st.session_state.get("research_domain","")
@@ -8190,30 +8215,6 @@ _rd_meta = RESEARCH_DOMAINS.get(_rd, {})
 _rd_color = _rd_meta.get("color", "#00e5ff")
 _rd_icon = _rd_meta.get("icon", "🔬")
 
-
-# ─── Header ─────────────────────────────────────────────────────────
-st.markdown(
-    "<div class='ph'>"
-    "<div style='display:flex;align-items:center;gap:14px;'>"
-    f"<img src='{_logo_src}' style='width:52px;height:52px;object-fit:contain;filter:drop-shadow(0 0 14px #00e5ff66);animation:spinDNA 12s linear infinite;'>"
-    f"<div>"
-    f"<div class='pt'>Protellect</div>"
-    f"<div class='ps'>AI-powered protein triage · Genetics-first · Eliminate wasted experiments</div>"
-    f"</div></div></div>",
-    unsafe_allow_html=True,
-)
-
-# ─── Tutorial trigger ────────────────────────────────────────────────
-if st.session_state.get("show_tutorial", True):
-    show_tutorial_dialog()
-
-# Persistent tutorial button in header area
-with st.container():
-    _, btn_col = st.columns([10, 1])
-    with btn_col:
-        if st.button("📖 Tutorial", key="tut_btn", help="Open the tutorial"):
-            st.session_state["show_tutorial"] = True
-            st.rerun()
 
 # ─── CSV-only triage panel ────────────────────────────────────────────
 if st.session_state.get("csv_triage_active") and st.session_state.get("csv_df") is not None:
