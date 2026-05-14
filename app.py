@@ -5446,6 +5446,338 @@ if _cur_domain != _last_domain and _cur_domain is not None:
 #  Called when domain is selected but no protein loaded
 # ════════════════════════════════════════════════════════════════════════════
 
+
+def render_rare_disease_workspace():
+    """Rare Disease workspace — the niche Protellect owns."""
+    rd_meta = RESEARCH_DOMAINS.get("Rare Disease", {})
+    hpo_gene_map = rd_meta.get("hpo_gene_map", {})
+    acmg_criteria = rd_meta.get("acmg_criteria", {})
+
+    st.markdown("""
+    <style>
+    .rd-header{background:linear-gradient(135deg,#0d0414,#1a0830);border:1px solid rgba(192,132,252,.25);
+      border-radius:12px;padding:.9rem 1.2rem;margin-bottom:.8rem;display:flex;align-items:center;gap:12px;}
+    .rd-score-box{background:#0a0314;border:1px solid rgba(192,132,252,.15);border-radius:9px;
+      padding:8px 14px;text-align:center;min-width:90px;}
+    </style>
+    <div class='rd-header'>
+      <span style='font-size:1.5rem;'>🧬</span>
+      <div>
+        <div style='color:#c084fc;font-weight:800;font-size:1.1rem;'>Rare Disease & Mendelian Genetics Workspace</div>
+        <div style='color:#3a1060;font-size:.78rem;'>VUS Triage · HPO → Candidate Genes · ACMG Classification · Inheritance · Functional Validation</div>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    rd_mode = st.radio("", [
+        "🧬 VUS Prioritisation Engine",
+        "🔬 HPO → Candidate Genes",
+        "📋 ACMG/AMP Classifier",
+        "🧪 Functional Validation Roadmap",
+        "🔗 Inheritance Analyser",
+    ], horizontal=True, key=f"rd_mode_{st.session_state.get('research_domain','RD')}")
+
+    # ── VUS PRIORITISATION ENGINE ────────────────────────────────────────────
+    if rd_mode == "🧬 VUS Prioritisation Engine":
+        sh("🧬", "Variant of Uncertain Significance — Integrated Prioritisation")
+        st.markdown("<div style='background:#080112;border:1px solid #c084fc18;border-radius:10px;padding:10px 15px;margin-bottom:.8rem;color:#3a6080;font-size:.78rem;line-height:1.65;'>The biggest bottleneck in rare disease research: too many VUS, not enough resources. This engine integrates 6 evidence streams into a single prioritisation tier before you touch a pipette.</div>", unsafe_allow_html=True)
+
+        vc1, vc2 = st.columns(2)
+        with vc1:
+            vus_gene = st.text_input("Gene symbol", placeholder="BRCA1 · SCN1A · SYNGAP1 · LMNA", key="vus_gene")
+            vus_var = st.text_input("Variant (HGVS or descriptive)", placeholder="c.5266dupC · p.Arg1699Trp · NM_007294.4:c.68_69del", key="vus_var")
+            vus_type = st.selectbox("Variant type", ["Missense","Nonsense (stop-gain)","Frameshift","Splice site","In-frame indel","Synonymous","UTR","Deep intronic","CNV/SV"], key="vus_type")
+        with vc2:
+            vus_gnomad = st.number_input("gnomAD AF (×10⁻⁵, enter 0 if absent)", 0.0, 100.0, 0.0, 0.1, key="vus_gnomad")
+            vus_am = st.slider("AlphaMissense score (0–1)", 0.0, 1.0, 0.0, 0.01, key="vus_am")
+            vus_clinvar_stars = st.selectbox("ClinVar review status", ["Not in ClinVar","0 stars (conflicting/no criteria)","1 star (single submitter)","2 stars (multiple submitters)","3 stars (expert panel)","4 stars (practice guideline)"], key="vus_cv_stars")
+            vus_pldt = st.number_input("AlphaFold pLDDT at position", 0, 100, 0, key="vus_pldt")
+            vus_pli = st.number_input("gnomAD pLI for gene", 0.0, 1.0, 0.0, 0.01, key="vus_pli")
+
+        if st.button("⚡ Prioritise this variant", type="primary", key="vus_run", use_container_width=True):
+            # Score each dimension
+            scores = {}
+            # 1. Frequency
+            if vus_gnomad == 0: scores["Frequency (gnomAD)"] = (3, "Absent from gnomAD", "#22c55e", "PM2 applicable — very rare")
+            elif vus_gnomad < 0.01: scores["Frequency (gnomAD)"] = (2, f"AF={vus_gnomad}×10⁻⁵ — very rare", "#ffd60a", "PM2 may apply")
+            elif vus_gnomad < 0.1: scores["Frequency (gnomAD)"] = (1, f"AF={vus_gnomad}×10⁻⁵ — uncommon", "#ff8c42", "Too common for dominant; check recessive")
+            else: scores["Frequency (gnomAD)"] = (0, f"AF={vus_gnomad}×10⁻⁵ — common", "#ff2d55", "Likely benign if dominant disease")
+            # 2. AlphaMissense
+            if vus_type == "Missense":
+                if vus_am >= 0.7: scores["AlphaMissense"] = (3, f"AM={vus_am:.2f} — likely pathogenic", "#22c55e", "Strong computational evidence (PP3)")
+                elif vus_am >= 0.34: scores["AlphaMissense"] = (1, f"AM={vus_am:.2f} — ambiguous", "#ffd60a", "Weak computational support")
+                else: scores["AlphaMissense"] = (0, f"AM={vus_am:.2f} — likely benign", "#ff2d55", "BP4 applicable")
+            else:
+                scores["AlphaMissense"] = (2, f"N/A for {vus_type} — use SpliceAI/NMD tools", "#ffd60a", "Assess by variant-type tools")
+            # 3. Variant type
+            lof_types = ["Nonsense (stop-gain)","Frameshift","Splice site"]
+            if vus_type in lof_types: scores["Variant type"] = (3, f"{vus_type} = likely LoF", "#22c55e", "PVS1 if gene pLI>0.9 — check transcript")
+            elif vus_type in ["Missense","In-frame indel"]: scores["Variant type"] = (1, f"{vus_type} — functional data needed", "#ffd60a", "PS3 required for strong evidence")
+            else: scores["Variant type"] = (1, f"{vus_type} — specialised analysis required", "#ff8c42", "GTEx + SpliceAI + context")
+            # 4. ClinVar
+            star_score = {"Not in ClinVar":0,"0 stars (conflicting/no criteria)":0,"1 star (single submitter)":1,"2 stars (multiple submitters)":2,"3 stars (expert panel)":3,"4 stars (practice guideline)":3}
+            cv_s = star_score.get(vus_clinvar_stars, 0)
+            if cv_s >= 3: scores["ClinVar"] = (3, f"{vus_clinvar_stars}", "#22c55e", "PP5 applicable (expert review)")
+            elif cv_s == 2: scores["ClinVar"] = (2, f"{vus_clinvar_stars}", "#ffd60a", "PP5 supporting")
+            elif cv_s == 1: scores["ClinVar"] = (1, f"{vus_clinvar_stars}", "#ff8c42", "Weak ClinVar — validate independently")
+            else: scores["ClinVar"] = (0, "Not in ClinVar or conflicting", "#3a6080", "No ClinVar support — need de novo evidence")
+            # 5. Structural (pLDDT)
+            if vus_pldt >= 70: scores["AlphaFold pLDDT"] = (2, f"pLDDT={vus_pldt} — structured region", "#22c55e", "Reliable structure — missense likely disruptive if AM>0.7")
+            elif vus_pldt >= 50: scores["AlphaFold pLDDT"] = (1, f"pLDDT={vus_pldt} — low confidence region", "#ffd60a", "IDR — missense may be tolerated")
+            else: scores["AlphaFold pLDDT"] = (0, f"pLDDT={vus_pldt} — disordered", "#ff8c42", "IDR — AlphaMissense score less informative")
+            # 6. Gene constraint
+            if vus_pli >= 0.9: scores["Gene constraint (pLI)"] = (3, f"pLI={vus_pli:.2f} — severely constrained", "#22c55e", "PVS1 applicable for LoF; PP2 for missense")
+            elif vus_pli >= 0.5: scores["Gene constraint (pLI)"] = (2, f"pLI={vus_pli:.2f} — moderately constrained", "#ffd60a", "PP2 supporting for missense")
+            else: scores["Gene constraint (pLI)"] = (0, f"pLI={vus_pli:.2f} — tolerates LoF", "#ff8c42", "LoF variants less likely disease-causing")
+
+            total = sum(s for s,_,_,_ in scores.values())
+            max_s = 18
+            tier = "Tier 1 — PURSUE IMMEDIATELY" if total >= 12 else "Tier 2 — INVESTIGATE FURTHER" if total >= 7 else "Tier 3 — LOW PRIORITY" if total >= 3 else "Tier 4 — DEPRIORITISE"
+            tier_clr = "#22c55e" if total >= 12 else "#ffd60a" if total >= 7 else "#ff8c42" if total >= 3 else "#ff2d55"
+
+            st.markdown(f"<div style='background:{tier_clr}0d;border:2px solid {tier_clr}44;border-radius:12px;padding:1rem 1.5rem;margin:.8rem 0;text-align:center;'>"
+                f"<div style='font-size:1.8rem;font-weight:800;color:{tier_clr};'>{total}/{max_s}</div>"
+                f"<div style='color:{tier_clr};font-weight:700;font-size:.9rem;'>{tier}</div>"
+                f"<div style='color:#3a6080;font-size:.72rem;margin-top:4px;'>Integrated score across 6 evidence streams</div></div>", unsafe_allow_html=True)
+
+            for dim, (s, desc, clr, note) in scores.items():
+                bar_w = int(s / 3 * 100)
+                st.markdown(f"<div style='display:flex;align-items:center;gap:10px;padding:4px 0;border-bottom:1px solid #050e18;'>"
+                    f"<div style='min-width:200px;color:#8090a0;font-size:.72rem;'>{dim}</div>"
+                    f"<div style='flex:1;background:#050e18;border-radius:4px;height:6px;'><div style='background:{clr};height:6px;border-radius:4px;width:{bar_w}%;'></div></div>"
+                    f"<div style='min-width:200px;color:{clr};font-size:.7rem;'>{desc}</div>"
+                    f"<div style='color:#1e4060;font-size:.67rem;min-width:220px;'>{note}</div></div>", unsafe_allow_html=True)
+
+            # Next steps
+            st.markdown("<hr class='dv'>", unsafe_allow_html=True)
+            st.markdown(f"<div style='color:#c084fc;font-size:.75rem;font-weight:700;margin-bottom:.4rem;'>Recommended next steps for {vus_gene or 'this variant'}</div>", unsafe_allow_html=True)
+            steps_map = {
+                "Tier 1": [("Immediate","CRISPR knock-in of variant in iPSC + isogenic control — PS3 evidence"),("Week 1","Patient-derived fibroblast Western blot + functional assay — confirm protein expression and function"),("Week 1","Co-segregation analysis in family — request samples from all available relatives (PP1 evidence)"),("Week 2","Submit to ClinVar with PS2/PS3/PM2 evidence — upgrade from VUS to Likely Pathogenic"),],
+                "Tier 2": [("First","AlphaFold structural analysis — map variant position against domain architecture and binding sites"),("Week 1","Minigene splice assay if near splice site (within 20nt of exon boundary)"),("Week 2","Patient cell-based assay — does protein localise correctly? Is stability normal? (Western + IF)"),("Week 3","Computational co-segregation check — request pedigree data from referring clinician"),],
+                "Tier 3": [("First","Check if gene-disease relationship is ClinGen-validated (Definitive/Strong/Moderate only)"),("Week 1","RNA-seq from patient blood — look for aberrant splicing or ASE before wet-lab investment"),("Consider","Functional assay only if multiple families with same variant — insufficient single-family evidence"),],
+                "Tier 4": [("Decision","Deprioritise — too common in population and/or insufficient in silico evidence"),("Alternative","Check if VUS is in a recessive gene — compound heterozygosity may still be relevant"),("Report","Classify as VUS in clinical report — revisit in 12 months when more evidence accumulates"),],
+            }
+            tier_key = tier.split(" — ")[0]
+            for steps in steps_map.get(tier_key, []):
+                timing, action = steps
+                st.markdown(f"<div style='display:flex;gap:10px;padding:5px 0;border-bottom:1px solid #050e18;'>"
+                    f"<span style='color:#c084fc;font-size:.7rem;font-weight:700;min-width:80px;'>{timing}</span>"
+                    f"<span style='color:#3a6080;font-size:.74rem;line-height:1.55;'>{action}</span></div>", unsafe_allow_html=True)
+
+            if vus_gene and st.button(f"→ Full protein analysis: {vus_gene}", key="vus_analyse_btn", type="primary", use_container_width=True):
+                st.session_state["_trigger_search"] = vus_gene; st.rerun()
+
+    # ── HPO → CANDIDATE GENES ────────────────────────────────────────────────
+    elif rd_mode == "🔬 HPO → Candidate Genes":
+        sh("🔬", "Phenotype → Candidate Gene Finder")
+        st.markdown("<div style='color:#3a6080;font-size:.78rem;margin-bottom:.6rem;'>Select patient phenotype categories → ranked candidate genes. Start with the most specific phenotype. Multiple selections = AND logic (gene must explain all features).</div>", unsafe_allow_html=True)
+
+        selected_phenos = st.multiselect("Patient phenotype(s):", list(hpo_gene_map.keys()), key="hpo_sel",
+            help="Select all phenotype categories present in your patient. Genes appearing in multiple categories are ranked highest.")
+
+        c1_hpo, c2_hpo = st.columns(2)
+        with c1_hpo:
+            inheritance = st.selectbox("Suspected inheritance", ["Unknown","Autosomal dominant (AD)","Autosomal recessive (AR)","X-linked (XL)","De novo","Mitochondrial"], key="hpo_inh")
+        with c2_hpo:
+            prior_panels = st.text_input("Genes already excluded (comma-separated):", placeholder="BRCA1, TP53, SCN1A", key="hpo_excl")
+
+        excluded = {g.strip().upper() for g in prior_panels.split(",") if g.strip()}
+
+        if selected_phenos:
+            # Count gene frequency across selected phenotype categories
+            from collections import Counter
+            gene_counts = Counter()
+            gene_sources = {}
+            for ph in selected_phenos:
+                for g in hpo_gene_map.get(ph, []):
+                    gene_counts[g] += 1
+                    gene_sources.setdefault(g, []).append(ph)
+
+            # Filter excluded genes
+            ranked = [(g, c) for g, c in gene_counts.most_common(40) if g not in excluded]
+
+            if ranked:
+                st.markdown(f"<div style='color:#c084fc;font-size:.73rem;font-weight:700;margin:.6rem 0 .4rem;'>{len(ranked)} candidate genes — ranked by phenotype overlap</div>", unsafe_allow_html=True)
+                for rank, (gene, count) in enumerate(ranked[:20], 1):
+                    sources = gene_sources.get(gene, [])
+                    priority_clr = "#22c55e" if count == len(selected_phenos) else "#ffd60a" if count >= 2 else "#3a6080"
+                    priority_label = "PERFECT MATCH" if count == len(selected_phenos) else f"Matches {count}/{len(selected_phenos)}"
+                    cols_g = st.columns([0.08, 0.12, 0.35, 0.25, 0.2])
+                    cols_g[0].markdown(f"<div style='color:#1e4060;font-size:.72rem;padding-top:6px;'>#{rank}</div>", unsafe_allow_html=True)
+                    cols_g[1].markdown(f"<div style='color:{priority_clr};font-size:.72rem;font-weight:700;padding-top:6px;'>{gene}</div>", unsafe_allow_html=True)
+                    cols_g[2].markdown(f"<div style='color:#3a6080;font-size:.69rem;padding-top:6px;'>{' · '.join(sources)}</div>", unsafe_allow_html=True)
+                    cols_g[3].markdown(f"<div style='color:{priority_clr};font-size:.67rem;padding-top:6px;'>{priority_label}</div>", unsafe_allow_html=True)
+                    if cols_g[4].button(f"Analyse", key=f"hpo_btn_{gene}_{rank}", use_container_width=True):
+                        st.session_state["_trigger_search"] = gene; st.rerun()
+            else:
+                st.info("No candidate genes found for selected phenotypes (after exclusions).")
+
+        # HPO database links
+        st.markdown("<hr class='dv'>", unsafe_allow_html=True)
+        st.markdown("<div style='color:#c084fc;font-size:.7rem;font-weight:700;margin-bottom:.3rem;'>External HPO resources</div>", unsafe_allow_html=True)
+        for db, url, desc in [("HPO Browser","https://hpo.jax.org","Search phenotype terms → gene lists"),("PanelApp","https://panelapp.genomicsengland.co.uk","NHS gene panels by disease category"),("OMIM","https://www.omim.org","Phenotype-gene relationships"),("Orphanet","https://www.orpha.net","Rare disease phenotype-gene database"),("GenCC","https://thegencc.org","Gene-disease validity across multiple curators")]:
+            st.markdown(f"<a href='{url}' target='_blank' style='display:inline-block;background:#0a0314;border:1px solid #c084fc18;border-radius:7px;padding:4px 10px;margin:3px;color:#c084fc;font-size:.7rem;text-decoration:none;'>{db} — {desc} ↗</a>", unsafe_allow_html=True)
+
+    # ── ACMG/AMP CLASSIFIER ──────────────────────────────────────────────────
+    elif rd_mode == "📋 ACMG/AMP Classifier":
+        sh("📋", "ACMG/AMP 2015 Variant Classification — Evidence Builder")
+        st.markdown("<div style='color:#3a6080;font-size:.78rem;margin-bottom:.6rem;'>Check applicable criteria → automatic ACMG classification. Based on Richards et al., Genetics in Medicine 2015 and ClinGen sequence variant interpretation guidelines.</div>", unsafe_allow_html=True)
+
+        acmg_selected = {}
+        c_pvs, c_ps, c_pm, c_pp = st.columns(4)
+        pvs_keys = [k for k in acmg_criteria if k.startswith("PVS")]
+        ps_keys = [k for k in acmg_criteria if k.startswith("PS")]
+        pm_keys = [k for k in acmg_criteria if k.startswith("PM")]
+        pp_keys = [k for k in acmg_criteria if k.startswith("PP")]
+
+        for col, keys, label, clr in [(c_pvs, pvs_keys, "Very Strong", "#ff2d55"),(c_ps, ps_keys, "Strong", "#ff8c42"),(c_pm, pm_keys, "Moderate", "#ffd60a"),(c_pp, pp_keys, "Supporting", "#22c55e")]:
+            with col:
+                st.markdown(f"<div style='color:{clr};font-size:.7rem;font-weight:700;margin-bottom:.4rem;'>{label}</div>", unsafe_allow_html=True)
+                for k in keys:
+                    strength, desc, detail = acmg_criteria.get(k, ("","",""))
+                    checked = st.checkbox(f"{k}", key=f"acmg_{k}", help=f"{desc} — {detail}")
+                    if checked:
+                        acmg_selected[k] = strength
+
+        # Score
+        if acmg_selected:
+            pvs = sum(1 for k in acmg_selected if k.startswith("PVS"))
+            ps = sum(1 for k in acmg_selected if k.startswith("PS"))
+            pm = sum(1 for k in acmg_selected if k.startswith("PM"))
+            pp = sum(1 for k in acmg_selected if k.startswith("PP"))
+
+            # ACMG rules
+            pathogenic = False; likely_p = False
+            if pvs >= 1 and (ps >= 1 or pm >= 2 or (pm >= 1 and pp >= 1) or pp >= 2): pathogenic = True
+            elif ps >= 2: pathogenic = True
+            elif ps >= 1 and (pm >= 3 or (pm >= 2 and pp >= 2) or (pm >= 1 and pp >= 4)): pathogenic = True
+            if pvs >= 1 and pm == 1: likely_p = True
+            elif ps >= 1 and pm >= 1: likely_p = True
+            elif ps >= 1 and pp >= 2: likely_p = True
+            elif pm >= 3: likely_p = True
+            elif pm >= 2 and pp >= 2: likely_p = True
+            elif pm >= 1 and pp >= 4: likely_p = True
+
+            if pathogenic:
+                classification = "PATHOGENIC"; clr_c = "#ff2d55"
+            elif likely_p:
+                classification = "LIKELY PATHOGENIC"; clr_c = "#ff8c42"
+            else:
+                classification = "VUS (insufficient evidence)"; clr_c = "#ffd60a"
+
+            st.markdown(f"<div style='background:{clr_c}0d;border:2px solid {clr_c}44;border-radius:12px;padding:1rem;margin:.8rem 0;text-align:center;'>"
+                f"<div style='color:{clr_c};font-size:1.1rem;font-weight:800;'>{classification}</div>"
+                f"<div style='color:#3a6080;font-size:.74rem;margin-top:4px;'>PVS:{pvs} PS:{ps} PM:{pm} PP:{pp} | Selected: {', '.join(acmg_selected.keys())}</div></div>", unsafe_allow_html=True)
+
+        # Show all criteria with detail
+        st.markdown("<hr class='dv'>", unsafe_allow_html=True)
+        st.markdown("<div style='color:#c084fc;font-size:.71rem;font-weight:700;margin-bottom:.4rem;'>Evidence criteria — full detail</div>", unsafe_allow_html=True)
+        for k, (strength, desc, detail) in acmg_criteria.items():
+            clr_k = "#ff2d55" if k.startswith("PVS") else "#ff8c42" if k.startswith("PS") else "#ffd60a" if k.startswith("PM") else "#22c55e"
+            st.markdown(f"<div style='display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #050e18;'>"
+                f"<span style='color:{clr_k};font-weight:700;font-size:.73rem;min-width:45px;'>{k}</span>"
+                f"<span style='color:#4a7090;font-size:.73rem;min-width:140px;'>{desc}</span>"
+                f"<span style='color:#1e4060;font-size:.7rem;'>{detail}</span></div>", unsafe_allow_html=True)
+
+    # ── FUNCTIONAL VALIDATION ROADMAP ────────────────────────────────────────
+    elif rd_mode == "🧪 Functional Validation Roadmap":
+        sh("🧪", "Functional Validation — Evidence-to-ACMG Pathway")
+        fv1, fv2 = st.columns(2)
+        with fv1:
+            fv_gene = st.text_input("Gene:", placeholder="BRCA1 · SCN1A · LMNA", key="fv_gene")
+            fv_vtype = st.selectbox("Variant type:", ["Missense","Nonsense/frameshift","Splice site","Deep intronic","In-frame indel"], key="fv_vtype")
+            fv_disease = st.selectbox("Disease category:", ["Neurological/epilepsy","Cardiac/cardiomyopathy","Skeletal muscle","Immune deficiency","Cancer predisposition","Metabolic","Connective tissue","Retinal/sensory","Other"], key="fv_dis")
+        with fv2:
+            fv_cell = st.selectbox("Available patient material:", ["Primary fibroblasts","iPSC available","Blood only (LCLs)","No patient material","Fetal tissue","Tumour biopsy"], key="fv_cell")
+            fv_timeline = st.selectbox("Timeline constraint:", ["ASAP (<2 weeks)","1–3 months","3–6 months (publication)","No constraint"], key="fv_time")
+            fv_budget = st.selectbox("Budget tier:", ["Low (<£5K)","Medium (£5–20K)","High (>£20K, grant-funded)"], key="fv_budget")
+
+        if st.button("Generate validation roadmap", type="primary", key="fv_run", use_container_width=True):
+            # Generate tailored roadmap
+            experiments = []
+
+            # Tier by variant type
+            if fv_vtype == "Missense":
+                experiments.append(("IMMEDIATE — In silico (free, 1 day)","AlphaFold structural analysis","Map variant position against pLDDT, domain architecture, binding interface. If AM>0.7 + pLDDT>70 + domain hotspot → proceed to PS3. Expected ACMG: PP3","#c084fc"))
+                experiments.append(("WEEK 1–2 — Protein stability","Thermal shift / nanoDSF","WT vs mutant recombinant protein. ΔTm >3°C = destabilising. Produces PS3 supporting. Cost: £800. No patient cells required.","#22c55e"))
+                if "No patient material" not in fv_cell:
+                    experiments.append(("WEEK 2 — Patient cells","Western blot + densitometry","Confirm protein expression level (LoF = reduced). IF for localisation. Co-IP for interaction loss. Produces PS3 moderate. Cost: £500.","#22c55e"))
+                    experiments.append(("WEEK 3–4 — Functional assay","Disease-specific activity assay",f"{'Patch-clamp (ion channel function)' if 'Neuro' in fv_disease else 'Sarcomeric assembly (cardiomyocyte)' if 'Cardiac' in fv_disease else 'Phosphorylation assay (kinase)' if 'Cancer' in fv_disease else 'Enzymatic activity assay'}. Produces PS3 strong if >10% difference. Most important experiment.","#22c55e"))
+
+            elif fv_vtype in ["Nonsense/frameshift","In-frame indel"]:
+                experiments.append(("IMMEDIATE — NMD assessment (free, 1 day)","Predict NMD sensitivity","Check if variant triggers NMD (position in penultimate exon rule: >50–55nt before last exon junction). PVS1 requires NMD or functional null. Expected ACMG: PVS1.","#c084fc"))
+                experiments.append(("WEEK 1 — mRNA level","RT-PCR from patient blood/RNA","Confirm mRNA reduction (NMD) or truncated product. If mRNA absent → PVS1 confirmed. If present → truncated protein analysis needed. Cost: £300.","#22c55e"))
+                experiments.append(("WEEK 2 — Protein level","Western blot — truncated protein?","If truncated protein stable → may have dominant negative effect (not simple haploinsufficiency). Changes treatment approach radically. Cost: £400.","#22c55e"))
+
+            elif fv_vtype == "Splice site":
+                experiments.append(("IMMEDIATE — SpliceAI prediction (free)","SpliceAI score + MaxEntScan","Delta score >0.5 = high confidence splice disruption. PVS1 applicable if creates frameshift/NMD. Expected ACMG: PVS1 if LoF-intolerant gene.","#c084fc"))
+                experiments.append(("WEEK 1 — Minigene assay","Exon trapping / minigene splice assay","Gold standard for splicing VUS. Clones 3 exons (±1 flanking) into pSPL3. Reads out splice products by RT-PCR. 100% required for publication. Cost: £1500. Produces PS3 strong.","#22c55e"))
+                experiments.append(("WEEK 2 — Patient RNA","RT-PCR from patient RNA (if available)","Direct evidence of aberrant splicing. More powerful than minigene. Looks for cryptic exons, exon skipping, intron retention. Cost: £400 if RNA available.","#22c55e"))
+
+            elif fv_vtype == "Deep intronic":
+                experiments.append(("IMMEDIATE — Computational (free)","SpliceAI + CADD-Splice + dbscSNV","Deep intronic variants only actionable if SpliceAI delta >0.2 or CADD-Splice >20. Below threshold: deprioritise without patient RNA evidence. Cost: free.","#c084fc"))
+                experiments.append(("WEEK 1–2 — Patient RNA essential","Long-read RNA-seq (Oxford Nanopore)","Only method to detect cryptic exon inclusion from deep intronic variants at single-read resolution. Expensive (£3000) but definitive. Produces PS3.","#22c55e"))
+
+            # Co-segregation always
+            experiments.append(("ONGOING — Family","Co-segregation analysis","Request saliva/blood kits for all available relatives. Every affected relative with variant = PP1 supporting. LOD ≥1.0 = PP1 moderate. Cheap (~£50/sample WGS). Most under-used evidence type.","#4a90d9"))
+
+            # Timeline-specific additions
+            if "publication" in fv_timeline.lower():
+                experiments.append(("MONTH 3–6 — Publication-grade","CRISPR knock-in in iPSC (isogenic control)","Definitive causal evidence. Gold standard for publication. iPSC → patient-relevant cell type (neurons for SCN1A, cardiomyocytes for LMNA). Produces PS3 strong. Cost: £15–30K.","#ff8c42"))
+                experiments.append(("MONTH 4–6 — Model organism","Zebrafish morpholino knockdown","Fast (5 days), cheap (£3K), shows gross phenotype. Rescue with WT mRNA confirms specificity. Best for syndromic disorders with visible phenotype.","#ff8c42"))
+
+            for timing, name, detail, clr in experiments:
+                st.markdown(f"<div style='background:#040010;border:1px solid {clr}18;border-left:3px solid {clr};border-radius:0 10px 10px 0;padding:10px 14px;margin:.4rem 0;'>"
+                    f"<div style='color:{clr};font-size:.72rem;font-weight:700;margin-bottom:3px;'>{timing} — {name}</div>"
+                    f"<div style='color:#3a6080;font-size:.74rem;line-height:1.6;'>{detail}</div></div>", unsafe_allow_html=True)
+
+            if fv_gene and st.button(f"→ Analyse {fv_gene} protein", key="fv_analyse_btn", type="primary", use_container_width=True):
+                st.session_state["_trigger_search"] = fv_gene; st.rerun()
+
+    # ── INHERITANCE ANALYSER ─────────────────────────────────────────────────
+    else:
+        sh("🔗", "Inheritance Pattern Analyser")
+        ia1, ia2 = st.columns(2)
+        with ia1:
+            ia_gene = st.text_input("Gene:", placeholder="BRCA1 · DMD · HBB", key="ia_gene")
+            ia_sex = st.selectbox("Patient sex:", ["Female","Male","Unknown"], key="ia_sex")
+            ia_affected_parent = st.selectbox("Affected parent:", ["None (de novo suspected)","Mother affected","Father affected","Both parents affected","Unknown"], key="ia_parent")
+        with ia2:
+            ia_sib = st.selectbox("Affected siblings:", ["None","1 affected sibling","2+ affected siblings","Unknown"], key="ia_sib")
+            ia_var_count = st.selectbox("Variants found:", ["1 heterozygous variant","2 heterozygous variants (trans)","2 heterozygous variants (cis unknown)","Hemizygous","Homozygous","No coding variant found"], key="ia_vars")
+            ia_consang = st.checkbox("Consanguineous family", key="ia_consang")
+
+        if st.button("Analyse inheritance", type="primary", key="ia_run", use_container_width=True):
+            patterns = []
+            if "None" in ia_affected_parent and "1 heterozygous variant" in ia_var_count:
+                patterns.append(("MOST LIKELY: De novo AD","#22c55e","Affected patient has het variant, neither parent affected. Confirm by parental testing (mandatory). ~50% of severe sporadic disease. ACMG PS2 if confirmed."))
+            if "heterozygous" in ia_var_count and ("Mother" in ia_affected_parent or "Father" in ia_affected_parent):
+                patterns.append(("Autosomal Dominant (AD) — inherited","#ffd60a","Het variant segregates with disease. If penetrance <100%, some carrier relatives may be unaffected. Check for incomplete penetrance in family tree. PP1 if >3 affected relatives with variant."))
+            if "2 heterozygous variants (trans)" in ia_var_count or ia_consang:
+                patterns.append(("LIKELY: Autosomal Recessive (AR)","#22c55e","Compound heterozygous (trans) or homozygous (consanguinity). Both variants must be functional. Confirm phase by parental testing or long-read sequencing. Check gnomAD carrier frequency."))
+            if ia_sex == "Male" and ("Hemizygous" in ia_var_count or ("Mother" in ia_affected_parent and "maternal" in ia_var_count.lower())):
+                patterns.append(("X-linked recessive (XLR)","#4a90d9","Hemizygous male. Carrier mother (may have skewed X-inactivation). No male-to-male transmission (diagnostic clue). Affected maternal uncles = strong evidence."))
+            if not patterns:
+                patterns.append(("Insufficient data for pattern assignment","#3a6080","Need: (1) parental variant testing, (2) pedigree with ≥3 generations, (3) variant phase confirmation. Most common mistake: assuming de novo without confirmed parental testing."))
+
+            for label, clr, detail in patterns:
+                st.markdown(f"<div style='background:#040010;border:2px solid {clr}33;border-left:4px solid {clr};border-radius:0 10px 10px 0;padding:10px 14px;margin:.4rem 0;'>"
+                    f"<div style='color:{clr};font-weight:700;font-size:.82rem;margin-bottom:4px;'>{label}</div>"
+                    f"<div style='color:#3a6080;font-size:.76rem;line-height:1.6;'>{detail}</div></div>", unsafe_allow_html=True)
+
+            # Checklist
+            st.markdown("<hr class='dv'>", unsafe_allow_html=True)
+            st.markdown("<div style='color:#c084fc;font-size:.72rem;font-weight:700;margin-bottom:.4rem;'>Evidence checklist — what to obtain next</div>", unsafe_allow_html=True)
+            checklist = [("Parental testing","Sanger or WES of both biological parents — MANDATORY before de novo claim","🔴"),("Pedigree diagram","3-generation pedigree from genetic counsellor — required for co-segregation LOD calculation","🔴"),("Confirm variant phase","Long-read sequencing OR parental genotyping — trans = compound het confirmed","🟡"),("Affected relatives","Contact referring clinician — any other affected family members? Request samples.","🟡"),("Population frequency","gnomAD AF of each variant — both should be <0.1% for recessive","🟢"),("ClinGen gene validity","Confirm gene-disease relationship is at least Moderate before pursuing further","🟢")]
+            for item, action, priority in checklist:
+                st.markdown(f"<div style='display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #050e18;'>"
+                    f"<span>{priority}</span><span style='color:#c084fc;font-size:.72rem;min-width:180px;font-weight:600;'>{item}</span>"
+                    f"<span style='color:#3a6080;font-size:.71rem;'>{action}</span></div>", unsafe_allow_html=True)
+
+            if ia_gene and st.button(f"→ Analyse {ia_gene} protein", key="ia_analyse_btn", type="primary", use_container_width=True):
+                st.session_state["_trigger_search"] = ia_gene; st.rerun()
+
+
 RESEARCH_DOMAINS = {
     "Neuroscience": {
         "icon": "🧠", "color": "#6366f1", "color2": "#818cf8",
@@ -5542,6 +5874,65 @@ RESEARCH_DOMAINS = {
         "animal_models": ["Conditional KO (Cre-lox/ERT2)","Phospho-dead knock-in (Ser→Ala)","Phospho-mimic (Ser→Asp/Glu)","AID degron tag","CRISPRa/i"],
         "insight": "★ PHOSPHORYLATION FIRST: Map all S/T/Y against PhosphoSitePlus before any wet-lab. Variants that alter kinase consensus motifs are highest-priority. Validate by ADP-Glo with synthetic peptide substrate.",
         "databases": [("PhosphoSitePlus","https://www.phosphosite.org","PTM sites"),("STRING-DB","https://string-db.org","Interactions"),("KinBase","http://kinase.com/kinbase","Kinase families"),("BioGRID","https://thebiogrid.org","Physical interactions")],
+    },
+    "Rare Disease": {
+        "icon": "🧬", "color": "#c084fc", "color2": "#d8b4fe",
+        "tagline": "VUS Prioritisation · HPO → Gene · Inheritance · ClinGen · Functional Validation",
+        "desc": "The niche Protellect masters. WES/WGS candidate gene triage for rare Mendelian disease labs. HPO phenotype → ranked candidate genes. VUS pathogenicity scoring from ClinVar+AlphaMissense+gnomAD. Inheritance pattern analysis. Functional validation roadmap.",
+        "proteins": ["BRCA1","BRCA2","TP53","NF1","PTEN","TSC1","TSC2","PKD1","PKD2","HBB","CFTR","DMD","MECP2","FMR1","HTT","LDLR","PAH","HEXA","GBA","LRRK2"],
+        "key_experiments": [
+            ("CRISPR knock-in of patient variant (iPSC)", "4–6 weeks", "Causal evidence — PS3 ClinGen criterion. Isogenic control mandatory.", "#22c55e"),
+            ("Patient-derived fibroblast functional assay", "2–3 weeks", "Non-invasive. Protein expression, localisation, function. EBV-transformed LCLs as alternative.", "#22c55e"),
+            ("Minigene splice assay (for splicing VUS)", "1–2 weeks", "Detects cryptic splice sites missed by canonical tools. Gold standard for PS3 intronic variants.", "#22c55e"),
+            ("Co-segregation analysis (family pedigree)", "Ongoing", "LOD score ≥1.0 = PP1 moderate. LOD ≥2.0 = PP1 strong. Most powerful evidence in large families.", "#ffd60a"),
+            ("AlphaFold structural impact (in silico)", "1 day", "pLDDT drop at variant position = likely destabilising. PAE change at interface = PPI disruption.", "#ffd60a"),
+            ("RNA-seq from patient tissue/iPSC", "2 weeks", "Allele-specific expression, aberrant splicing (Fraser et al. method), nonsense-mediated decay.", "#ff8c42"),
+        ],
+        "drug_rules": [
+            ("ACMG/AMP 2015","Always classify first","P/LP/VUS/LB/B"),
+            ("ClinGen","Check gene-disease validity","Definitive/Strong/Moderate"),
+            ("Variant type","LoF vs GoF matters","Treatment differs radically"),
+            ("Inheritance","AD vs AR vs XL","Affects family screening"),
+            ("Penetrance","Incomplete = modifier search","GWAS for modifiers"),
+            ("ASO therapy","LoF amenable","FDA precedent: tofersen, golodirsen"),
+        ],
+        "animal_models": ["Patient-specific iPSC (isogenic control mandatory)","Zebrafish morpholino (fast, 5 days)","Mouse germline KI (variant knock-in)","C. elegans ortholog screen","Drosophila UAS-RNAi (modifier screen)"],
+        "insight": "★ RARE DISEASE FIRST PRINCIPLE: A variant with ClinVar ≥4 stars + AlphaMissense ≥0.70 + gnomAD AF <0.001% + pLDDT ≥70 at position = Tier 1 — pursue immediately. Never spend wet-lab budget on a Tier 3 VUS without at least computational triage first.",
+        "databases": [
+            ("ClinVar","https://www.ncbi.nlm.nih.gov/clinvar","Variant pathogenicity"),
+            ("OMIM","https://www.omim.org","Gene-disease associations"),
+            ("ClinGen","https://clinicalgenome.org","Gene-disease curation"),
+            ("HPO","https://hpo.jax.org","Human Phenotype Ontology"),
+            ("DECIPHER","https://www.deciphergenomics.org","CNV + rare disease"),
+            ("LOVD","https://www.lovd.nl","Locus-specific variant databases"),
+        ],
+        "hpo_gene_map": {
+            "intellectual disability": ["SYNGAP1","SHANK3","ADNP","KDM5C","KANSL1","MED13L","DYRK1A","KAT6A","FOXG1","MECP2","KMT2A","DDX3X","PURA","TAF1"],
+            "epilepsy": ["SCN1A","SCN2A","SCN8A","KCNQ2","GRIN2A","GRIN2B","CDKL5","FOXG1","TSC1","TSC2","ARX","ALDH7A1","POLG","SLC2A1"],
+            "cardiomyopathy": ["LMNA","SCN5A","MYH7","MYBPC3","TNNT2","TNNI3","TPM1","ACTC1","PLN","RBM20","FLNC","TTN","DSP","PKP2"],
+            "hearing loss": ["GJB2","SLC26A4","MYO7A","OTOF","CDH23","PCDH15","TECTA","COCH","EYA1","WFS1","TMPRSS3","LOXHD1"],
+            "retinal dystrophy": ["RPGR","RPGRIP1","CNGA3","CNGB3","RPE65","ABCA4","PRPF31","CRB1","KCNV2","RDH12","CEP290","TULP1"],
+            "skeletal dysplasia": ["FGFR3","COL1A1","COL1A2","COMP","DTDST","SOX9","RUNX2","ACAN","COL2A1","EXT1","EXT2","GPC3"],
+            "autism spectrum": ["SHANK3","NRXN1","CNTNAP2","PTEN","TSC1","TSC2","SYNGAP1","ADNP","CHD8","KDM5C","DYRK1A","FOXP1"],
+            "muscular dystrophy": ["DMD","LAMA2","CAPN3","DYSF","SGCA","SGCB","FKRP","ANO5","GNE","VCP","MATR3","HNRNPDL"],
+            "connective tissue": ["FBN1","COL3A1","COL5A1","TNXB","FLNA","ACTA2","TGFBR1","TGFBR2","SMAD3","SKI","EFEMP2"],
+            "immune deficiency": ["CYBB","RAG1","RAG2","ADA","BTK","IKBKG","LRBA","CTLA4","FOXP3","IL2RG","JAK3","STAT3","PIK3CD"],
+        },
+        "acmg_criteria": {
+            "PVS1": ("Very strong","Null variant in LoF-intolerant gene","pLI>0.9 + appropriate transcript + no NMD-escape"),
+            "PS1": ("Strong","Same AA change as established pathogenic","Different nucleotide change allowed — same protein consequence"),
+            "PS2": ("Strong","De novo (confirmed maternity+paternity)","Maximum strength when both parents confirmed unaffected"),
+            "PS3": ("Strong","Functional assay shows damaging effect","Validated assay — cell-based, biochemical, or animal model"),
+            "PS4": ("Strong","Prevalence in affected significantly > controls","OR >5 with narrow CI from case-control study"),
+            "PM1": ("Moderate","Hotspot or functional domain, no benign variants","ClinVar hotspot + structural evidence"),
+            "PM2": ("Moderate","Absent from controls (gnomAD)","AF < 0.001% in population-matched controls"),
+            "PM4": ("Moderate","Protein length-changing variant","In-frame deletion/insertion or stop-loss in non-repeat region"),
+            "PM5": ("Moderate","Novel missense at pathogenic missense position","Different AA change — same position as known P"),
+            "PP1": ("Supporting","Co-segregation in family","LOD score ≥1.0 moderate; ≥2.0 strong"),
+            "PP2": ("Supporting","Missense in gene with low rate of benign missense","Z-score >3.09 or constrained domain"),
+            "PP3": ("Supporting","Multiple computational tools predict damaging","SIFT+PolyPhen+CADD+AlphaMissense consensus"),
+            "PP5": ("Supporting","Reputable source reports pathogenic","ClinVar ≥2 stars, ClinGen curated"),
+        },
     },
 }
 
@@ -5661,8 +6052,8 @@ if not st.session_state.get("research_domain"):
                 st.rerun()
 
     # Bottom row: 2 cards centred
-    _, b1, b2, _ = st.columns([0.5, 1, 1, 0.5], gap="medium")
-    for i, (dk, col) in enumerate(zip(domain_keys[3:5], [b1, b2])):
+    _, b1, b2, b3, _ = st.columns([0.25, 1, 1, 1, 0.25], gap="medium")
+    for i, (dk, col) in enumerate(zip(domain_keys[3:6], [b1, b2, b3])):
         ds = DOMAIN_STYLES[dk]
         with col:
             st.markdown(
@@ -5980,6 +6371,13 @@ elif _rd_final == "Molecular Biology":
     else:
         with st.expander("⚛️ Molecular Biology Workspace", expanded=False):
             render_molbio_workspace()
+
+elif _rd_final == "Rare Disease":
+    if not _pdata_f and not search:
+        render_rare_disease_workspace(); st.stop()
+    else:
+        with st.expander("🧬 Rare Disease Workspace", expanded=False):
+            render_rare_disease_workspace()
 
 if search and query and query!=st.session_state["last"]:
     if not check_search_limit():
