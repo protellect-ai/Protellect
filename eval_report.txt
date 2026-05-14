@@ -1,0 +1,66 @@
+PROTELLECT ML — VARIANT PRIORITISATION MODEL EVALUATION
+============================================================
+
+Best model: LightGBM
+Training samples: 5,790 (1,731 P/LP, 4,059 B/LB)
+Features: 17
+
+XGBoost:
+  5-fold ROC-AUC:      1.0000 ± 0.0000
+  Avg Precision:       1.0000 ± 0.0000
+  Accuracy:            0.9986
+
+LightGBM:
+  5-fold ROC-AUC:      1.0000 ± 0.0000
+  Avg Precision:       1.0000 ± 0.0000
+  Accuracy:            0.9998
+
+
+Final calibrated model (full training set):
+  ROC-AUC:         1.0000
+  Avg Precision:   1.0000
+
+Classification report:
+               precision    recall  f1-score   support
+
+    Benign/LB       1.00      1.00      1.00      4059
+Pathogenic/LP       1.00      1.00      1.00      1731
+
+     accuracy                           1.00      5790
+    macro avg       1.00      1.00      1.00      5790
+ weighted avg       1.00      1.00      1.00      5790
+
+Confusion matrix (rows=true, cols=pred):
+[[4059    0]
+ [   0 1731]]
+
+Tier distribution:
+      n_variants  precision
+tier                       
+1           1719        1.0
+2             12        1.0
+4           4059        0.0
+
+Feature importances:
+  oe_lof                                   1009.000000
+  genomic_integrity_score                  985.000000
+  multi_evidence_score                     730.000000
+  oe_lof_upper                             643.000000
+  mis_z                                    515.000000
+  consequence_score                        511.000000
+  cv_stars                                 408.000000
+  pLI                                      366.000000
+  n_submitters                             202.000000
+  gene_total_cv_variants                   128.000000
+  gene_plp_count                           118.000000
+  is_lof_intolerant                        42.000000
+  is_lof_variant                           29.000000
+  variant_type_code                        29.000000
+  mis_z_tier                               20.000000
+  pvs1_applicable                          1.000000
+  is_highly_constrained                    0.000000
+
+Tier thresholds:
+  tier1_min_prob: 0.75
+  tier2_min_prob: 0.5
+  tier3_min_prob: 0.25
