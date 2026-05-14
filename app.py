@@ -6317,6 +6317,8 @@ if st.session_state.get("_trigger_search"):
         query = _tq
         search = True
 
+tab0,tab1,tab2,tab3,tab4,tab5,tab6,tab7,tab8,tab9=st.tabs(["📋  Summary","🔴  Triage","📋  Case Study","🔬  Explorer","🧪  Experiments","🤖  AI Report","🗂️  Workspace","🔗  Disease Link","⚗️  Chemistry","💊  Pharma"])
+
 _rd_final = st.session_state.get("research_domain","")
 _pdata_f = st.session_state.get("pdata",{})
 _gene_f = st.session_state.get("gene","")
@@ -7696,7 +7698,6 @@ draw();scroll(0);
 #  Vague annotation → Specific EC-numbered pathway annotation using LLM+rules
 # ════════════════════════════════════════════════════════════════════════════
 
-tab0,tab1,tab2,tab3,tab4,tab5,tab6,tab7,tab8,tab9=st.tabs(["📋  Summary","🔴  Triage","📋  Case Study","🔬  Explorer","🧪  Experiments","🤖  AI Report","🗂️  Workspace","🔗  Disease Link","⚗️  Chemistry","💊  Pharma"])
 
 # Chemical backbone in Chemistry tab
 if _pdata_f and _gene_f:
@@ -11432,3 +11433,4 @@ dr();
 # ════════════════════════════════════════════════════════════════════════════
 #  ENHANCED CHEMICAL BACKBONE RENDERER (injected at top of Chemistry tab)
 # ════════════════════════════════════════════════════════════════════════════
+
