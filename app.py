@@ -1825,6 +1825,7 @@ def detect_csv_type(df):
         return "dms"
     if any(k in cols for k in ["fold","logfc","log2","fpkm","rpkm","tpm","count","expr","deseq","edger"]): return "expression"
     if any(k in cols for k in ["chrom","chr","ref","alt","rsid","vcf","gnomad","af_","allele_freq"]): return "vcf_variants"
+    if any(k in cols for k in ["accession","grch","protein change","protein_change","clinicalsignificance","clinical significance","condition","geneidsymbol","gene(s)","variationid"]): return "clinical_variants"
     if any(k in cols for k in ["variant","mutation","hgvs","clinvar","pathogen","classification"]): return "clinical_variants"
     if any(k in cols for k in ["protein","abundance","intensity","peptide","spectral","lfq","tmt"]): return "proteomics"
     if any(k in cols for k in ["pvalue","p_val","padj","fdr","qvalue","z_score","beta","odds_ratio"]): return "stats"
@@ -6353,6 +6354,7 @@ if _rd_final == "Oncology":
     if not _pdata_f and not search:
         # No protein loaded → show full Oncology workspace
         render_oncology_workspace()
+        if not st.session_state.get("csv_triage_active"): st.stop()
     else:
         # Protein loaded → show domain landing in expander + oncology panel in tab0
         with st.expander(f"🎗 Oncology Workspace — {_gene_f}", expanded=False):
@@ -6373,35 +6375,40 @@ if _rd_final == "Oncology":
 
 elif _rd_final == "Neuroscience":
     if not _pdata_f and not search:
-        render_neuroscience_workspace(); st.stop()
+        render_neuroscience_workspace()
+        if not st.session_state.get("csv_triage_active"): st.stop()
     else:
         with st.expander("🧠 Neuroscience Workspace", expanded=False):
             render_neuroscience_workspace()
 
 elif _rd_final == "Microbiome":
     if not _pdata_f and not search:
-        render_microbiome_workspace(); st.stop()
+        render_microbiome_workspace()
+        if not st.session_state.get("csv_triage_active"): st.stop()
     else:
         with st.expander("🦠 Microbiome Workspace", expanded=False):
             render_microbiome_workspace()
 
 elif _rd_final == "Pharmaceuticals":
     if not _pdata_f and not search:
-        render_pharma_workspace(); st.stop()
+        render_pharma_workspace()
+        if not st.session_state.get("csv_triage_active"): st.stop()
     else:
         with st.expander("💊 Pharmaceuticals Workspace", expanded=False):
             render_pharma_workspace()
 
 elif _rd_final == "Molecular Biology":
     if not _pdata_f and not search:
-        render_molbio_workspace(); st.stop()
+        render_molbio_workspace()
+        if not st.session_state.get("csv_triage_active"): st.stop()
     else:
         with st.expander("⚛️ Molecular Biology Workspace", expanded=False):
             render_molbio_workspace()
 
 elif _rd_final == "Rare Disease":
     if not _pdata_f and not search:
-        render_rare_disease_workspace(); st.stop()
+        render_rare_disease_workspace()
+        if not st.session_state.get("csv_triage_active"): st.stop()
     else:
         with st.expander("🧬 Rare Disease Workspace", expanded=False):
             render_rare_disease_workspace()
