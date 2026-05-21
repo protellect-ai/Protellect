@@ -947,6 +947,17 @@ def fetch_uniprot(query):
         "gfp":"jellyfish (Aequorea victoria) — use human fluorescent reporters",
         "luciferase":"firefly (Photinus pyralis)",
     }
+    # Generic/food terms that hit protein names misleadingly — redirect instead of reject
+    AMBIGUOUS_REDIRECTS = {
+        "gelatin": "⚠️ 'gelatin' is a food product (denatured collagen), not a gene name. Did you mean: ADIPOQ (Adiponectin/GBP28), COL1A1 (collagen source), or MMP2 (Gelatinase A)? Search by gene symbol for a precise result.",
+        "sugar": "⚠️ 'sugar' is not a gene name. Try: SLC2A1 (GLUT1, glucose transporter), GCK (glucokinase), or INS (insulin).",
+        "fat": "⚠️ 'fat' is not a gene name. Try: FASN (fatty acid synthase), ADIPOQ (adiponectin), or PPARG (fat cell regulator).",
+        "calcium": "⚠️ 'calcium' is an ion, not a gene. Try: CACNA1S (calcium channel), CALM1 (calmodulin), or ATP2A1 (SERCA pump).",
+        "vitamin": "⚠️ 'vitamin' is not a gene name. Try: VDR (vitamin D receptor), TNFSF11 (vitamin D pathway), or RBP4 (retinol-binding protein).",
+    }
+    for term, redirect_msg in AMBIGUOUS_REDIRECTS.items():
+        if q_lower == term or q_lower.startswith(term + " "):
+            raise ValueError(redirect_msg)
     q_lower = query.lower().strip()
     for term, species in NON_HUMAN_TERMS.items():
         if term in q_lower:
@@ -1023,6 +1034,52 @@ def fetch_uniprot(query):
         f"(3) the gene symbol is different in humans. "
         f"Try: TP53 · FLNC · BRCA1 · EGFR · ACM2 · ARRB2 · P04637 (TP53 accession)"
     )
+
+def _is_ambiguous_search(query: str, result_gene: str, result_name: str) -> str | None:
+    """
+    Returns a warning string if the search term is ambiguous/generic and
+    the top result may not be what the user intended.
+    Returns None if the match looks direct and unambiguous.
+    """
+    q = query.strip().lower()
+    g = result_gene.strip().lower()
+    n = result_name.strip().lower()
+
+    # If the query matches the gene symbol exactly → no warning
+    if q == g: return None
+    # If the query is a UniProt accession → no warning
+    import re as _re
+    if _re.match(r"^[A-Z][0-9][A-Z0-9]{3}[0-9]$", query.strip(), _re.I): return None
+
+    # Common ambiguous/generic food/substance terms that hit protein names
+    AMBIGUOUS_TERMS = {
+        "gelatin":  ("ADIPOQ (Adiponectin)", "Adiponectin was historically called 'Gelatin-Binding Protein 28' (GBP28) in early literature — it is NOT related to dietary gelatin. If you meant: search the human gene symbol directly, e.g. ADIPOQ, COL1A1 (collagen/gelatin source), or MMP2 (gelatinase A)."),
+        "albumin":  ("ALB (Serum albumin)", "Albumin matches human serum albumin (ALB). If you meant a different protein, search by gene symbol."),
+        "fibrin":   ("FGB/FGA/FGG", "Fibrin is a fibrinogen cleavage product. Search FGB, FGA, or FGG for fibrinogen chains."),
+        "collagen": ("COL1A1 (top hit)", "Multiple collagen genes exist (COL1A1–COL28A1). Search the specific collagen by number (e.g. COL4A1) for precision."),
+        "keratin":  ("KRT1 (top hit)", "Multiple keratin genes exist (KRT1–KRT86). Search the specific keratin number for precision."),
+        "actin":    ("ACTB/ACTA1", "Multiple actin genes exist. ACTB = cytoplasmic beta-actin, ACTA1 = skeletal muscle alpha-actin."),
+        "myosin":   ("MYH7 (top hit)", "Multiple myosin heavy/light chain genes exist. Search the specific myosin (e.g. MYH7, MYL2) for precision."),
+        "hemoglobin":("HBB (top hit)", "Multiple haemoglobin subunit genes: HBA1, HBA2 (alpha), HBB (beta), HBD (delta)."),
+        "elastin":  ("ELN", "ELN = human elastin — correct match."),
+        "casein":   (None, "Casein is a milk protein — no direct human gene equivalent. Try CSNK (casein kinase) if you meant casein kinase."),
+    }
+
+    for term, (likely_hit, explanation) in AMBIGUOUS_TERMS.items():
+        if term in q and g not in q:
+            return (f"🔍 **Search disambiguation:** '{query}' matched **{result_gene}** "
+                    f"because its protein name contains this term. "
+                    f"Top result: {likely_hit}. {explanation}")
+
+    # Generic check: query not in gene name and not in first word of protein name
+    gene_words = g.split()
+    protein_first_word = n.split()[0] if n else ""
+    if q not in gene_words and q != protein_first_word and len(q) > 4:
+        return (f"🔍 **Search note:** '{query}' is not the gene symbol for **{result_gene}** — "
+                f"it matched the protein description. If this is not the protein you intended, "
+                f"search by gene symbol (e.g. {result_gene.upper()}) or UniProt accession for a precise match.")
+
+    return None
 
 @st.cache_data(show_spinner=False, ttl=86400)
 def fetch_clinvar(gene, max_v=150):
@@ -6834,6 +6891,12 @@ if search and query and query!=st.session_state["last"]:
             st.session_state["pdata"]=pdata
             gene=g_gene(pdata); uid=pdata.get("primaryAccession","")
             st.session_state["gene"]=gene; st.session_state["uid"]=uid
+            # ── Disambiguation check ──────────────────────────────────────────
+            try:
+                _pn = pdata.get("proteinDescription",{}).get("recommendedName",{}).get("fullName",{}).get("value","") or ""
+                st.session_state["_search_disambiguation"] = _is_ambiguous_search(query, gene, _pn)
+            except Exception:
+                st.session_state["_search_disambiguation"] = None
             cv=fetch_clinvar(gene,max_v); st.session_state["cv"]=cv
             pdb=fetch_pdb(uid); st.session_state["pdb"]=pdb
             papers=fetch_papers(gene); st.session_state["papers"]=papers
@@ -9186,16 +9249,30 @@ with tab0:
         unsafe_allow_html=True,
     )
 
+    # ── Search disambiguation warning ───────────────────────────────────────
+    _disambig = st.session_state.get("_search_disambiguation")
+    if _disambig:
+        st.markdown(
+            f"<div style='background:#0a0a00;border:1px solid #ffd60a44;border-left:4px solid #ffd60a;"
+            f"border-radius:0 10px 10px 0;padding:.6rem 1rem;margin-bottom:.8rem;font-size:.8rem;color:#b0a040;'>"
+            f"{_disambig}</div>",
+            unsafe_allow_html=True
+        )
+
     # ── Key metrics row ───────────────────────────────────────────────────────
     sm1,sm2,sm3,sm4,sm5,sm6 = st.columns(6)
     n_crit_s = sum(1 for v in scored if v.get("ml_rank")=="CRITICAL")
     n_high_s = sum(1 for v in scored if v.get("ml_rank")=="HIGH")
-    with sm1: st.markdown(mc(len(diseases),"Diseases","#00e5ff"),unsafe_allow_html=True)
-    with sm2: st.markdown(mc(gi.get("n_pathogenic",0),"Pathogenic","#ff2d55","linear-gradient(90deg,#ff2d55,#ff8080)"),unsafe_allow_html=True)
-    with sm3: st.markdown(mc(n_crit_s,"CRITICAL ML","#ff8c42"),unsafe_allow_html=True)
-    with sm4: st.markdown(mc(f"{gnomad_data.get('pLI','?')}","pLI (essential.)","#a855f7") if gnomad_data else mc("N/A","pLI","#3a6080"),unsafe_allow_html=True)
-    with sm5: st.markdown(mc(len(drugs_data),"Known drugs","#00c896"),unsafe_allow_html=True)
-    with sm6: st.markdown(mc(f"{patient_data.get('estimated_global_patients',0)//1000}K" if patient_data.get('estimated_global_patients',0)>0 else "?","Est. patients","#4a90d9"),unsafe_allow_html=True)
+    _pli_display = gnomad_data.get("pLI") if gnomad_data else None
+    _pli_str = f"{_pli_display:.3f}" if isinstance(_pli_display, (int,float)) else ("N/A — not scored" if _pli_display is None else str(_pli_display))
+    _pli_clr = "#22c55e" if (isinstance(_pli_display,(int,float)) and _pli_display>=0.9) else "#ffd60a" if (isinstance(_pli_display,(int,float)) and _pli_display>=0.5) else "#a855f7"
+    _n_path = gi.get("n_pathogenic",0)
+    with sm1: st.markdown(mc(len(diseases),"Associated diseases","#00e5ff"),unsafe_allow_html=True)
+    with sm2: st.markdown(mc(_n_path,f"P/LP variants in ClinVar","#ff2d55","linear-gradient(90deg,#ff2d55,#ff8080)"),unsafe_allow_html=True)
+    with sm3: st.markdown(mc(n_crit_s,"High-priority variants (ML)","#ff8c42") if n_crit_s > 0 else mc("0","High-priority variants","#3a6080"),unsafe_allow_html=True)
+    with sm4: st.markdown(mc(_pli_str,"gnomAD pLI (LoF intolerance)",_pli_clr),unsafe_allow_html=True)
+    with sm5: st.markdown(mc(len(drugs_data),"Known targeted drugs","#00c896"),unsafe_allow_html=True)
+    with sm6: st.markdown(mc(f"{patient_data.get('estimated_global_patients',0)//1000}K" if patient_data.get('estimated_global_patients',0)>0 else "Unknown","Est. patients globally","#4a90d9"),unsafe_allow_html=True)
 
     st.markdown("<hr class='dv'>", unsafe_allow_html=True)
 
