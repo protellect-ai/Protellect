@@ -6873,7 +6873,44 @@ if search and query and query!=st.session_state["last"]:
         )
         st.stop()
     decrement_search()
-    # Clear any previously cached non-human result
+    # ── Pre-search: reject ambiguous/food/substance terms immediately ─────────
+    _q_pre = query.strip().lower()
+    _PRECHECK_REDIRECTS = {
+        "gelatin":   ("ADIPOQ, COL1A1, or MMP2 (Gelatinase A)", "Gelatin is denatured collagen — not a gene name. Adiponectin (ADIPOQ) was historically called 'Gelatin-Binding Protein 28' in early 1990s literature, which is why it appears."),
+        "sugar":     ("SLC2A1, GCK, or INS", "Sugar is not a gene. Try: SLC2A1 (GLUT1 glucose transporter), GCK (glucokinase), or INS (insulin)."),
+        "fat":       ("FASN, ADIPOQ, or PPARG", "Fat is not a gene name. Try: FASN (fatty acid synthase), ADIPOQ (adiponectin), or PPARG (fat cell differentiation)."),
+        "calcium":   ("CACNA1S, CALM1, or ATP2A1", "Calcium is an ion, not a gene. Try: CACNA1S (calcium channel), CALM1 (calmodulin), or ATP2A1 (SERCA pump)."),
+        "vitamin":   ("VDR, RBP4, or TNFSF11", "Vitamin is not a gene name. Try: VDR (vitamin D receptor), RBP4 (retinol-binding protein), or SLC23A1 (vitamin C transporter)."),
+        "collagen":  ("COL1A1, COL4A1, or COL2A1", "Multiple collagen genes exist (COL1A1–COL28A1). Search a specific collagen type (e.g. COL4A1) for precision."),
+        "protein":   (None, "Too generic. Search a specific gene name (e.g. TP53, BRCA1, FLNC, EGFR) or UniProt accession."),
+        "enzyme":    (None, "Too generic. Search a specific enzyme gene name (e.g. LDH, ALT/GPT, ACE) or EC number."),
+        "receptor":  (None, "Too generic. Search a specific receptor gene (e.g. EGFR, ADRB2, GRIA1, GABRA1)."),
+    }
+    _precheck_hit = None
+    for _term, (_suggest, _explain) in _PRECHECK_REDIRECTS.items():
+        if _q_pre == _term or _q_pre.startswith(_term + " ") or _q_pre.endswith(" " + _term):
+            _precheck_hit = (_term, _suggest, _explain)
+            break
+    if _precheck_hit:
+        _t, _s, _e = _precheck_hit
+        st.markdown(
+            f"<div style='background:#0a0800;border:2px solid #ffd60a44;border-left:4px solid #ffd60a;"
+            f"border-radius:0 12px 12px 0;padding:1rem 1.2rem;margin:.5rem 0;'>"
+            f"<div style='color:#ffd60a;font-weight:800;font-size:.9rem;margin-bottom:.4rem;'>"
+            f"🔍 Did you mean a gene name?</div>"
+            f"<div style='color:#b0a040;font-size:.82rem;line-height:1.65;'>{_e}</div>"
+            f"{'<div style=color:#4a90d9;font-size:.79rem;margin-top:.5rem;>Try: <b>' + _s + '</b></div>' if _s else ''}"
+            f"</div>",
+            unsafe_allow_html=True
+        )
+        # Still proceed with the search so they see what matched — but flag it
+        st.session_state["_search_disambiguation"] = (
+            f"🔍 **Search note:** '{query}' is not a gene name — "
+            f"it matched a protein whose historical name contains this term. "
+            f"{'Suggested gene symbols: **' + _s + '**' if _s else 'Search by gene symbol for a precise result.'}"
+        )
+
+    # Clear cache on every search so stale results never persist
     fetch_uniprot.clear()
     with st.spinner("🔬 Fetching UniProt · ClinVar · AlphaFold · PubMed…"):
         try:
@@ -9249,12 +9286,23 @@ with tab0:
         unsafe_allow_html=True,
     )
 
-    # ── Search disambiguation warning ───────────────────────────────────────
+    # ── Search disambiguation warning (persistent — survives cache) ──────────
     _disambig = st.session_state.get("_search_disambiguation")
+    # Also detect at render time from the actual gene loaded
+    _loaded_gene = st.session_state.get("gene","")
+    _loaded_query = st.session_state.get("last","")
+    _KNOWN_INDIRECT = {
+        "ADIPOQ": ("gelatin","Adiponectin (ADIPOQ) was historically called 'Gelatin-Binding Protein 28' in 1990s literature. It has nothing to do with dietary gelatin. If you wanted: COL1A1 (collagen, the source of gelatin) or MMP2 (Gelatinase A)."),
+        "ALB":    ("albumin","ALB is human serum albumin — if you searched 'albumin' and expected a different protein, search by gene symbol."),
+    }
+    if not _disambig and _loaded_gene in _KNOWN_INDIRECT:
+        _term, _explain = _KNOWN_INDIRECT[_loaded_gene]
+        if _loaded_query.lower().strip() == _term or _term in _loaded_query.lower():
+            _disambig = f"🔍 **Search note:** '{_loaded_query}' matched **{_loaded_gene}** — {_explain}"
     if _disambig:
         st.markdown(
-            f"<div style='background:#0a0a00;border:1px solid #ffd60a44;border-left:4px solid #ffd60a;"
-            f"border-radius:0 10px 10px 0;padding:.6rem 1rem;margin-bottom:.8rem;font-size:.8rem;color:#b0a040;'>"
+            f"<div style='background:#0a0a00;border:1px solid #ffd60a55;border-left:4px solid #ffd60a;"
+            f"border-radius:0 10px 10px 0;padding:.7rem 1rem;margin-bottom:.8rem;font-size:.8rem;color:#c0b050;'>"
             f"{_disambig}</div>",
             unsafe_allow_html=True
         )
@@ -11371,9 +11419,8 @@ with tab7:
         "as opposed to being an associated bystander or expression change without causal mutation.</div>",
         unsafe_allow_html=True,
     )
-    
+    ws = st.session_state.get("workspace", [])
     dis_search_ws = st.session_state.get("disease_search","")
-    
 
     if not ws:
         st.markdown(
