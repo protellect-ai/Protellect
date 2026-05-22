@@ -947,18 +947,9 @@ def fetch_uniprot(query):
         "gfp":"jellyfish (Aequorea victoria) — use human fluorescent reporters",
         "luciferase":"firefly (Photinus pyralis)",
     }
-    # Generic/food terms that hit protein names misleadingly — redirect instead of reject
-    AMBIGUOUS_REDIRECTS = {
-        "gelatin": "⚠️ 'gelatin' is a food product (denatured collagen), not a gene name. Did you mean: ADIPOQ (Adiponectin/GBP28), COL1A1 (collagen source), or MMP2 (Gelatinase A)? Search by gene symbol for a precise result.",
-        "sugar": "⚠️ 'sugar' is not a gene name. Try: SLC2A1 (GLUT1, glucose transporter), GCK (glucokinase), or INS (insulin).",
-        "fat": "⚠️ 'fat' is not a gene name. Try: FASN (fatty acid synthase), ADIPOQ (adiponectin), or PPARG (fat cell regulator).",
-        "calcium": "⚠️ 'calcium' is an ion, not a gene. Try: CACNA1S (calcium channel), CALM1 (calmodulin), or ATP2A1 (SERCA pump).",
-        "vitamin": "⚠️ 'vitamin' is not a gene name. Try: VDR (vitamin D receptor), TNFSF11 (vitamin D pathway), or RBP4 (retinol-binding protein).",
-    }
-    for term, redirect_msg in AMBIGUOUS_REDIRECTS.items():
-        if q_lower == term or q_lower.startswith(term + " "):
-            raise ValueError(redirect_msg)
-    q_lower = query.lower().strip()
+    # Note: ambiguous food/substance terms (gelatin, sugar, etc.) are handled
+    # by the pre-search check in the main app flow — NOT here.
+    # Raising ValueError here would break the fetch and show "Unknown protein".
     for term, species in NON_HUMAN_TERMS.items():
         if term in q_lower:
             raise ValueError(
@@ -5868,7 +5859,7 @@ if not st.session_state.get("auth_user"):
 for k,v0 in {"pdata":None,"cv":None,"pdb":"","papers":[],"scored":[],"gene":"","uid":"",
              "assay":"","last":"","csv_df":None,"csv_type":"","goal_label":GOAL_OPTIONS[0],
              "goal_custom":"","sensitivity":50,"gi":None,"partner_query":"",
-             "partner_cv":None,"partner_gi":None,"disease_search":"","disease_proteins":[],"csv_triage_active":False,"show_tutorial":True,"gnomad":{},"string":[],"trials":[],"drugs":[],"abstracts":[],"org":{},"ai_result":{},"ot":{},"am":{},"isoforms":[],"hotspots":[],"patients":{},"excel_bytes":None,"domain_ctx":{},"acmg_auto":{},"conflicts":[],"ml_result":{},"lab_configured":False,"lab_chat_open":False,"lab_setup_complete":False,"lab_name":"","lab_pi":"","lab_focus":"","lab_domain":"","lab_proteins":[],"lab_diseases":[],"lab_techniques":[],"lab_budget":"medium","lab_model_organism":"","lab_goal":"","lab_chat_history":[],"protein_query_val":"",
+             "partner_cv":None,"partner_gi":None,"disease_search":"","disease_proteins":[],"csv_triage_active":False,"show_tutorial":True,"gnomad":{},"string":[],"trials":[],"drugs":[],"abstracts":[],"org":{},"ai_result":{},"ot":{},"am":{},"isoforms":[],"hotspots":[],"patients":{},"excel_bytes":None,"domain_ctx":{},"acmg_auto":{},"conflicts":[],"ml_result":{},"lab_configured":False,"lab_chat_open":False,"lab_setup_complete":False,"lab_name":"","lab_pi":"","lab_focus":"","lab_domain":"","lab_proteins":[],"lab_diseases":[],"lab_techniques":[],"lab_budget":"medium","lab_model_organism":"","lab_goal":"","lab_chat_history":[],"protein_query_val":"","screener_results":[],"screener_genes_run":[],"screener_running":False,"screener_filters":{},"screener_history":[],
              "research_domain":None,"domain_expanded":None,"_last_domain":None}.items():
     if k not in st.session_state: st.session_state[k]=v0
 
@@ -9029,7 +9020,7 @@ def render_lab_chatbot():
         role = msg["role"]
         text = msg["content"]
         # Remove the config line from display
-        display = re.sub(r'PROTELLECT_CONFIG:\{.*?\}', '', text, flags=re.DOTALL).strip()
+        display = re.sub(r'PROTELLECT_CONFIG:[{].*?[}]', '', text, flags=re.DOTALL).strip()
         if not display: continue
         bg  = "#0a1820" if role == "assistant" else "#14002a"
         clr = "#c084fc" if role == "assistant" else "#b0d8f0"
@@ -9103,7 +9094,7 @@ def render_lab_chatbot():
                     changes = apply_config_to_workspace(cfg)
                     st.session_state["_lab_changes_pending"] = changes
                     st.session_state["_lab_just_configured"] = True
-                    clean_reply = re.sub(r'PROTELLECT_CONFIG:\{.*?\}', '', reply, flags=re.DOTALL).strip()
+                    clean_reply = re.sub(r'PROTELLECT_CONFIG:[{].*?[}]', '', reply, flags=re.DOTALL).strip()
                     chat_hist.append({"role":"assistant","content":clean_reply})
                 else:
                     chat_hist.append({"role":"assistant","content":reply})
@@ -9134,7 +9125,7 @@ def render_lab_chatbot():
                         changes = apply_config_to_workspace(cfg)
                         st.session_state["_lab_changes_pending"] = changes
                         st.session_state["_lab_just_configured"] = True
-                        clean_reply = re.sub(r'PROTELLECT_CONFIG:\{.*?\}', '', reply, flags=re.DOTALL).strip()
+                        clean_reply = re.sub(r'PROTELLECT_CONFIG:[{].*?[}]', '', reply, flags=re.DOTALL).strip()
                         chat_hist.append({"role":"assistant","content":clean_reply})
                     else:
                         chat_hist.append({"role":"assistant","content":reply})
@@ -11406,6 +11397,446 @@ ASSAY_RESOURCES = [
         "use_case": "For splice-site and regulatory variants — see conservation and functional context",
     },
 ]
+
+
+# ════════════════════════════════════════════════════════════════════════════
+#  TAB 6 — PROTEIN SCREENER & LAB CONFIGURATOR
+#  Full protein screening engine with filtering + chatbot workspace modifier
+# ════════════════════════════════════════════════════════════════════════════
+with tab6:
+    _rd6 = st.session_state.get("research_domain","")
+    _lab_done = st.session_state.get("lab_setup_complete", False)
+    _lab_prots = st.session_state.get("lab_proteins", [])
+    _lab_focus = st.session_state.get("lab_focus","")
+
+    # ── HEADER ────────────────────────────────────────────────────────────────
+    st.markdown("""
+    <div style='background:linear-gradient(135deg,#040d18,#08142a);border:1px solid #00e5ff18;
+    border-radius:14px;padding:1rem 1.4rem;margin-bottom:1rem;display:flex;align-items:center;gap:14px;'>
+      <span style='font-size:1.6rem;'>🔭</span>
+      <div>
+        <div style='color:#00e5ff;font-weight:800;font-size:1.05rem;'>Protein Screener & Lab Configurator</div>
+        <div style='color:#1e4060;font-size:.77rem;'>
+          Screen any list of proteins · Filter by GI score, pLI, disease relevance, druggability ·
+          Configure your entire workspace with the AI lab chatbot
+        </div>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    _scr_mode = st.radio("", [
+        "🔭 Protein Screener",
+        "🤖 AI Lab Configurator",
+        "📋 Screener History",
+    ], horizontal=True, key="tab6_mode")
+
+    # ════════════════════════════════════════════════════════════════════════
+    #  MODE 1: PROTEIN SCREENER
+    # ════════════════════════════════════════════════════════════════════════
+    if _scr_mode == "🔭 Protein Screener":
+        st.markdown("<hr class='dv'>", unsafe_allow_html=True)
+
+        # ── Input ──────────────────────────────────────────────────────────
+        col_in1, col_in2 = st.columns([2, 1])
+        with col_in1:
+            sh("🧬", "Gene List to Screen")
+            _default_genes = ", ".join(_lab_prots) if _lab_prots else ""
+            _genes_raw = st.text_area(
+                "Enter gene symbols (comma or newline separated):",
+                value=_default_genes,
+                placeholder="BRCA1, TP53, KRAS, EGFR, SCN1A, SYNGAP1, LMNA, PKD1...",
+                height=120, key="screener_genes",
+                help="Paste any list — gene symbols, UniProt IDs, or disease-linked genes from your CSV uploads"
+            )
+
+        with col_in2:
+            sh("⚙️", "Filter Thresholds")
+            _min_gi = st.slider("Min. genomic integrity (%)", 0, 100, 0, 1, key="scr_gi",
+                help="ClinVar P/LP density per 100 aa. >5% = disease-critical.")
+            _min_pli = st.slider("Min. gnomAD pLI", 0.0, 1.0, 0.0, 0.05, key="scr_pli",
+                help="LoF intolerance. >0.9 = severely constrained essential gene.")
+            _require_drug = st.checkbox("Must have known drug", False, key="scr_drug",
+                help="Only show proteins with DGIdb or OpenTargets druggability evidence")
+            _require_disease = st.checkbox("Must have disease association", False, key="scr_dis",
+                help="Only show proteins with ClinVar disease links")
+            _max_results = st.selectbox("Max proteins to screen", [10, 25, 50, 100], index=1, key="scr_max")
+
+        # ── Screen button ──────────────────────────────────────────────────
+        _run_screen = st.button("🚀 Run Screen", type="primary", use_container_width=True, key="run_screener")
+
+        if _run_screen:
+            # Parse gene list
+            _raw = _genes_raw.replace("\n",",").replace(";",",")
+            _gene_list = [g.strip().upper() for g in _raw.split(",") if g.strip()]
+            _gene_list = list(dict.fromkeys(_gene_list))[:int(_max_results)]  # deduplicate
+
+            if not _gene_list:
+                st.warning("Enter at least one gene symbol to screen.")
+            else:
+                st.session_state["screener_results"] = []
+                st.session_state["screener_genes_run"] = _gene_list
+                st.session_state["screener_running"] = True
+                st.session_state["screener_filters"] = {
+                    "min_gi": _min_gi, "min_pli": _min_pli,
+                    "require_drug": _require_drug, "require_disease": _require_disease,
+                }
+
+        # ── Run screening loop ─────────────────────────────────────────────
+        if st.session_state.get("screener_running") and st.session_state.get("screener_genes_run"):
+            _genes_to_run = st.session_state["screener_genes_run"]
+            _results = st.session_state.get("screener_results", [])
+            _already_done = {r["gene"] for r in _results}
+            _todo = [g for g in _genes_to_run if g not in _already_done]
+            _filters = st.session_state.get("screener_filters", {})
+
+            if _todo:
+                _prog = st.progress(len(_results)/len(_genes_to_run),
+                    text=f"Screening {_todo[0]}… ({len(_results)}/{len(_genes_to_run)})")
+                _status = st.empty()
+
+                for _g in _todo[:3]:  # Process 3 at a time per rerun
+                    _status.markdown(
+                        f"<div style='color:#00e5ff;font-size:.8rem;'>🔬 Fetching {_g} from ClinVar + gnomAD + UniProt...</div>",
+                        unsafe_allow_html=True
+                    )
+                    try:
+                        _pd = fetch_uniprot(_g)
+                        _gname = g_gene(_pd)
+                        _seqlen = len(g_seq(_pd)) if g_seq(_pd) else 1
+                        _cvd = fetch_clinvar(_gname, max_v=50)
+                        _gnd = fetch_gnomad(_gname)
+                        _dis = g_diseases(_pd)
+                        _gi_d = compute_gi(_cvd, _seqlen)
+                        _druggable = bool(g_gpcr(_pd)) or any(
+                            k in " ".join(kw.get("value","") for kw in _pd.get("keywords",[])).lower()
+                            for k in ["kinase","nuclear receptor","protease","channel"]
+                        )
+                        _pli_v = _gnd.get("pLI",0) or 0
+                        _gi_v = _gi_d.get("density",0)*100 if _gi_d else 0
+                        _n_plp = _gi_d.get("n_pathogenic",0) if _gi_d else 0
+                        _n_dis = len(_dis)
+
+                        # ML score
+                        _ml = score_variant_ml(
+                            consequence="frameshift" if _pli_v>=0.9 else "missense",
+                            clinvar_stars=min(4, int(_n_plp/max(_gi_d.get("n_total",1),1)*20)) if _gi_d else 0,
+                            pli=_pli_v, cv_density=_gi_v,
+                            gene_total_cv=_gi_d.get("n_total",0) if _gi_d else 0,
+                            gene_plp_count=_n_plp,
+                            oe_lof_upper=_gnd.get("oe_lof_upper",1) or 1,
+                            mis_z=_gnd.get("mis_z",0) or 0,
+                        )
+
+                        _row = {
+                            "gene": _gname, "uid": _pd.get("primaryAccession",""),
+                            "seq_len": _seqlen,
+                            "n_diseases": _n_dis, "diseases": [d.get("name","") for d in _dis[:3]],
+                            "n_plp": _n_plp,
+                            "gi_score": round(_gi_v,1),
+                            "pli": round(_pli_v,3),
+                            "oe_lof_upper": round(_gnd.get("oe_lof_upper",1) or 1,3),
+                            "mis_z": round(_gnd.get("mis_z",0) or 0,2),
+                            "ml_prob": _ml.get("probability",0),
+                            "ml_tier": _ml.get("tier",4),
+                            "druggable": _druggable,
+                            "verdict": _ml.get("label",""),
+                            "error": None,
+                        }
+                    except Exception as _e:
+                        _row = {"gene":_g,"error":str(_e)[:60],"ml_tier":4,"ml_prob":0,
+                                "gi_score":0,"pli":0,"n_plp":0,"n_diseases":0,
+                                "diseases":[],"druggable":False,"verdict":"ERROR"}
+                    _results.append(_row)
+
+                st.session_state["screener_results"] = _results
+                if len(_results) >= len(_genes_to_run):
+                    st.session_state["screener_running"] = False
+                    # Save to history
+                    hist = st.session_state.get("screener_history", [])
+                    hist.append({
+                        "genes": _genes_to_run,
+                        "results": _results,
+                        "filters": _filters,
+                        "timestamp": __import__("datetime").datetime.now().strftime("%Y-%m-%d %H:%M"),
+                    })
+                    st.session_state["screener_history"] = hist[-5:]  # keep last 5
+                st.rerun()
+
+        # ── Results table ──────────────────────────────────────────────────
+        _results = st.session_state.get("screener_results", [])
+        _filters = st.session_state.get("screener_filters", {})
+
+        if _results:
+            # Apply filters
+            _filtered = [r for r in _results if not r.get("error") and
+                r.get("gi_score",0) >= _filters.get("min_gi",0) and
+                r.get("pli",0) >= _filters.get("min_pli",0) and
+                (not _filters.get("require_drug") or r.get("druggable")) and
+                (not _filters.get("require_disease") or r.get("n_diseases",0)>0)
+            ]
+            _errors = [r for r in _results if r.get("error")]
+
+            # Sort by ML probability
+            _filtered.sort(key=lambda x: x.get("ml_prob",0), reverse=True)
+
+            st.markdown(f"""
+            <div style='display:flex;gap:1rem;margin:.8rem 0;flex-wrap:wrap;'>
+              <div style='background:#040d18;border:1px solid #22c55e22;border-radius:8px;padding:6px 14px;'>
+                <span style='color:#22c55e;font-weight:700;font-size:.9rem;'>{sum(1 for r in _filtered if r.get("ml_tier")==1)}</span>
+                <span style='color:#1e4060;font-size:.72rem;'> Tier 1 — Pursue</span>
+              </div>
+              <div style='background:#040d18;border:1px solid #ffd60a22;border-radius:8px;padding:6px 14px;'>
+                <span style='color:#ffd60a;font-weight:700;font-size:.9rem;'>{sum(1 for r in _filtered if r.get("ml_tier")==2)}</span>
+                <span style='color:#1e4060;font-size:.72rem;'> Tier 2 — Investigate</span>
+              </div>
+              <div style='background:#040d18;border:1px solid #ff8c4222;border-radius:8px;padding:6px 14px;'>
+                <span style='color:#ff8c42;font-weight:700;font-size:.9rem;'>{sum(1 for r in _filtered if r.get("ml_tier")==3)}</span>
+                <span style='color:#1e4060;font-size:.72rem;'> Tier 3 — Low priority</span>
+              </div>
+              <div style='background:#040d18;border:1px solid #ff2d5522;border-radius:8px;padding:6px 14px;'>
+                <span style='color:#ff2d55;font-weight:700;font-size:.9rem;'>{sum(1 for r in _filtered if r.get("ml_tier")==4)}</span>
+                <span style='color:#1e4060;font-size:.72rem;'> Tier 4 — Deprioritise</span>
+              </div>
+              <div style='background:#040d18;border:1px solid #3a608022;border-radius:8px;padding:6px 14px;'>
+                <span style='color:#3a6080;font-weight:700;font-size:.9rem;'>{len(_filtered)}</span>
+                <span style='color:#1e4060;font-size:.72rem;'> passed filters / {len(_results)} total</span>
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # Results table header
+            _hdr = st.columns([1.4, 0.6, 0.6, 0.6, 0.6, 0.6, 1.2, 1.4, 0.8])
+            for col, h in zip(_hdr, ["Gene","GI%","P/LP","pLI","mis_z","Diseases","Tier","Verdict","Action"]):
+                col.markdown(f"<div style='color:#1e4060;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:4px 0;'>{h}</div>", unsafe_allow_html=True)
+
+            for row in _filtered[:50]:
+                _tc = {"1":"#22c55e","2":"#ffd60a","3":"#ff8c42","4":"#ff2d55"}.get(str(row.get("ml_tier",4)),"#3a6080")
+                _cols = st.columns([1.4, 0.6, 0.6, 0.6, 0.6, 0.6, 1.2, 1.4, 0.8])
+                _cols[0].markdown(f"<div style='color:#b0d8f0;font-weight:700;font-size:.82rem;padding:4px 0;'>{row.get('gene','?')}</div>", unsafe_allow_html=True)
+                _cols[1].markdown(f"<div style='color:{'#ff2d55' if row.get('gi_score',0)>10 else '#ffd60a' if row.get('gi_score',0)>5 else '#3a6080'};font-size:.78rem;padding:4px 0;'>{row.get('gi_score',0):.1f}%</div>", unsafe_allow_html=True)
+                _cols[2].markdown(f"<div style='color:#b0d8f0;font-size:.78rem;padding:4px 0;'>{row.get('n_plp',0)}</div>", unsafe_allow_html=True)
+                _cols[3].markdown(f"<div style='color:{'#22c55e' if row.get('pli',0)>=0.9 else '#ffd60a' if row.get('pli',0)>=0.5 else '#3a6080'};font-size:.78rem;padding:4px 0;'>{row.get('pli',0):.3f}</div>", unsafe_allow_html=True)
+                _cols[4].markdown(f"<div style='color:#b0d8f0;font-size:.78rem;padding:4px 0;'>{row.get('mis_z',0):.1f}</div>", unsafe_allow_html=True)
+                _cols[5].markdown(f"<div style='color:#b0d8f0;font-size:.78rem;padding:4px 0;'>{row.get('n_diseases',0)}</div>", unsafe_allow_html=True)
+                _cols[6].markdown(f"<div style='background:{_tc}18;color:{_tc};font-size:.7rem;font-weight:700;padding:3px 8px;border-radius:5px;border:1px solid {_tc}33;display:inline-block;'>Tier {row.get('ml_tier',4)}</div>", unsafe_allow_html=True)
+                _cols[7].markdown(f"<div style='color:{_tc};font-size:.7rem;padding:4px 0;'>{str(row.get('verdict',''))[:28]}</div>", unsafe_allow_html=True)
+                if _cols[8].button("Analyse →", key=f"scr_go_{row.get('gene','')}", use_container_width=True):
+                    st.session_state["_trigger_search"] = row.get("gene","")
+                    st.session_state["protein_query_val"] = row.get("gene","")
+                    st.rerun()
+
+            if _errors:
+                with st.expander(f"⚠ {len(_errors)} proteins could not be fetched"):
+                    for r in _errors:
+                        st.markdown(f"<div style='color:#3a6080;font-size:.74rem;'>{r['gene']}: {r.get('error','unknown error')}</div>", unsafe_allow_html=True)
+
+            # Export
+            if st.button("📥 Export screen results as CSV", key="scr_export"):
+                import csv, io
+                _buf = io.StringIO()
+                _w = csv.DictWriter(_buf, fieldnames=["gene","uid","seq_len","n_diseases","n_plp","gi_score","pli","oe_lof_upper","mis_z","ml_prob","ml_tier","druggable","verdict","error"])
+                _w.writeheader()
+                for r in _filtered: _w.writerow({k: r.get(k,"") for k in _w.fieldnames})
+                st.download_button("⬇ Download CSV", _buf.getvalue().encode(), f"protellect_screen_{__import__('datetime').datetime.now().strftime('%Y%m%d_%H%M')}.csv", "text/csv", key="scr_dl")
+
+        elif not st.session_state.get("screener_running"):
+            st.markdown(
+                "<div style='background:#040d18;border:1px solid #0d2545;border-radius:10px;"
+                "padding:2.5rem;text-align:center;color:#3a6080;margin-top:1rem;'>"
+                "<div style='font-size:1.3rem;margin-bottom:.5rem;'>🔭</div>"
+                "<div style='font-size:.9rem;font-weight:600;color:#b0d8f0;margin-bottom:.4rem;'>Ready to screen</div>"
+                "<div style='font-size:.82rem;'>Enter gene symbols above and click Run Screen. "
+                "The screener queries ClinVar, gnomAD, and the ML model for every protein in parallel "
+                "and returns a ranked triage table.</div></div>",
+                unsafe_allow_html=True
+            )
+
+    # ════════════════════════════════════════════════════════════════════════
+    #  MODE 2: AI LAB CONFIGURATOR (FULL CHATBOT)
+    # ════════════════════════════════════════════════════════════════════════
+    elif _scr_mode == "🤖 AI Lab Configurator":
+        st.markdown("<hr class='dv'>", unsafe_allow_html=True)
+        sh("🤖", "AI Lab Configurator")
+
+        # Show current configuration
+        if _lab_done:
+            _cfg_dom  = st.session_state.get("lab_domain","—")
+            _cfg_goal = st.session_state.get("lab_goal","—")
+            _cfg_prot = st.session_state.get("lab_proteins",[])
+            _cfg_dis  = st.session_state.get("lab_diseases",[])
+            _cfg_tech = st.session_state.get("lab_techniques",[])
+            _cfg_sens = st.session_state.get("sensitivity",50)
+            _cfg_org  = st.session_state.get("lab_model_organism","—")
+            st.markdown(
+                f"<div style='background:#0a1a0a;border:1px solid #22c55e33;border-radius:12px;"
+                f"padding:1rem 1.4rem;margin-bottom:1rem;'>"
+                f"<div style='color:#22c55e;font-weight:700;font-size:.85rem;margin-bottom:.6rem;'>✅ Workspace configured</div>"
+                f"<div style='display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;'>"
+                f"<div><span style='color:#1e4060;font-size:.65rem;text-transform:uppercase;'>Domain</span><br>"
+                f"<span style='color:#b0d8f0;font-size:.82rem;font-weight:600;'>{_cfg_dom}</span></div>"
+                f"<div><span style='color:#1e4060;font-size:.65rem;text-transform:uppercase;'>Goal</span><br>"
+                f"<span style='color:#b0d8f0;font-size:.82rem;'>{_cfg_goal}</span></div>"
+                f"<div><span style='color:#1e4060;font-size:.65rem;text-transform:uppercase;'>Sensitivity</span><br>"
+                f"<span style='color:#b0d8f0;font-size:.82rem;'>{_cfg_sens}</span></div>"
+                f"<div><span style='color:#1e4060;font-size:.65rem;text-transform:uppercase;'>Proteins</span><br>"
+                f"<span style='color:#b0d8f0;font-size:.82rem;'>{', '.join(_cfg_prot[:4]) or '—'}</span></div>"
+                f"<div><span style='color:#1e4060;font-size:.65rem;text-transform:uppercase;'>Diseases</span><br>"
+                f"<span style='color:#b0d8f0;font-size:.82rem;'>{', '.join(_cfg_dis[:2]) or '—'}</span></div>"
+                f"<div><span style='color:#1e4060;font-size:.65rem;text-transform:uppercase;'>Organism</span><br>"
+                f"<span style='color:#b0d8f0;font-size:.82rem;'>{_cfg_org}</span></div>"
+                f"</div></div>",
+                unsafe_allow_html=True
+            )
+            # Auto-populate screener with lab proteins
+            if _cfg_prot:
+                if st.button(f"→ Screen all {len(_cfg_prot)} lab proteins now", type="primary", key="cfg_to_screener"):
+                    st.session_state["screener_genes_run"] = [g.upper() for g in _cfg_prot]
+                    st.session_state["screener_running"] = True
+                    st.session_state["screener_results"] = []
+                    st.session_state["screener_filters"] = {"min_gi":0,"min_pli":0,"require_drug":False,"require_disease":False}
+                    # Switch to screener tab
+                    st.rerun()
+
+        # ── Chat interface (full-page version) ───────────────────────────────
+        st.markdown(
+            "<div style='background:#040d18;border:1px solid #c084fc22;border-radius:12px;padding:14px 16px;'>",
+            unsafe_allow_html=True
+        )
+        st.markdown(
+            "<div style='color:#c084fc;font-size:.85rem;font-weight:700;margin-bottom:.3rem;'>Lab Setup Assistant</div>"
+            "<div style='color:#3a1060;font-size:.76rem;margin-bottom:.8rem;'>Tell me about your lab — I'll configure the domain, research goal, sensitivity thresholds, and protein list automatically.</div>",
+            unsafe_allow_html=True
+        )
+
+        _chat_hist = st.session_state.get("lab_chat_history",[])
+
+        # Show chat history
+        _chat_container = st.container()
+        with _chat_container:
+            for _msg in _chat_hist[-10:]:
+                _role = _msg["role"]
+                _text = _msg["content"]
+                # Remove config JSON from display
+                import re as _re6
+                _disp = _re6.sub(r'PROTELLECT_CONFIG:[{].*?[}]','',_text,flags=_re6.DOTALL).strip()
+                if not _disp: continue
+                _bg = "#0a1820" if _role=="assistant" else "#14002a"
+                _clr = "#c084fc" if _role=="assistant" else "#b0d8f0"
+                _pref = "🤖 " if _role=="assistant" else "👤 "
+                st.markdown(
+                    f"<div style='background:{_bg};border-radius:10px;padding:9px 12px;margin:.3rem 0;"
+                    f"font-size:.79rem;color:{_clr};line-height:1.6;'>{_pref}{_disp}</div>",
+                    unsafe_allow_html=True
+                )
+
+        # Input + quick starts
+        if not _lab_done:
+            _user_msg = st.text_area(
+                "", placeholder="e.g. We study genetic epilepsies — mainly SCN1A and SCN2A variants causing Dravet syndrome. We use patch-clamp, iPSC neurons, and Xenopus oocyte expression...",
+                height=100, key="lab_chat_main_input", label_visibility="collapsed"
+            )
+            _col_send, _col_clear = st.columns([3,1])
+            with _col_send:
+                _send = st.button("Send →", type="primary", key="lab_chat_main_send", use_container_width=True)
+            with _col_clear:
+                if st.button("Clear", key="lab_chat_main_clear", use_container_width=True):
+                    st.session_state["lab_chat_history"] = []
+                    st.session_state["lab_setup_complete"] = False
+                    st.session_state["_search_disambiguation"] = None
+                    st.rerun()
+
+            if _send and _user_msg.strip():
+                _chat_hist.append({"role":"user","content":_user_msg.strip()})
+                _api_msgs = _chat_hist[-10:]
+                if len(_chat_hist)==1:
+                    _api_msgs = [{"role":"assistant","content":"Hi! I'm your Protellect setup assistant — I'll configure your entire workspace in a few questions. What proteins or diseases does your lab focus on, and what's your main research goal?"},{"role":"user","content":_user_msg.strip()}]
+                with st.spinner("AI is thinking..."):
+                    _reply = call_claude_api(_api_msgs)
+                _cfg6 = extract_config_from_response(_reply)
+                if _cfg6:
+                    _changes6 = apply_config_to_workspace(_cfg6)
+                    st.session_state["_lab_changes_pending"] = _changes6
+                    st.session_state["_lab_just_configured"] = True
+                    _clean = _re6.sub(r'PROTELLECT_CONFIG:[{].*?[}]','',_reply,flags=_re6.DOTALL).strip()
+                    _chat_hist.append({"role":"assistant","content":_clean})
+                else:
+                    _chat_hist.append({"role":"assistant","content":_reply})
+                st.session_state["lab_chat_history"] = _chat_hist
+                st.rerun()
+
+            # Quick-start cards
+            if not _chat_hist:
+                st.markdown("<div style='color:#3a1060;font-size:.72rem;margin:.7rem 0 .3rem;'>Or pick a lab profile to get started instantly:</div>", unsafe_allow_html=True)
+                _qs = st.columns(2)
+                _quick = [
+                    ("🧬 Rare disease / genetics","We're a rare disease genetics lab. We study Mendelian disorders using WES/WGS. Our goal is clinical variant interpretation and VUS prioritisation. We work with patient samples and iPSC."),
+                    ("🎗 Cancer biology","We're a cancer biology lab focusing on solid tumours — mainly KRAS-driven cancers. We want to identify therapeutic targets and understand resistance to targeted therapy."),
+                    ("🧠 Neurogenetics / epilepsy","We study genetic epilepsies — mainly SCN1A and SCN2A variants. We use patch-clamp, iPSC neurons, and mouse models. Goal: precision medicine for channelopathies."),
+                    ("💊 Drug discovery / pharma","We're a pharma drug discovery team targeting GPCRs and kinases. We want ADMET-aware target screening and druggability assessment. High-throughput capacity."),
+                ]
+                for i, (label, msg) in enumerate(_quick):
+                    with _qs[i%2]:
+                        if st.button(label, key=f"qs6_{i}", use_container_width=True):
+                            _chat_hist.append({"role":"user","content":msg})
+                            with st.spinner("Configuring..."):
+                                _r = call_claude_api([{"role":"user","content":msg}])
+                            _c = extract_config_from_response(_r)
+                            if _c:
+                                apply_config_to_workspace(_c)
+                                st.session_state["_lab_just_configured"] = True
+                                _clean = _re6.sub(r'PROTELLECT_CONFIG:[{].*?[}]','',_r,flags=_re6.DOTALL).strip()
+                                _chat_hist.append({"role":"assistant","content":_clean})
+                            else:
+                                _chat_hist.append({"role":"assistant","content":_r})
+                            st.session_state["lab_chat_history"] = _chat_hist
+                            st.session_state["lab_chat_open"] = False
+                            st.rerun()
+        else:
+            if st.button("🔄 Reconfigure workspace", key="tab6_reconfig", type="primary"):
+                st.session_state["lab_setup_complete"] = False
+                st.session_state["lab_chat_history"] = []
+                st.rerun()
+
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    # ════════════════════════════════════════════════════════════════════════
+    #  MODE 3: SCREENER HISTORY
+    # ════════════════════════════════════════════════════════════════════════
+    elif _scr_mode == "📋 Screener History":
+        st.markdown("<hr class='dv'>", unsafe_allow_html=True)
+        sh("📋", "Previous Screens")
+        _hist = st.session_state.get("screener_history",[])
+        if not _hist:
+            st.info("No screens run yet. Go to Protein Screener and run your first screen.")
+        else:
+            for i, _h in enumerate(reversed(_hist)):
+                with st.expander(f"Screen {len(_hist)-i} · {_h.get('timestamp','')} · {len(_h['genes'])} proteins"):
+                    _res = _h.get("results",[])
+                    _t1 = sum(1 for r in _res if r.get("ml_tier")==1)
+                    _t2 = sum(1 for r in _res if r.get("ml_tier")==2)
+                    st.markdown(
+                        f"<div style='color:#3a6080;font-size:.78rem;margin-bottom:.5rem;'>"
+                        f"Genes: {', '.join(_h['genes'][:8])}{'...' if len(_h['genes'])>8 else ''} · "
+                        f"<span style='color:#22c55e;'>{_t1} Tier 1</span> · "
+                        f"<span style='color:#ffd60a;'>{_t2} Tier 2</span></div>",
+                        unsafe_allow_html=True
+                    )
+                    for _r in sorted(_res, key=lambda x: x.get("ml_prob",0), reverse=True)[:10]:
+                        _tc = {"1":"#22c55e","2":"#ffd60a","3":"#ff8c42","4":"#ff2d55"}.get(str(_r.get("ml_tier",4)),"#3a6080")
+                        st.markdown(
+                            f"<div style='display:flex;gap:10px;padding:3px 0;border-bottom:1px solid #050e18;'>"
+                            f"<span style='color:#b0d8f0;font-weight:700;font-size:.78rem;min-width:80px;'>{_r.get('gene','?')}</span>"
+                            f"<span style='color:{_tc};font-size:.73rem;min-width:60px;'>Tier {_r.get('ml_tier',4)}</span>"
+                            f"<span style='color:#3a6080;font-size:.72rem;'>GI={_r.get('gi_score',0):.1f}% · pLI={_r.get('pli',0):.3f} · {_r.get('verdict','')[:30]}</span></div>",
+                            unsafe_allow_html=True
+                        )
+                    if st.button(f"Re-analyse top hit: {sorted(_res,key=lambda x:x.get('ml_prob',0),reverse=True)[0].get('gene','') if _res else '—'}", key=f"hist_go_{i}"):
+                        _top = sorted(_res,key=lambda x:x.get("ml_prob",0),reverse=True)[0].get("gene","")
+                        if _top:
+                            st.session_state["_trigger_search"] = _top
+                            st.session_state["protein_query_val"] = _top
+                            st.rerun()
+
 
 
 # ════════════ TAB 7 — DISEASE-PROTEIN LINK ════════════
