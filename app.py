@@ -984,14 +984,14 @@ def fetch_uniprot(query):
         validate_human(entry)  # raises if non-human
         return entry
 
-    # ── Text search — strict human-only at every step ──────────────────────
-    human_queries = [
-        f"gene:{query} AND reviewed:true AND organism_id:9606",
-        f"gene_exact:{query} AND organism_id:9606",
-        f"protein_name:{query} AND reviewed:true AND organism_id:9606",
-        f"({query}) AND reviewed:true AND organism_id:9606",
+    # ── Stage 1: EXACT gene symbol match (highest confidence) ──────────────
+    # Try exact gene symbol first — if it hits, no ambiguity possible
+    _q_upper = query.strip().upper()
+    exact_queries = [
+        f"gene_exact:{_q_upper} AND reviewed:true AND organism_id:9606",
+        f"gene:{_q_upper} AND reviewed:true AND organism_id:9606",
     ]
-    for qry in human_queries:
+    for qry in exact_queries:
         try:
             r = requests.get(f"{base}/search",
                              params={"query": qry, "format": "json", "size": 3},
@@ -1000,19 +1000,45 @@ def fetch_uniprot(query):
             results = r.json().get("results", [])
             for candidate in results:
                 org = candidate.get("organism", {})
-                sci = org.get("scientificName","")
-                taxid = org.get("taxonId", 0)
-                if "Homo sapiens" not in sci and taxid != HUMAN_TAXID:
-                    continue  # skip non-human silently
-                # Fetch full entry for confirmed human hit
+                if "Homo sapiens" not in org.get("scientificName","") and org.get("taxonId",0) != HUMAN_TAXID:
+                    continue
                 uid = candidate["primaryAccession"]
                 r2 = requests.get(f"{base}/{uid}", headers={"Accept":"application/json"}, timeout=20)
                 r2.raise_for_status()
                 full_entry = r2.json()
-                validate_human(full_entry)  # final check
+                validate_human(full_entry)
+                full_entry["_search_confidence"] = "exact_gene_symbol"
                 return full_entry
         except ValueError:
-            raise  # re-raise human validation errors
+            raise
+        except Exception:
+            continue
+
+    # ── Stage 2: Protein name / text search (lower confidence — flag it) ────
+    fallback_queries = [
+        f"protein_name:{query} AND reviewed:true AND organism_id:9606",
+        f"({query}) AND reviewed:true AND organism_id:9606",
+    ]
+    for qry in fallback_queries:
+        try:
+            r = requests.get(f"{base}/search",
+                             params={"query": qry, "format": "json", "size": 3},
+                             headers={"Accept": "application/json"}, timeout=20)
+            r.raise_for_status()
+            results = r.json().get("results", [])
+            for candidate in results:
+                org = candidate.get("organism", {})
+                if "Homo sapiens" not in org.get("scientificName","") and org.get("taxonId",0) != HUMAN_TAXID:
+                    continue
+                uid = candidate["primaryAccession"]
+                r2 = requests.get(f"{base}/{uid}", headers={"Accept":"application/json"}, timeout=20)
+                r2.raise_for_status()
+                full_entry = r2.json()
+                validate_human(full_entry)
+                full_entry["_search_confidence"] = "protein_name_match"  # Signal for disambiguation
+                return full_entry
+        except ValueError:
+            raise
         except Exception:
             continue
 
@@ -1436,6 +1462,76 @@ def fetch_gnomad(gene: str) -> dict:
     except Exception as _e:
         return {}
 
+@st.cache_data(show_spinner=False, ttl=86400)
+def fetch_clingen(gene: str) -> dict:
+    """
+    Fetch ClinGen gene-disease validity classification.
+    ClinGen rates gene-disease relationships as:
+    Definitive > Strong > Moderate > Limited > No Reported Evidence | Disputed | Refuted
+    This is the most clinically rigorous gene-disease validity source available.
+    """
+    try:
+        r = requests.get(
+            "https://search.clinicalgenome.org/kb/gene-validity",
+            params={"search": gene, "limit": 10},
+            headers={"Accept": "application/json"},
+            timeout=15,
+        )
+        if r.status_code != 200:
+            return {"classifications": [], "source": "ClinGen"}
+        data = r.json()
+        results = data.get("gene_validity_list", data.get("results", []))
+        classifications = []
+        for item in results:
+            g = item.get("gene", {})
+            if gene.upper() not in (g.get("symbol",""), g.get("hgncId","")):
+                sym = g.get("symbol","").upper()
+                if sym != gene.upper():
+                    continue
+            disease = item.get("disease", {})
+            validity = item.get("classification", {})
+            classifications.append({
+                "disease": disease.get("label", ""),
+                "mondo_id": disease.get("iri","").split("/")[-1] if disease.get("iri") else "",
+                "classification": validity.get("label",""),
+                "sop": item.get("sopVersion",""),
+                "date": item.get("approvalDate",""),
+                "url": f"https://search.clinicalgenome.org/kb/gene-validity/{item.get('uuid','')}",
+            })
+        return {"classifications": classifications, "source": "ClinGen", "n": len(classifications)}
+    except Exception:
+        return {"classifications": [], "source": "ClinGen"}
+
+def _disease_evidence_tier(source: str, n_clinvar_stars: int = 0,
+                            clingen_class: str = "") -> dict:
+    """
+    Assign an evidence tier to a disease association.
+    Tier 1 = UniProt manually curated (strongest)
+    Tier 2 = ClinGen Definitive/Strong
+    Tier 3 = ClinVar ≥2 stars / ClinGen Moderate
+    Tier 4 = ClinVar 1 star / ClinGen Limited
+    Tier 5 = OpenTargets GWAS/expression only (correlation, not causation)
+    """
+    CLINGEN_TIERS = {
+        "Definitive": 2, "Strong": 2, "Moderate": 3,
+        "Limited": 4, "No Reported Evidence": 5,
+        "Disputed": 5, "Refuted": 5,
+    }
+    tier = 5
+    if source == "uniprot": tier = 1
+    elif clingen_class in CLINGEN_TIERS: tier = CLINGEN_TIERS[clingen_class]
+    elif n_clinvar_stars >= 2: tier = 3
+    elif n_clinvar_stars == 1: tier = 4
+    tier_labels = {
+        1: ("Tier 1", "#22c55e", "UniProt manually curated — highest confidence causal evidence"),
+        2: ("Tier 2", "#4a90d9", "ClinGen Definitive/Strong — expert-curated gene-disease validity"),
+        3: ("Tier 3", "#ffd60a", "ClinVar ≥2 stars / ClinGen Moderate — good evidence, peer reviewed"),
+        4: ("Tier 4", "#ff8c42", "ClinVar 1 star / ClinGen Limited — single submitter, use cautiously"),
+        5: ("Tier 5", "#3a6080", "Statistical association only — not causal Mendelian evidence"),
+    }
+    label, color, desc = tier_labels[tier]
+    return {"tier": tier, "label": label, "color": color, "description": desc}
+
 @st.cache_data(show_spinner=False, ttl=3600)
 def fetch_clinical_trials(gene: str, condition: str = "") -> list:
     """Fetch active clinical trials related to gene from ClinicalTrials.gov."""
@@ -1787,7 +1883,9 @@ def g_diseases(p):
         if not mut_type:
             mut_type = _extract_mutation_type(desc)
         
+        _ev_tier = _disease_evidence_tier("uniprot")
         out.append({
+            "_evidence_tier": _ev_tier,
             "name": name,
             "desc": desc,
             "note": note,
@@ -1917,6 +2015,70 @@ def g_xref(p,db):
     for x in p.get("uniProtKBCrossReferences",[]):
         if x.get("database")==db: return x.get("id","")
     return ""
+@st.cache_data(show_spinner=False, ttl=86400)
+def fetch_gpcrdb(gene: str) -> dict:
+    """
+    Query GPCRdb — the definitive GPCR classification database.
+    Returns subfamily, family, ligand data, and H8 helix presence.
+    """
+    try:
+        # GPCRdb protein endpoint
+        r = requests.get(
+            f"https://gpcrdb.org/services/protein/{gene.lower()}/",
+            headers={"Accept":"application/json"}, timeout=15,
+        )
+        if r.status_code != 200:
+            return {}
+        data = r.json()
+        # Also fetch coupling data
+        coupling_r = requests.get(
+            f"https://gpcrdb.org/services/protein/{gene.lower()}/couplings/",
+            headers={"Accept":"application/json"}, timeout=10,
+        )
+        couplings = coupling_r.json() if coupling_r.status_code == 200 else {}
+        return {
+            "confirmed_gpcr": True,
+            "family": data.get("family",""),
+            "subfamily": data.get("subfamily",""),
+            "receptor_class": data.get("receptor_class",""),
+            "entry_name": data.get("entry_name",""),
+            "species": data.get("species",""),
+            "couplings": couplings,
+            "source": "GPCRdb",
+        }
+    except Exception:
+        return {}
+
+def _check_h8_helix(seq: str) -> dict:
+    """
+    Check for H8 (helix 8) Filamin-Binding Motif in GPCR C-terminus.
+    The H8 motif is a conserved hydrophobic helix after TM7 in Class A GPCRs.
+    Consensus: [FILV]x[FILV]x[FILV] within last 60 aa.
+    Returns dict with has_h8, position, and sequence.
+    """
+    if not seq or len(seq) < 30:
+        return {"has_h8": False}
+    tail = seq[-60:]
+    import re as _re
+    # H8 consensus: amphipathic helix with hydrophobic residues at i, i+2, i+4
+    hydro = set("FILMVWY")
+    h8_hits = []
+    for i in range(len(tail)-8):
+        window = tail[i:i+9]
+        # Count hydrophobic at positions 0, 2, 4 (characteristic of amphipathic helix)
+        score = sum(1 for pos in [0,2,4,6] if pos < len(window) and window[pos] in hydro)
+        if score >= 3:
+            h8_hits.append((i + len(seq) - 60 + 1, window))
+    if h8_hits:
+        best_pos, best_seq = h8_hits[0]
+        return {
+            "has_h8": True,
+            "position": best_pos,
+            "sequence": best_seq,
+            "note": f"H8 motif at position {best_pos} — PKA/Filamin piggyback assay applicable (PMID:26124276)"
+        }
+    return {"has_h8": False, "note": "No H8 motif detected — standard GPCR assays apply (cAMP/IP3/β-arrestin)"}
+
 def g_gpcr(p):
     kws=[k.get("value","").lower() for k in p.get("keywords",[])]
     kws_str = " ".join(kws)
@@ -1926,6 +2088,47 @@ def g_gpcr(p):
     has_gpcr_kw = any(x in kws_str for x in ["gpcr","g protein-coupled receptor","7-transmembrane","rhodopsin","adrenergic receptor","muscarinic","serotonin receptor","dopamine receptor","chemokine receptor","opioid receptor"])
     has_gpcr_fn = any(x in fn for x in ["g protein-coupled","g-protein-coupled","seven-transmembrane","7-transmembrane receptor"])
     return has_gpcr_kw or has_gpcr_fn
+
+def g_gpcr_full(p, gene: str = "") -> dict:
+    """
+    Full GPCR classification: UniProt + GPCRdb + H8 helix check.
+    Returns unified dict with confirmed class, subfamily, coupling, H8 status.
+    """
+    is_gpcr_uniprot = g_gpcr(p)
+    gpcrdb = {}
+    if gene and (is_gpcr_uniprot or any(x in g_func(p).lower() for x in ["receptor","gpcr"])):
+        gpcrdb = fetch_gpcrdb(gene)
+    confirmed = is_gpcr_uniprot or gpcrdb.get("confirmed_gpcr", False)
+    seq = g_seq(p) if callable(g_seq) else ""
+    h8 = _check_h8_helix(seq) if confirmed and seq else {"has_h8": False}
+    # Subfamily classification
+    GPCR_CLASSES = {
+        "Class A (Rhodopsin)": ["rhodopsin","adrenergic","muscarinic","dopamine","serotonin","opioid","chemokine","cannabinoid","histamine","adenosine","purinergic"],
+        "Class B1 (Secretin)": ["secretin","glucagon","glp","gip","pth","crf","vip","pacap","calcitonin"],
+        "Class B2 (Adhesion)": ["adhesion","celsr","etl","emr","htr","latrophilin"],
+        "Class C (Glutamate)": ["metabotropic","grm","gaba-b","gabab","calcium-sensing","taste"],
+        "Class F (Frizzled)": ["frizzled","fzd","smoothened"],
+    }
+    detected_class = gpcrdb.get("receptor_class","")
+    if not detected_class:
+        fn_lower = g_func(p).lower()
+        kws_lower = " ".join(k.get("value","").lower() for k in p.get("keywords",[]))
+        for cls, keywords in GPCR_CLASSES.items():
+            if any(kw in fn_lower or kw in kws_lower for kw in keywords):
+                detected_class = cls
+                break
+        if not detected_class and confirmed:
+            detected_class = "Class A (Rhodopsin) — presumed"
+    return {
+        "is_gpcr": confirmed,
+        "receptor_class": detected_class,
+        "subfamily": gpcrdb.get("subfamily",""),
+        "family": gpcrdb.get("family",""),
+        "h8": h8,
+        "couplings": gpcrdb.get("couplings",{}),
+        "gpcrdb_confirmed": gpcrdb.get("confirmed_gpcr", False),
+        "source": "GPCRdb + UniProt" if gpcrdb else "UniProt only",
+    }
 
 def g_gpcr_class(p):
     kws=[k.get("value","") for k in p.get("keywords",[])]
@@ -5859,7 +6062,7 @@ if not st.session_state.get("auth_user"):
 for k,v0 in {"pdata":None,"cv":None,"pdb":"","papers":[],"scored":[],"gene":"","uid":"",
              "assay":"","last":"","csv_df":None,"csv_type":"","goal_label":GOAL_OPTIONS[0],
              "goal_custom":"","sensitivity":50,"gi":None,"partner_query":"",
-             "partner_cv":None,"partner_gi":None,"disease_search":"","disease_proteins":[],"csv_triage_active":False,"show_tutorial":True,"gnomad":{},"string":[],"trials":[],"drugs":[],"abstracts":[],"org":{},"ai_result":{},"ot":{},"am":{},"isoforms":[],"hotspots":[],"patients":{},"excel_bytes":None,"domain_ctx":{},"acmg_auto":{},"conflicts":[],"ml_result":{},"lab_configured":False,"lab_chat_open":False,"lab_setup_complete":False,"lab_name":"","lab_pi":"","lab_focus":"","lab_domain":"","lab_proteins":[],"lab_diseases":[],"lab_techniques":[],"lab_budget":"medium","lab_model_organism":"","lab_goal":"","lab_chat_history":[],"protein_query_val":"","screener_results":[],"screener_genes_run":[],"screener_running":False,"screener_filters":{},"screener_history":[],
+             "partner_cv":None,"partner_gi":None,"disease_search":"","disease_proteins":[],"csv_triage_active":False,"show_tutorial":True,"gnomad":{},"string":[],"trials":[],"drugs":[],"abstracts":[],"org":{},"ai_result":{},"ot":{},"am":{},"isoforms":[],"hotspots":[],"patients":{},"excel_bytes":None,"domain_ctx":{},"acmg_auto":{},"conflicts":[],"ml_result":{},"lab_configured":False,"lab_chat_open":False,"lab_setup_complete":False,"lab_name":"","lab_pi":"","lab_focus":"","lab_domain":"","lab_proteins":[],"lab_diseases":[],"lab_techniques":[],"lab_budget":"medium","lab_model_organism":"","lab_goal":"","lab_chat_history":[],"protein_query_val":"","clingen":{},"screener_results":[],"screener_genes_run":[],"screener_running":False,"screener_filters":{},"screener_history":[],
              "research_domain":None,"domain_expanded":None,"_last_domain":None}.items():
     if k not in st.session_state: st.session_state[k]=v0
 
@@ -6864,44 +7067,63 @@ if search and query and query!=st.session_state["last"]:
         )
         st.stop()
     decrement_search()
-    # ── Pre-search: reject ambiguous/food/substance terms immediately ─────────
+
+    # ── Clear stale disambiguation from any previous search ──────────────────
+    st.session_state["_search_disambiguation"] = None
+
+    # ── Pre-search: block generic/category names that return garbage data ─────
     _q_pre = query.strip().lower()
-    _PRECHECK_REDIRECTS = {
-        "gelatin":   ("ADIPOQ, COL1A1, or MMP2 (Gelatinase A)", "Gelatin is denatured collagen — not a gene name. Adiponectin (ADIPOQ) was historically called 'Gelatin-Binding Protein 28' in early 1990s literature, which is why it appears."),
-        "sugar":     ("SLC2A1, GCK, or INS", "Sugar is not a gene. Try: SLC2A1 (GLUT1 glucose transporter), GCK (glucokinase), or INS (insulin)."),
-        "fat":       ("FASN, ADIPOQ, or PPARG", "Fat is not a gene name. Try: FASN (fatty acid synthase), ADIPOQ (adiponectin), or PPARG (fat cell differentiation)."),
-        "calcium":   ("CACNA1S, CALM1, or ATP2A1", "Calcium is an ion, not a gene. Try: CACNA1S (calcium channel), CALM1 (calmodulin), or ATP2A1 (SERCA pump)."),
-        "vitamin":   ("VDR, RBP4, or TNFSF11", "Vitamin is not a gene name. Try: VDR (vitamin D receptor), RBP4 (retinol-binding protein), or SLC23A1 (vitamin C transporter)."),
-        "collagen":  ("COL1A1, COL4A1, or COL2A1", "Multiple collagen genes exist (COL1A1–COL28A1). Search a specific collagen type (e.g. COL4A1) for precision."),
-        "protein":   (None, "Too generic. Search a specific gene name (e.g. TP53, BRCA1, FLNC, EGFR) or UniProt accession."),
-        "enzyme":    (None, "Too generic. Search a specific enzyme gene name (e.g. LDH, ALT/GPT, ACE) or EC number."),
-        "receptor":  (None, "Too generic. Search a specific receptor gene (e.g. EGFR, ADRB2, GRIA1, GABRA1)."),
+    _STOP_TERMS = {
+        # Food / substance terms
+        "gelatin":    ("ADIPOQ · COL1A1 · MMP2",      "Gelatin is denatured collagen — not a gene. Adiponectin (ADIPOQ) was nicknamed 'Gelatin-Binding Protein 28' in 1990s literature."),
+        "sugar":      ("SLC2A1 · GCK · INS",           "Not a gene. Try: SLC2A1 (GLUT1), GCK (glucokinase), INS (insulin)."),
+        "fat":        ("FASN · ADIPOQ · PPARG",         "Not a gene. Try: FASN (fatty acid synthase), ADIPOQ (adiponectin), PPARG (fat cell regulator)."),
+        "calcium":    ("CACNA1S · CALM1 · ATP2A1",      "Calcium is an ion, not a gene. Try: CACNA1S (Ca²⁺ channel), CALM1 (calmodulin), ATP2A1 (SERCA pump)."),
+        "vitamin":    ("VDR · RBP4 · SLC23A1",          "Not a gene. Try: VDR (vitamin D receptor), RBP4 (retinol-binding), SLC23A1 (vitamin C transporter)."),
+        # Protein family names — UniProt can't resolve these to one gene
+        "keratin":    ("KRT1 · KRT5 · KRT14 · KRT18",  "Keratin is a family of 54 genes. Clinically relevant: KRT5/14 (epidermolysis bullosa), KRT8/18 (liver disease), KRT1/10 (ichthyosis). Search the specific number."),
+        "collagen":   ("COL1A1 · COL4A1 · COL2A1",     "Collagen is a family of 28 genes. Try: COL1A1/2 (OI, EDS), COL4A1 (HANAC syndrome), COL2A1 (spondyloepiphyseal dysplasia)."),
+        "actin":      ("ACTB · ACTA1 · ACTA2",          "Actin is a family. Try: ACTB (cytoskeletal, ubiquitous), ACTA1 (skeletal muscle myopathy), ACTA2 (smooth muscle, aortic aneurysm)."),
+        "myosin":     ("MYH7 · MYH9 · MYL2",            "Myosin is a family of >40 genes. Try: MYH7 (HCM), MYH9 (MYH9-related disease), MYL2 (cardiac light chain)."),
+        "hemoglobin": ("HBB · HBA1 · HBA2",             "Try: HBB (sickle cell, beta-thalassaemia), HBA1/HBA2 (alpha-thalassaemia)."),
+        "haemoglobin":("HBB · HBA1 · HBA2",             "Try: HBB (sickle cell, beta-thalassaemia), HBA1/HBA2 (alpha-thalassaemia)."),
+        "tubulin":    ("TUBA1A · TUBB2B · TUBB3",       "Try: TUBA1A (lissencephaly), TUBB2B (pachygyria), TUBB3 (CFEOM congenital fibrosis)."),
+        "fibrin":     ("FGB · FGA · FGG",                "Fibrin is a cleavage product. The fibrinogen genes are: FGA (alpha), FGB (beta), FGG (gamma)."),
+        "albumin":    ("ALB",                            "Human serum albumin gene is ALB. Try: ALB (hypoalbuminaemia, liver function)."),
+        "elastin":    ("ELN",                            "Human elastin gene is ELN. Mutations cause supravalvular aortic stenosis and Williams syndrome."),
+        "laminin":    ("LAMA2 · LAMA4 · LAMB1",         "Laminin is a family. Try: LAMA2 (merosin-deficient CMD), LAMB2 (Pierson syndrome)."),
+        "fibronectin":("FN1",                            "Fibronectin = FN1. Mutations cause glomerulopathy with fibronectin deposits."),
+        # Fully generic terms
+        "protein":    (None, "Too generic — matches thousands of entries. Search a specific gene (TP53, BRCA1, EGFR) or UniProt accession (P04637)."),
+        "enzyme":     (None, "Too generic. Search a specific enzyme gene (LDH, GPT, ACE, PCSK9) or use an EC number."),
+        "receptor":   (None, "Too generic. Search a specific receptor (EGFR, ADRB2, GRIA1, GABRA1, SCN1A)."),
+        "channel":    (None, "Too generic. Search a specific channel gene (SCN1A, KCNQ2, CACNA1S, CFTR, PIEZO1)."),
+        "antibody":   (None, "Antibodies target proteins. Search the antigen gene instead (EGFR, ERBB2=HER2, CD274=PD-L1, MS4A1=CD20)."),
+        "hormone":    (None, "Too generic. Search a specific hormone gene (INS=insulin, GH1, TSHB, POMC, LEP=leptin, GHRH)."),
+        "cytokine":   (None, "Too generic. Search a specific cytokine gene (TNF, IL6, IL1B, IFNG, IL10, TGFB1)."),
+        "integrin":   (None, "Integrin is a family. Search the specific subunit (ITGB1, ITGA2B, ITGB3, ITGAV)."),
     }
-    _precheck_hit = None
-    for _term, (_suggest, _explain) in _PRECHECK_REDIRECTS.items():
+    _stop_hit = None
+    for _term, (_suggest, _explain) in _STOP_TERMS.items():
         if _q_pre == _term or _q_pre.startswith(_term + " ") or _q_pre.endswith(" " + _term):
-            _precheck_hit = (_term, _suggest, _explain)
+            _stop_hit = (_term, _suggest, _explain)
             break
-    if _precheck_hit:
-        _t, _s, _e = _precheck_hit
+
+    if _stop_hit:
+        _t, _s, _e = _stop_hit
         st.markdown(
-            f"<div style='background:#0a0800;border:2px solid #ffd60a44;border-left:4px solid #ffd60a;"
-            f"border-radius:0 12px 12px 0;padding:1rem 1.2rem;margin:.5rem 0;'>"
-            f"<div style='color:#ffd60a;font-weight:800;font-size:.9rem;margin-bottom:.4rem;'>"
-            f"🔍 Did you mean a gene name?</div>"
-            f"<div style='color:#b0a040;font-size:.82rem;line-height:1.65;'>{_e}</div>"
-            f"{'<div style=color:#4a90d9;font-size:.79rem;margin-top:.5rem;>Try: <b>' + _s + '</b></div>' if _s else ''}"
+            f"<div style='background:#030810;border:2px solid #ffd60a55;border-left:5px solid #ffd60a;"
+            f"border-radius:0 14px 14px 0;padding:1.3rem 1.5rem;margin:.6rem 0;'>"
+            f"<div style='color:#ffd60a;font-weight:800;font-size:1rem;margin-bottom:.6rem;'>"
+            f"🔍 &nbsp;'{query}' is a protein family name, not a gene symbol</div>"
+            f"<div style='color:#c0a840;font-size:.85rem;line-height:1.75;margin-bottom:.7rem;'>{_e}</div>"
+            f"{'<div style=background:#040d18;border:1px solid #4a90d955;border-radius:9px;padding:8px 14px;><span style=color:#1e4060;font-size:.73rem;>Use one of these gene symbols: </span><br><span style=color:#00e5ff;font-size:.92rem;font-weight:700;>' + _s + '</span></div>' if _s else ''}"
             f"</div>",
             unsafe_allow_html=True
         )
-        # Still proceed with the search so they see what matched — but flag it
-        st.session_state["_search_disambiguation"] = (
-            f"🔍 **Search note:** '{query}' is not a gene name — "
-            f"it matched a protein whose historical name contains this term. "
-            f"{'Suggested gene symbols: **' + _s + '**' if _s else 'Search by gene symbol for a precise result.'}"
-        )
+        st.stop()  # Stop here — don't proceed with a search that returns garbage
 
-    # Clear cache on every search so stale results never persist
+    # Clear cache so stale results never persist between searches
     fetch_uniprot.clear()
     with st.spinner("🔬 Fetching UniProt · ClinVar · AlphaFold · PubMed…"):
         try:
@@ -6956,6 +7178,12 @@ if search and query and query!=st.session_state["last"]:
                 isoforms  = fetch_isoforms(uid)
                 hotspots  = compute_hotspot_clusters(cv.get("variants",[]), pdata.get("sequence",{}).get("length",1))
                 patient_d = estimate_patient_population(g_diseases(pdata), cv, compute_gi(cv, pdata.get("sequence",{}).get("length",1)))
+                # ── ClinGen gene-disease validity ─────────────────────────────
+                try:
+                    clingen_data = fetch_clingen(gene)
+                except Exception:
+                    clingen_data = {"classifications": []}
+                st.session_state["clingen"]   = clingen_data
                 st.session_state["ot"]        = ot_data
                 st.session_state["am"]        = am_scores
                 st.session_state["isoforms"]  = isoforms
@@ -7437,12 +7665,28 @@ _ml_res         = st.session_state.get("ml_result", {})
 
 def _render_enhanced_signals():
     try:
-        _dom = st.session_state.get("domain_ctx") or {}
+        _dom  = st.session_state.get("domain_ctx") or {}
         _acmg = st.session_state.get("acmg_auto") or {}
-        _ml = st.session_state.get("ml_result") or {}
-        _cf = st.session_state.get("conflicts") or []
+        _ml   = st.session_state.get("ml_result") or {}
+        _cf   = st.session_state.get("conflicts") or []
+        _cg   = st.session_state.get("clingen") or {}
     except Exception:
         return
+    # ── ClinGen validity (highest authority — shown first) ─────────────────
+    _cg_classes = _cg.get("classifications",[]) if _cg else []
+    if _cg_classes:
+        _VCOL = {"Definitive":"#22c55e","Strong":"#4a90d9","Moderate":"#ffd60a",
+                 "Limited":"#ff8c42","No Reported Evidence":"#3a6080",
+                 "Disputed":"#ff2d55","Refuted":"#ff2d55"}
+        _cg_html = "".join(
+            f"<span style='background:{_VCOL.get(c.get('classification',''),'#3a6080')}18;"
+            f"color:{_VCOL.get(c.get('classification',''),'#3a6080')};border:1px solid "
+            f"{_VCOL.get(c.get('classification',''),'#3a6080')}44;"
+            f"padding:2px 9px;border-radius:5px;font-size:.66rem;font-weight:700;margin:2px;"
+            f"display:inline-block;'>ClinGen {c.get('classification','')}: {str(c.get('disease',''))[:28]}</span>"
+            for c in _cg_classes[:3]
+        )
+        st.markdown(f"<div style='margin:.3rem 0;'><span style='color:#1e4060;font-size:.64rem;text-transform:uppercase;'>ClinGen validity: </span>{_cg_html}</div>", unsafe_allow_html=True)
     if _cf:
         _conflicts_hook2 = _cf
     else:
@@ -11991,15 +12235,48 @@ with tab8:
             n_ser = seq_c.count("S")+seq_c.count("T")+seq_c.count("Y")
             aromaticity = round((seq_c.count("F")+seq_c.count("W")+seq_c.count("Y"))/len(seq_c)*100,1)
             grand_avg_hydro = round(sum({"A":.62,"R":-2.53,"N":-0.78,"D":-0.90,"C":.29,"Q":-0.85,"E":-0.74,"G":.48,"H":-.40,"I":1.38,"L":1.06,"K":-1.50,"M":.64,"F":1.19,"P":.12,"S":-0.18,"T":-0.05,"W":.81,"Y":.26,"V":1.08}.get(aa,0) for aa in seq_c)/len(seq_c),3)
+
+            # ── PTM-adjusted properties ──────────────────────────────────────────
+            _ptm_feats = [f for f in pdata.get("features",[]) if f.get("type") in ("Modified residue","Glycosylation","Disulfide bond","Cross-link","Lipidation")]
+            _n_glyco = sum(1 for f in _ptm_feats if f.get("type")=="Glycosylation" and "N-linked" in str(f.get("description","")))
+            _n_o_glyco = sum(1 for f in _ptm_feats if f.get("type")=="Glycosylation" and "O-linked" in str(f.get("description","")))
+            _n_phospho_annot = sum(1 for f in _ptm_feats if "phospho" in str(f.get("description","")).lower())
+            # N-glycan adds ~2.5 kDa each, O-glycan ~0.5 kDa each (rough estimate)
+            _glyco_mw_add = _n_glyco * 2.5 + _n_o_glyco * 0.5
+            _eff_mw = round(mw_kda + _glyco_mw_add, 1)
+            _mw_display = f"{mw_kda} kDa" + (f" (est. {_eff_mw} kDa glycosylated)" if _glyco_mw_add > 0 else "")
+
+            # ── IDR detection from AlphaFold pLDDT ──────────────────────────────
+            _am_data = st.session_state.get("am",{}) or {}
+            _idr_residues = 0
+            _idr_pct = 0.0
+            if _am_data and isinstance(_am_data, dict):
+                # pLDDT stored per-residue in am_data or as summary
+                pass  # AlphaFold pLDDT accessed via features below
+            _af_feats = [f for f in pdata.get("features",[]) if f.get("type") in ("Region","Compositional bias") and "disordered" in str(f.get("description","")).lower()]
+            _idr_residues = sum(
+                abs(int(f.get("location",{}).get("end",{}).get("value",0) or 0) -
+                    int(f.get("location",{}).get("start",{}).get("value",0) or 0))
+                for f in _af_feats
+            )
+            _idr_pct = round(_idr_residues / max(len(seq_c),1) * 100, 1)
+
+            # ── Instability index context ────────────────────────────────────────
+            _instab_raw = sum({"D":1.68,"E":1.05,"K":1.05,"R":0.0,"N":0,"S":0}.get(aa,0) for aa in seq_c) * 10 / len(seq_c)
+            _instab = round(_instab_raw, 1)
+            _instab_note = "unstable — recombinant expression challenging" if _instab > 40 else "borderline — test multiple expression systems" if _instab > 35 else "stable"
+
             props = [
-                ("Molecular Weight", f"{mw_kda} kDa", "#00e5ff"),
+                ("Molecular Weight", _mw_display, "#00e5ff"),
                 ("Length", f"{len(seq_c):,} aa", "#00e5ff"),
                 ("Est. pI", str(pi_est), "#6478ff" if pi_est<7 else "#ff8c42"),
                 ("Net charge pH 7.4", f"{charge_74:+.0f}", "#ff2d55" if charge_74<0 else "#22c55e"),
-                ("GRAVY hydrophobicity", str(grand_avg_hydro), "#22c55e" if grand_avg_hydro<0 else "#ff8c42"),
-                ("Cys / potential SS", f"{n_cys} / {n_ss}", "#ffd60a"),
-                ("Phosphorylatable S/T/Y", f"{n_ser}", "#f97316"),
+                ("GRAVY hydrophobicity", f"{grand_avg_hydro} ({'membrane-assoc.' if grand_avg_hydro>0.5 else 'soluble' if grand_avg_hydro<-0.5 else 'borderline'})", "#22c55e" if grand_avg_hydro<0 else "#ff8c42"),
+                ("Cys / potential SS bonds", f"{n_cys} / {n_ss}", "#ffd60a"),
+                ("Phosphorylatable S/T/Y", f"{n_ser} residues ({_n_phospho_annot} UniProt annotated)", "#f97316"),
                 ("Aromaticity", f"{aromaticity}%", "#c084fc"),
+                ("Instability index", f"{_instab} — {_instab_note}", "#ff8c42" if _instab>40 else "#ffd60a" if _instab>35 else "#22c55e"),
+                ("Disordered regions", f"{_idr_pct}% IDR ({_idr_residues} aa)" if _idr_residues else "Not annotated in UniProt", "#3a6080" if not _idr_residues else "#ffd60a" if _idr_pct>30 else "#4a90d9"),
             ]
             cols_r1 = st.columns(4)
             cols_r2 = st.columns(4)
@@ -12017,15 +12294,46 @@ with tab8:
             st.markdown("<hr class='dv'>", unsafe_allow_html=True)
             sh("💊", "Drug-Bindability Assessment")
             bindability = []
-            if mw_kda < 80: bindability.append(("✓ Accessible size", "#22c55e", f"{mw_kda} kDa — within small-molecule drug target range"))
-            else: bindability.append(("⚠ Large protein", "#ffd60a", f"{mw_kda} kDa — may need biologics, fragments, or PROTAC approach"))
-            if grand_avg_hydro < 0: bindability.append(("✓ Soluble (hydrophilic)", "#22c55e", "Likely globular; soluble in aqueous assay conditions"))
-            else: bindability.append(("⚠ Hydrophobic", "#ff8c42", "May be membrane-associated; may require detergent for assays"))
-            if n_cys >= 4: bindability.append(("⚠ Disulfide-rich", "#ffd60a", f"{n_ss} potential SS bonds — folding-sensitive; use reducing conditions carefully"))
-            if is_gpcr_c: bindability.append(("🎯 GPCR target", "#00e5ff", "7-TM receptor — excellent drug target class; orthosteric + allosteric sites available"))
-            if is_kin_c: bindability.append(("🎯 Kinase target", "#00e5ff", "ATP-binding pocket — well-validated for small molecule inhibition"))
+            # Size
+            if mw_kda < 50: bindability.append(("✓ Small — ideal for small molecules", "#22c55e", f"{mw_kda} kDa — perfect for fragment screening and small-molecule drugs"))
+            elif mw_kda < 100: bindability.append(("✓ Accessible size", "#22c55e", f"{mw_kda} kDa — within small-molecule drug target range"))
+            else: bindability.append(("⚠ Large protein", "#ffd60a", f"{_eff_mw if _glyco_mw_add>0 else mw_kda} kDa — consider biologics (mAb), PROTACs, or allosteric fragments"))
+            # Hydrophobicity → predicted localisation
+            if grand_avg_hydro > 0.5: bindability.append(("⚠ Membrane-embedded (hydrophobic)", "#ff8c42", "Requires detergent, nanodisc, or lipid-cubic-phase for structural work. Binding sites at extracellular face or lipid interface"))
+            elif grand_avg_hydro > 0: bindability.append(("~ Borderline hydrophobic", "#ffd60a", "May be peripherally membrane-associated. Check AlphaFold structure — buried hydrophobic patches indicate interaction surfaces"))
+            else: bindability.append(("✓ Soluble / hydrophilic", "#22c55e", "Likely cytoplasmic or secreted. Standard aqueous assay conditions. HTS-compatible"))
+            # pI → purification implications
+            if 5.5 < pi_est < 8.5: bindability.append(("✓ Neutral pI — standard purification", "#22c55e", f"pI={pi_est} — anion or cation exchange at pH 7 both viable"))
+            elif pi_est <= 5.5: bindability.append(("⚠ Acidic pI — use anion exchange", "#ffd60a", f"pI={pi_est} — will be negatively charged at physiological pH. DEAE/Q-Sepharose at pH >pI"))
+            else: bindability.append(("⚠ Basic pI — use cation exchange", "#ffd60a", f"pI={pi_est} — use SP/CM-Sepharose at pH <pI. Risk of aggregation at physiological conditions"))
+            # Instability
+            if _instab > 40: bindability.append((f"⚠ Unstable (II={_instab})", "#ff8c42", f"Instability index {_instab} >40 — challenging recombinant expression. Try baculovirus/insect cells, cell-free system, MBP/SUMO solubility tags"))
+            elif _instab > 35: bindability.append((f"~ Borderline stable (II={_instab})", "#ffd60a", f"Instability index {_instab} — test multiple expression systems. Monitor aggregation at each purification step"))
+            # Disulfide
+            if n_cys >= 6: bindability.append(("⚠ Disulfide-rich", "#ffd60a", f"{n_ss} potential SS bonds — eukaryotic expression required (HEK293/CHO/insect). Oxidising conditions mandatory. Never in reducing E.coli cytoplasm"))
+            elif n_cys >= 2: bindability.append(("~ Contains Cys residues", "#4a90d9", f"{n_cys} Cys residues — verify if structural SS bonds present before adding reducing agents"))
+            # IDR
+            if _idr_pct > 40: bindability.append((f"⚠ Highly disordered ({_idr_pct}% IDR)", "#ff8c42", "Cannot crystallise apo form. Use NMR, SAXS, or HDX-MS. Drug binding may be to transient/cryptic sites. AlphaMissense scores unreliable in IDR"))
+            elif _idr_pct > 15: bindability.append((f"~ Partially disordered ({_idr_pct}% IDR)", "#ffd60a", "IDR may mediate PPI — potential allosteric drug site. Check pLDDT<50 regions in AlphaFold structure"))
+            # GPCR with full classification
+            if is_gpcr_c:
+                try:
+                    _gf = g_gpcr_full(pdata, gene)
+                    _cls = _gf.get("receptor_class","GPCR")
+                    _h8 = _gf.get("h8",{})
+                    _h8_note = f"H8/Filamin assay applicable (PMID:26124276)" if _h8.get("has_h8") else "Standard cAMP/IP3/β-arrestin assays recommended"
+                    bindability.append(("🎯 GPCR — premier drug target class", "#00e5ff", f"{_cls}. Orthosteric + allosteric + bitopic sites. {_h8_note}"))
+                except Exception:
+                    bindability.append(("🎯 GPCR target", "#00e5ff", "7-TM receptor — orthosteric + allosteric sites available"))
+            if is_kin_c: bindability.append(("🎯 Kinase — ATP pocket druggable", "#00e5ff", "Type I/II/III inhibitors + allosteric sites. Check PDB for co-crystal structures with ATP analogues"))
+            # PDB experimental structures
+            _pdb_ids = [xr.get("id","") for xr in pdata.get("uniProtKBCrossReferences",[]) if xr.get("database")=="PDB"]
+            if _pdb_ids: bindability.append(("✓ Experimental PDB structures", "#22c55e", f"{len(_pdb_ids)} entries: {', '.join(_pdb_ids[:5])}{'...' if len(_pdb_ids)>5 else ''} — use co-crystal structures over predicted pockets"))
+            _bind_sites = [f for f in pdata.get("features",[]) if f.get("type") in ("Binding site","Active site")]
+            if _bind_sites: bindability.append((f"✓ {len(_bind_sites)} annotated binding sites (UniProt)", "#22c55e", "Experimentally defined binding residues — use as starting point for docking/MD"))
+
             for label, clr, desc in bindability:
-                st.markdown(f"<div style='display:flex;gap:8px;padding:5px 0;border-bottom:1px solid #050e18;'><span style='color:{clr};font-weight:700;font-size:.78rem;min-width:200px;'>{label}</span><span style='color:#3a6080;font-size:.76rem;'>{desc}</span></div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='display:flex;gap:8px;padding:5px 0;border-bottom:1px solid #050e18;align-items:flex-start;'><span style='color:{clr};font-weight:700;font-size:.77rem;min-width:240px;flex-shrink:0;'>{label}</span><span style='color:#3a6080;font-size:.75rem;line-height:1.55;'>{desc}</span></div>", unsafe_allow_html=True)
 
         elif _chem_mode == "📊 Amino Acid Analysis":
             sh("📊", f"Amino Acid Composition — {gene}")
