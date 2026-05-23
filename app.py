@@ -1064,8 +1064,11 @@ def fetch_uniprot(query):
     # Try exact gene symbol first — if it hits, no ambiguity possible
     _q_upper = query.strip().upper()
     exact_queries = [
-        f"gene_exact:{_q_upper} AND reviewed:true AND organism_id:9606",
+        # UniProt field syntax: gene: is exact match for gene symbols
         f"gene:{_q_upper} AND reviewed:true AND organism_id:9606",
+        f"gene:{_q_upper} AND organism_id:9606",
+        # Try with quotes for multi-word gene names
+        f'gene:"{_q_upper}" AND organism_id:9606',
     ]
     for qry in exact_queries:
         try:
@@ -1093,7 +1096,9 @@ def fetch_uniprot(query):
     # ── Stage 2: Protein name / text search (lower confidence — flag it) ────
     fallback_queries = [
         f"protein_name:{query} AND reviewed:true AND organism_id:9606",
-        f"({query}) AND reviewed:true AND organism_id:9606",
+        f"name:{query} AND reviewed:true AND organism_id:9606",
+        f"{query} AND reviewed:true AND organism_id:9606",
+        f"{query} AND organism_id:9606",
     ]
     for qry in fallback_queries:
         try:
@@ -1176,16 +1181,32 @@ def _is_ambiguous_search(query: str, result_gene: str, result_name: str) -> str 
 
 @st.cache_data(show_spinner=False, ttl=86400)
 def fetch_clinvar(gene, max_v=150):
-    # Multi-strategy search: genesymbol → gene → gene_name (robustness on Streamlit Cloud)
+    """
+    Fetch ClinVar variants for a gene. Handles both old and new ClinVar API formats.
+    Uses multiple search strategies and robust per-variant parsing.
+    """
     ids = []
-    for term in [f"{gene}[genesymbol]", f"{gene}[gene]", f"{gene}[gene_name]"]:
+    # Strategy 1: strict gene symbol search
+    search_terms = [
+        f"{gene}[gene] AND single_gene[prop]",
+        f"{gene}[genesymbol]",
+        f"{gene}[gene]",
+        f'"{gene}"[gene name]',
+    ]
+    for term in search_terms:
         try:
-            r = requests.get(ESEARCH, params={"db":"clinvar","term":term,"retmax":max_v,"retmode":"json"}, timeout=30)
+            r = requests.get(ESEARCH, params={
+                "db":"clinvar","term":term,"retmax":max_v,
+                "retmode":"json","sort":"clinical_significance"
+            }, timeout=30)
             r.raise_for_status()
-            ids = r.json().get("esearchresult",{}).get("idlist",[])
-            if ids: break
-            time.sleep(0.4)
+            new_ids = r.json().get("esearchresult",{}).get("idlist",[])
+            if new_ids:
+                ids = new_ids
+                break
+            time.sleep(0.3)
         except: continue
+
     if not ids: return {"variants":[],"summary":{}}
     variants=[]
     for i in range(0,len(ids),100):
@@ -1193,44 +1214,129 @@ def fetch_clinvar(gene, max_v=150):
             r2=requests.get(ESUMMARY,params={"db":"clinvar","id":",".join(ids[i:i+100]),"retmode":"json"},timeout=30)
             r2.raise_for_status(); data=r2.json().get("result",{})
             for uid in data.get("uids",[]):
-                e=data.get(uid,{}); gc=e.get("germline_classification",{})
-                sig_raw = str(gc.get("description","Not provided") or "Not provided")
-                sig = clean_sig(sig_raw)
-                sc  = SIG_SCORE.get(sig_raw.lower().strip(), SIG_SCORE.get(sig.lower().strip(), 0))
-                traits=[t.get("trait_name","") for t in e.get("trait_set",{}).get("trait",[]) if t.get("trait_name")]
-                locs=e.get("location_list",[{}]); vset=e.get("variation_set",[{}])
-                var_name = vset[0].get("variation_name","") if vset else ""
-                # Extract PROTEIN position from variant name (p.Tyr1705Ter -> 1705)
-                prot_pos = ""
-                import re as _re
-                pm = _re.search(r"p\.([A-Za-z]+)(\d+)", var_name)
-                if pm: prot_pos = pm.group(2)
-                if not prot_pos:  # Try cDNA position as fallback
-                    cm = _re.search(r"c\.(\d+)", var_name)
-                    if cm: prot_pos = str(int(cm.group(1))//3 + 1)
-                # Origin parsing - ClinVar uses multiple formats
-                origin_raw = e.get("origin",{})
-                if isinstance(origin_raw, dict):
-                    origin_str = origin_raw.get("origin", "")
-                elif isinstance(origin_raw, str):
-                    origin_str = origin_raw
-                else:
-                    origin_str = str(origin_raw)
-                # Determine somatic vs germline
-                is_somatic = bool(e.get("somatic_classifications",{})) or "somatic" in origin_str.lower()
-                is_germline = any(x in origin_str.lower() for x in ["germline","inherited","de novo","maternal","paternal","constitutional"]) or (not is_somatic and sc >= 3)
-                variants.append({
-                    "uid":uid,"title":e.get("title",""),
-                    "variant_name": var_name,
-                    "sig":sig,"score":sc,"condition":"; ".join(t for t in traits if t.strip()) if traits else "",
-                    "origin": origin_str,
-                    "review":gc.get("review_status",""),
-                    "start": prot_pos,
-                    "somatic": is_somatic,
-                    "germline": is_germline,
-                    "url":f"https://www.ncbi.nlm.nih.gov/clinvar/variation/{e.get('variation_id',uid)}/",
-                })
-        except: pass
+                try:
+                    e = data.get(uid,{})
+                    if not e or not isinstance(e, dict): continue
+
+                    # ── Significance — handle both old + new ClinVar API ──────────
+                    gc  = e.get("germline_classification") or {}
+                    cs  = e.get("clinical_significance") or {}
+                    sig_raw = (
+                        gc.get("description") or
+                        cs.get("description") or
+                        e.get("clinical_significance_description","") or
+                        "Not provided"
+                    )
+                    sig_raw = str(sig_raw).strip()
+                    if not sig_raw or sig_raw in ("nan","None",""): sig_raw = "Not provided"
+                    sig = clean_sig(sig_raw)
+                    sc  = SIG_SCORE.get(sig_raw.lower().strip(),
+                          SIG_SCORE.get(sig.lower().strip(), 0))
+
+                    # ── Review status ─────────────────────────────────────────────
+                    review = (gc.get("review_status") or
+                              cs.get("review_status") or
+                              e.get("review_status",""))
+
+                    # ── ClinVar star rating from review status ────────────────────
+                    STAR_MAP = {
+                        "practice guideline": 4,
+                        "reviewed by expert panel": 3,
+                        "criteria provided, multiple submitters, no conflicts": 2,
+                        "criteria provided, single submitter": 1,
+                        "criteria provided, conflicting classifications": 0,
+                        "no assertion criteria provided": 0,
+                        "no classification provided": 0,
+                    }
+                    cv_stars = max((STAR_MAP.get(k,0) for k in STAR_MAP if k in review.lower()), default=0)
+
+                    # ── Trait/condition ───────────────────────────────────────────
+                    trait_list = []
+                    ts = e.get("trait_set") or {}
+                    if isinstance(ts, dict):
+                        raw_traits = ts.get("trait",[]) or []
+                    elif isinstance(ts, list):
+                        raw_traits = ts
+                    else:
+                        raw_traits = []
+                    for t in raw_traits:
+                        if isinstance(t, dict):
+                            tn = t.get("trait_name","") or t.get("name","")
+                            if tn: trait_list.append(str(tn))
+                        elif isinstance(t, str) and t.strip():
+                            trait_list.append(t.strip())
+                    # Also try condition_list
+                    for cl in (e.get("condition_list") or []):
+                        if isinstance(cl, dict):
+                            cn = cl.get("condition_name","") or cl.get("name","")
+                            if cn and cn not in trait_list: trait_list.append(cn)
+
+                    # ── Variant name and position ─────────────────────────────────
+                    vset = e.get("variation_set") or e.get("variationset") or [{}]
+                    if not isinstance(vset, list): vset = [vset]
+                    var_name = ""
+                    for vs in vset:
+                        if isinstance(vs, dict):
+                            var_name = vs.get("variation_name","") or vs.get("name","")
+                            if var_name: break
+                    if not var_name:
+                        var_name = e.get("title","") or e.get("name","")
+
+                    import re as _re
+                    prot_pos = ""
+                    pm = _re.search(r"p\.([A-Za-z]{1,3})(\d+)", str(var_name))
+                    if pm: prot_pos = pm.group(2)
+                    if not prot_pos:
+                        cm = _re.search(r"c\.(\d+)", str(var_name))
+                        if cm: prot_pos = str(int(cm.group(1))//3 + 1)
+
+                    # ── Position from location_list ───────────────────────────────
+                    if not prot_pos:
+                        for loc in (e.get("location_list") or []):
+                            if isinstance(loc, dict):
+                                start = loc.get("assembly_start") or loc.get("start")
+                                if start: prot_pos = str(start); break
+
+                    # ── Origin / germline / somatic ───────────────────────────────
+                    origin_raw = e.get("origin") or e.get("allele_origin") or {}
+                    if isinstance(origin_raw, dict):
+                        origin_str = origin_raw.get("origin","") or origin_raw.get("value","")
+                    else:
+                        origin_str = str(origin_raw)
+                    is_somatic = (bool(e.get("somatic_classifications")) or
+                                  "somatic" in origin_str.lower())
+                    is_germline = (any(x in origin_str.lower() for x in
+                                   ["germline","inherited","de novo","maternal","paternal","constitutional","not somatic"])
+                                  or (not is_somatic and sc >= 3))
+
+                    # ── Variant consequence type ──────────────────────────────────
+                    mol_cons = ""
+                    for mc in (e.get("molecular_consequence_list") or []):
+                        if isinstance(mc, dict):
+                            mol_cons = mc.get("molecular_consequence","")
+                            if mol_cons: break
+
+                    variants.append({
+                        "uid": uid,
+                        "title": e.get("title",""),
+                        "variant_name": var_name,
+                        "sig": sig,
+                        "score": sc,
+                        "cv_stars": cv_stars,
+                        "condition": "; ".join(t for t in trait_list if t.strip()) if trait_list else "",
+                        "origin": origin_str,
+                        "review": review,
+                        "start": prot_pos,
+                        "position": int(prot_pos) if prot_pos.isdigit() else None,
+                        "somatic": is_somatic,
+                        "germline": is_germline,
+                        "mol_consequence": mol_cons,
+                        "cv_class": sc,  # For evidence tier system
+                        "url": f"https://www.ncbi.nlm.nih.gov/clinvar/variation/{e.get('variation_id', e.get('uid', uid))}/",
+                    })
+                except Exception as _ve:
+                    continue
+        except Exception as _be: pass
         time.sleep(0.1)
     variants.sort(key=lambda x:-x["score"])
     sigs=Counter(clean_sig(v["sig"]) if str(v["sig"]).strip().isdigit() else v["sig"] for v in variants)
@@ -2569,11 +2675,18 @@ def compute_gi(cv, protein_length):
     benign=[v for v in germline if v.get("score",0)<=0]
     n_p=len(pathogenic); n_g=max(len(germline),1); length=max(protein_length or 1,1)
     density=n_p/n_g; per100=(n_p/length)*100
-    if total<10:
-        return dict(verdict="UNDERSTUDIED",label="Insufficient ClinVar data",css="gi-unknown",
-                    color="#1e6080",icon="❓",pursue="neutral",density=density,per100=per100,
+    if total==0:
+        return dict(verdict="NO CLINVAR DATA",label="No ClinVar variants found — API fetch may have failed",
+                    css="gi-unknown",color="#1e6080",icon="❓",pursue="neutral",density=0,per100=0,
+                    n_pathogenic=0,n_vus=0,n_benign=0,n_total=0,n_germline=0,
+                    explanation="ClinVar returned no variants. This may be a network/API issue or the gene is not in ClinVar. Try searching by exact gene symbol (e.g. FLNA, not 'filamin a').",
+                    pathogenic_list=[])
+    elif total<5:
+        return dict(verdict="UNDERSTUDIED",label=f"Only {total} ClinVar entries — protein may be understudied",
+                    css="gi-unknown",color="#1e6080",icon="❓",pursue="neutral",density=density,per100=per100,
                     n_pathogenic=n_p,n_vus=len(vus),n_benign=len(benign),n_total=total,n_germline=len(germline),
-                    explanation="Too few ClinVar entries to draw conclusions.",pathogenic_list=pathogenic)
+                    explanation=f"Only {total} ClinVar entries. Cannot make a confident genetics-based recommendation. Check OMIM and literature for disease evidence.",
+                    pathogenic_list=pathogenic)
     elif n_p==0:
         return dict(verdict="NO DISEASE VARIANTS",label="Zero pathogenic / likely-pathogenic germline variants in ClinVar",
                     css="gi-redundant",color="#3a5a7a",icon="⚪",pursue="deprioritise",density=0,per100=0,
@@ -7354,8 +7467,11 @@ if search and query and query!=st.session_state["last"]:
             # ── Search confidence banner ──────────────────────────────────────
             _conf = pdata.get("_search_confidence","exact_gene_symbol")
             if _conf == "protein_name_match":
-                _pn = pdata.get("proteinDescription",{}).get("recommendedName",{}).get("fullName",{}).get("value","") or ""
-                st.session_state["_search_disambiguation"] = _is_ambiguous_search(query, gene, _pn)
+                try:
+                    _pn = (pdata.get("proteinDescription",{}) or {}).get("recommendedName",{}).get("fullName",{}).get("value","") or ""
+                    st.session_state["_search_disambiguation"] = _is_ambiguous_search(query, gene, _pn)
+                except Exception:
+                    st.session_state["_search_disambiguation"] = None
             elif not st.session_state.get("_search_disambiguation"):
                 st.session_state["_search_disambiguation"] = None
             cv=fetch_clinvar(gene,max_v); st.session_state["cv"]=cv
