@@ -958,8 +958,9 @@ def fetch_uniprot(query):
     # Note: ambiguous food/substance terms (gelatin, sugar, etc.) are handled
     # by the pre-search check in the main app flow — NOT here.
     # Raising ValueError here would break the fetch and show "Unknown protein".
+    _q_lower_nh = query.strip().lower()
     for term, species in NON_HUMAN_TERMS.items():
-        if term in q_lower:
+        if term in _q_lower_nh:
             raise ValueError(
                 f"⚠️ '{query}' is a non-human protein ({species}). "
                 f"Protellect analyses human proteins only. "
@@ -7546,6 +7547,14 @@ if search and query and query!=st.session_state["last"]:
         )
         st.stop()  # Stop here — don't proceed with a search that returns garbage
 
+    # Clear ALL stale protein data before each new search
+    for _clr_key in ["pdata","cv","gene","uid","gi","gnomad","string","trials",
+                      "drugs","abstracts","org","ai_result","ot","am","isoforms",
+                      "hotspots","patients","excel_bytes","domain_ctx","acmg_auto",
+                      "conflicts","ml_result","clingen","_search_disambiguation"]:
+        st.session_state[_clr_key] = None if _clr_key not in ("string","trials","drugs","abstracts","isoforms","hotspots","scored") else []
+    st.session_state["scored"] = []
+    st.session_state["last"] = query
     # Clear cache so stale results never persist between searches
     fetch_uniprot.clear()
     with st.spinner("🔬 Fetching UniProt · ClinVar · AlphaFold · PubMed…"):
@@ -8297,7 +8306,7 @@ _banner_html = (
 st.markdown(_banner_html, unsafe_allow_html=True)
 
 # ── Organism classification banner ──────────────────────────────────────────
-if org_class and not org_class.get("is_human", True):
+if org_class and not org_class.get("is_human", True) and gene and gene not in ("","?"):
     st.markdown(
         "<div style='background:#0a0500;border:2px solid #ff8c42;border-radius:10px;"
         "padding:.8rem 1.2rem;margin-bottom:.8rem;'>"
@@ -11273,9 +11282,16 @@ with tab3:
 
 # ════════════ TAB 4 — EXPERIMENTS ════════════
 with tab4:
+    if not (pdata and gene and gene not in ("","?")):
+        st.info("🧪 Search a protein in the sidebar to see its ROI-ranked experiment roadmap — generated fresh from ClinVar, gnomAD, and AlphaMissense for every protein.")
+    else:
+        # ── Experiments content (only when protein is loaded) ──────────────
+        _dummy_exp = True
+    if pdata and gene and gene not in ("","?"):
+     _dummy_exp2 = True
     # Scorecard
-    ptype=g_ptype(pdata); drugg={"kinase":.9,"gpcr":.95,"transcription_factor":.35,"receptor":.8,"general":.5}.get(ptype,.5)
-    n_crit2=sum(1 for v2 in scored if v2.get("ml_rank")=="CRITICAL"); n_high2=sum(1 for v2 in scored if v2.get("ml_rank")=="HIGH")
+    ptype=g_ptype(pdata) if pdata else "general"; drugg={"kinase":.9,"gpcr":.95,"transcription_factor":.35,"receptor":.8,"general":.5}.get(ptype,.5) if pdata else 0
+    n_crit2=sum(1 for v2 in (scored or []) if v2.get("ml_rank")=="CRITICAL"); n_high2=sum(1 for v2 in (scored or []) if v2.get("ml_rank")=="HIGH")
     priority=min(100,n_crit2*15+n_high2*8+len(scored)*.5+drugg*20)
     c1e,c2e,c3e,c4e=st.columns(4)
     with c1e: st.markdown(mc(n_crit2,"CRITICAL (ML)","#ff2d55","linear-gradient(90deg,#ff2d55,#ff8080)"),unsafe_allow_html=True)
@@ -11482,7 +11498,7 @@ with tab4:
                         f"Rescue experiment: re-introduce WT {gene} cDNA — if viability restores, phenotype is on-target",
                         f"{'Transcriptomics (RNA-seq) on mutant cells — identify downstream pathways — compare to GSEA disease gene sets for ' + dis0_hyp if protein_length < 800 else 'Phosphoproteomics on mutant cells — identify kinase/substrate changes'}",
                     ],
-                    "hypothesis": f"Mechanism is {'haploinsufficiency — one functional copy insufficient for ' + dis0_hyp if 'dominant' in diseases[0].get('inheritance','').lower() else 'biallelic loss — both copies must be non-functional'} (based on inheritance pattern from ClinVar). Rescue will require {'gene supplementation or protein stabilisation' if n_lof_v > 2 else 'functional small molecule to restore activity'}.",
+                    "hypothesis": f"Mechanism is {'haploinsufficiency — one functional copy insufficient for ' + dis0_hyp if (diseases and diseases[0].get('inheritance','') and 'dominant' in diseases[0].get('inheritance','').lower()) else 'biallelic loss — both copies must be non-functional'} (based on inheritance pattern from ClinVar). Rescue will require {'gene supplementation or protein stabilisation' if n_lof_v > 2 else 'functional small molecule to restore activity'}.",
                 },
                 {
                     "result": "IF viability is normal (> 90% of WT)",
