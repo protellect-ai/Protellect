@@ -984,6 +984,74 @@ def fetch_uniprot(query):
         validate_human(entry)  # raises if non-human
         return entry
 
+    # ── Pre-resolve common protein names to gene symbols ──────────────────
+    # Many researchers type the protein name, not the gene symbol.
+    # This map resolves the most common ambiguous multi-word names.
+    _PROTEIN_NAME_TO_GENE = {
+        # Filamins
+        "filamin a": "FLNA", "filamin-a": "FLNA", "flna": "FLNA",
+        "filamin b": "FLNB", "filamin-b": "FLNB", "flnb": "FLNB",
+        "filamin c": "FLNC", "filamin-c": "FLNC", "flnc": "FLNC",
+        # Tubulins
+        "alpha tubulin": "TUBA1A", "alpha-tubulin": "TUBA1A",
+        "beta tubulin": "TUBB2B", "beta-tubulin": "TUBB2B",
+        # Myosins
+        "cardiac myosin": "MYH7", "beta myosin": "MYH7", "beta-myosin": "MYH7",
+        "non-muscle myosin": "MYH9", "smooth muscle myosin": "MYH11",
+        "myosin light chain": "MYL2",
+        # Actins
+        "beta actin": "ACTB", "beta-actin": "ACTB",
+        "alpha actin": "ACTA1", "alpha-actin": "ACTA1",
+        "smooth muscle actin": "ACTA2", "alpha smooth muscle actin": "ACTA2",
+        "cardiac actin": "ACTC1",
+        # Keratins
+        "keratin 5": "KRT5", "keratin-5": "KRT5",
+        "keratin 14": "KRT14", "keratin-14": "KRT14",
+        "keratin 8": "KRT8", "keratin-8": "KRT8",
+        "keratin 18": "KRT18", "keratin-18": "KRT18",
+        "keratin 1": "KRT1", "keratin-1": "KRT1",
+        # Collagens
+        "collagen type 1": "COL1A1", "collagen i": "COL1A1",
+        "collagen type 4": "COL4A1", "collagen iv": "COL4A1",
+        "collagen type 2": "COL2A1", "collagen ii": "COL2A1",
+        # Ion channels
+        "sodium channel 1": "SCN1A", "nav1.1": "SCN1A",
+        "sodium channel 2": "SCN2A", "nav1.2": "SCN2A",
+        "potassium channel q2": "KCNQ2", "kv7.2": "KCNQ2",
+        "calcium channel l-type": "CACNA1S",
+        # Common proteins
+        "serum albumin": "ALB", "human albumin": "ALB",
+        "p53": "TP53", "tumor protein p53": "TP53", "tumour protein p53": "TP53",
+        "her2": "ERBB2", "her-2": "ERBB2", "erbb2": "ERBB2",
+        "egf receptor": "EGFR", "epidermal growth factor receptor": "EGFR",
+        "brca 1": "BRCA1", "brca 2": "BRCA2",
+        "huntingtin": "HTT", "huntington protein": "HTT",
+        "cystic fibrosis": "CFTR", "cftr protein": "CFTR",
+        "dystrophin": "DMD",
+        "fibrillin 1": "FBN1", "fibrillin-1": "FBN1",
+        "fibrillin 2": "FBN2", "fibrillin-2": "FBN2",
+        "titin": "TTN",
+        "desmoplakin": "DSP",
+        "lamin a": "LMNA", "lamin a/c": "LMNA",
+        "adiponectin": "ADIPOQ", "gelatin binding protein 28": "ADIPOQ",
+        "gelatinase a": "MMP2", "mmp-2": "MMP2",
+        "connexin 43": "GJB2", "connexin-26": "GJB2",
+        "retinoblastoma": "RB1", "rb protein": "RB1",
+        "atm kinase": "ATM", "atr kinase": "ATR",
+        "pten phosphatase": "PTEN",
+        "vhl protein": "VHL",
+        "neurofibromin": "NF1",
+        "tuberin": "TSC2", "hamartin": "TSC1",
+    }
+    _q_resolved = query.strip().lower()
+    if _q_resolved in _PROTEIN_NAME_TO_GENE:
+        _resolved_gene = _PROTEIN_NAME_TO_GENE[_q_resolved]
+        st.session_state["_search_disambiguation"] = (
+            f"🔍 Resolved '{query}' → gene symbol **{_resolved_gene}** automatically. "
+            f"Tip: searching by gene symbol directly (e.g. **{_resolved_gene}**) is always most precise."
+        )
+        query = _resolved_gene  # Replace query with canonical gene symbol
+
     # ── Stage 1: EXACT gene symbol match (highest confidence) ──────────────
     # Try exact gene symbol first — if it hits, no ambiguity possible
     _q_upper = query.strip().upper()
@@ -1290,20 +1358,63 @@ def fetch_omim_inheritance(omim_id: str) -> str:
     return ""
 
 @st.cache_data(show_spinner=False, ttl=3600)
+@st.cache_data(show_spinner=False, ttl=86400)
 def fetch_ncbi_gene(symbol):
+    """Fetch NCBI Gene data — chromosome, cytoband, exon count, genomic span."""
+    if not symbol or symbol in ("?",""):
+        return {}
     try:
-        r=requests.get(ESEARCH,params={"db":"gene","term":f"{symbol}[gene name] AND Homo sapiens[organism] AND alive[property]","retmax":1,"retmode":"json"},timeout=15)
-        r.raise_for_status(); ids=r.json().get("esearchresult",{}).get("idlist",[])
+        # Try multiple search strategies for robustness
+        strategies = [
+            f"{symbol}[gene symbol] AND Homo sapiens[organism] AND alive[property]",
+            f"{symbol}[gene name] AND Homo sapiens[organism] AND alive[property]",
+            f"{symbol}[all] AND Homo sapiens[organism] AND alive[property]",
+        ]
+        ids = []
+        for term in strategies:
+            r = requests.get(ESEARCH, params={
+                "db":"gene","term":term,"retmax":3,"retmode":"json","sort":"relevance"
+            }, timeout=15)
+            r.raise_for_status()
+            ids = r.json().get("esearchresult",{}).get("idlist",[])
+            if ids: break
+
         if not ids: return {}
-        gid=ids[0]
-        r2=requests.get(ESUMMARY,params={"db":"gene","id":gid,"retmode":"json"},timeout=15)
-        r2.raise_for_status(); e=r2.json().get("result",{}).get(gid,{})
-        gi=e.get("genomicinfo",[{}])[0] if e.get("genomicinfo") else {}
-        return {"id":gid,"chr":e.get("chromosome",""),"map":e.get("maplocation",""),
-                "summary":e.get("summary",""),"start":gi.get("chrstart",""),
-                "stop":gi.get("chrstop",""),"exons":gi.get("exoncount",""),
-                "link":f"https://www.ncbi.nlm.nih.gov/gene/{gid}"}
-    except: return {}
+        gid = ids[0]
+        r2 = requests.get(ESUMMARY, params={"db":"gene","id":gid,"retmode":"json"}, timeout=15)
+        r2.raise_for_status()
+        e = r2.json().get("result",{}).get(gid,{})
+        if not e or e.get("status") == "secondary":
+            # Try next ID
+            if len(ids) > 1:
+                gid = ids[1]
+                r2 = requests.get(ESUMMARY, params={"db":"gene","id":gid,"retmode":"json"}, timeout=15)
+                r2.raise_for_status()
+                e = r2.json().get("result",{}).get(gid,{})
+        gi = e.get("genomicinfo",[{}])[0] if e.get("genomicinfo") else {}
+        # Format chromosome start/stop readably
+        start_raw = gi.get("chrstart","")
+        stop_raw  = gi.get("chrstop","")
+        try:
+            start_fmt = f"{int(start_raw):,}"
+            stop_fmt  = f"{int(stop_raw):,}"
+        except Exception:
+            start_fmt = str(start_raw)
+            stop_fmt  = str(stop_raw)
+        return {
+            "id":    gid,
+            "chr":   e.get("chromosome",""),
+            "map":   e.get("maplocation",""),
+            "summary": e.get("summary","")[:300],
+            "start": start_fmt,
+            "stop":  stop_fmt,
+            "exons": gi.get("exoncount",""),
+            "strand": "+" if gi.get("exonstrand","") == "+" else "−" if gi.get("exonstrand","") else "",
+            "link":  f"https://www.ncbi.nlm.nih.gov/gene/{gid}",
+            "ncbi_name": e.get("name",""),
+        }
+    except Exception:
+        return {}
 
 
 # ─── Additional data sources ───────────────────────────────────────────────────
@@ -2011,10 +2122,28 @@ def g_func(p):
             t=c.get("texts",[])
             if t: return t[0].get("value","")
     return ""
-def g_xref(p,db):
-    for x in p.get("uniProtKBCrossReferences",[]):
-        if x.get("database")==db: return x.get("id","")
+def g_xref(p, db):
+    """Get cross-reference ID from UniProt entry. Handles all UniProt API formats."""
+    # Primary location: uniProtKBCrossReferences list
+    for x in p.get("uniProtKBCrossReferences", []):
+        if x.get("database") == db:
+            val = x.get("id","")
+            if val: return val
+    # Fallback: dbReferences (older UniProt format)
+    for x in p.get("dbReferences", []):
+        if x.get("type") == db:
+            val = x.get("id","")
+            if val: return val
     return ""
+
+def g_xref_all(p, db):
+    """Get ALL cross-reference IDs for a database (e.g. all Ensembl transcripts)."""
+    results = []
+    for x in p.get("uniProtKBCrossReferences", []):
+        if x.get("database") == db:
+            val = x.get("id","")
+            if val: results.append(val)
+    return results
 @st.cache_data(show_spinner=False, ttl=86400)
 def fetch_gpcrdb(gene: str) -> dict:
     """
@@ -2286,13 +2415,39 @@ def assess_gpcr_piggybacking(p, cv, gi_data):
             "investment": "PURSUE alongside GPCR partner — evidence supports genuine disease contribution.",
         }
     else:
+        # Check if it's a GPCR-interacting scaffolding protein (e.g. Filamin A)
+        _fn_check = g_func(p).lower()
+        _kw_check = " ".join(k.get("value","").lower() for k in p.get("keywords",[]))
+        _is_gpcr_interactor = any(x in _fn_check or x in _kw_check for x in [
+            "gpcr","g protein","arrestin","filamin","scaffold","signaling complex",
+            "regulator of g-protein","rgs","adenylyl cyclase","phospholipase c",
+        ])
+        if _is_gpcr_interactor:
+            return {
+                "type": "GPCR_INTERACTOR",
+                "label": "GPCR-interacting scaffolding protein",
+                "colour": "#4a90d9",
+                "confidence": "HIGH",
+                "reasoning": (
+                    f"{g_gene(p)} interacts with GPCR signalling machinery (co-purifies, "
+                    f"scaffolds, or modulates GPCR function) but is NOT itself a GPCR. "
+                    f"Its mutations cause disease through independent structural/scaffolding mechanisms. "
+                    f"The Filamin A–GPCR H8 helix piggyback assay (PMID:26124276) is applicable if "
+                    f"studying a GPCR that interacts with this protein."
+                ),
+                "investment": (
+                    "Do NOT screen as a GPCR target. Evaluate on genomic integrity score "
+                    "and direct disease variants. May be a useful co-target when studying "
+                    "GPCRs it scaffolds."
+                ),
+            }
         return {
             "type": "NOT_GPCR",
             "label": "Not GPCR-associated",
-            "colour": "#3a5a7a",
+            "colour": "#1e3a50",
             "confidence": "HIGH",
-            "reasoning": "No GPCR pathway association detected in UniProt annotation.",
-            "investment": "N/A — evaluate on genomic integrity alone.",
+            "reasoning": f"No GPCR pathway association detected for {g_gene(p)}. Evaluate through non-GPCR mechanisms.",
+            "investment": "Evaluate on genomic integrity score, disease variant burden, and domain-specific metrics.",
         }
 def g_ptype(p):
     kws=[k.get("value","").lower() for k in p.get("keywords",[])]
@@ -6796,6 +6951,39 @@ with st.sidebar:
     st.markdown("<div class='sb-t'>🧫 Assay Notes</div>", unsafe_allow_html=True)
     assay_txt=st.text_area("Assay description",height=70,placeholder="e.g. Western blot shows 3× expression increase…",label_visibility="collapsed")
 
+    # ── Lab profile summary (shown when configured via chatbot) ───────────
+    _lb_done = st.session_state.get("lab_setup_complete", False)
+    if _lb_done:
+        _lb_name   = st.session_state.get("lab_name","") or st.session_state.get("lab_pi","")
+        _lb_domain = st.session_state.get("lab_domain","")
+        _lb_prots  = st.session_state.get("lab_proteins",[])
+        _lb_sens   = st.session_state.get("sensitivity",50)
+        st.markdown(
+            f"<div style='background:#0a1a0a;border:1px solid #22c55e22;border-radius:9px;"
+            f"padding:7px 10px;margin:.4rem 0;'>"
+            f"<div style='color:#22c55e;font-size:.68rem;font-weight:700;margin-bottom:2px;'>"
+            f"✅ Lab configured{(' — ' + _lb_name) if _lb_name else ''}</div>"
+            f"<div style='color:#1e4060;font-size:.64rem;line-height:1.5;'>"
+            f"{_lb_domain}{(' · Sensitivity ' + str(_lb_sens)) if _lb_domain else ''}"
+            f"{'<br>' + ', '.join(_lb_prots[:4]) + ('...' if len(_lb_prots)>4 else '') if _lb_prots else ''}"
+            f"</div></div>",
+            unsafe_allow_html=True
+        )
+
+    # ── Plan display ───────────────────────────────────────────────────────
+    _plan_sb = st.session_state.get("auth_plan","pro")
+    _plan_label_sb = {"pro":"Pro · Unlimited","enterprise":"Enterprise","free":"Free (5 searches)"}.get(_plan_sb, _plan_sb.title())
+    _plan_clr_sb = "#22c55e" if _plan_sb in ("pro","enterprise") else "#ffd60a"
+    st.markdown(
+        f"<div style='border-top:1px solid #071828;margin:.6rem 0 .3rem;padding-top:.5rem;"
+        f"display:flex;justify-content:space-between;align-items:center;'>"
+        f"<span style='color:#1e4060;font-size:.62rem;text-transform:uppercase;letter-spacing:.07em;'>Access</span>"
+        f"<span style='background:{_plan_clr_sb}18;color:{_plan_clr_sb};border:1px solid {_plan_clr_sb}33;"
+        f"padding:1px 8px;border-radius:4px;font-size:.62rem;font-weight:700;'>{_plan_label_sb}</span>"
+        f"</div>",
+        unsafe_allow_html=True
+    )
+
     st.markdown(
         "<div class='sb-t'>Variant Triage Threshold</div>"
         "<div style='color:#3a6080;font-size:.75rem;margin-bottom:4px;'>Disease variants / total variants per 100 residues</div>",
@@ -7092,7 +7280,13 @@ if search and query and query!=st.session_state["last"]:
         "albumin":    ("ALB",                            "Human serum albumin gene is ALB. Try: ALB (hypoalbuminaemia, liver function)."),
         "elastin":    ("ELN",                            "Human elastin gene is ELN. Mutations cause supravalvular aortic stenosis and Williams syndrome."),
         "laminin":    ("LAMA2 · LAMA4 · LAMB1",         "Laminin is a family. Try: LAMA2 (merosin-deficient CMD), LAMB2 (Pierson syndrome)."),
-        "fibronectin":("FN1",                            "Fibronectin = FN1. Mutations cause glomerulopathy with fibronectin deposits."),
+        "fibronectin":("FN1",                             "Fibronectin = FN1. Mutations cause glomerulopathy with fibronectin deposits."),
+        "filamin":    ("FLNA · FLNB · FLNC",             "Filamin is a family of 3 genes. FLNA: X-linked periventricular heterotopia + GPCR piggyback assay (PMID:26124276). FLNB: Boomerang/Larsen dysplasia (skeletal). FLNC: Myofibrillar myopathy + dilated cardiomyopathy. Search by specific gene symbol."),
+        "spectrin":   ("SPTA1 · SPTB · SPTAN1",          "Spectrin is a family. SPTA1/SPTB: hereditary spherocytosis/elliptocytosis. SPTAN1: early infantile epileptic encephalopathy."),
+        "troponin":   ("TNNT2 · TNNI3 · TNNC1",          "Troponin has 3 cardiac subunits. TNNT2 (T): HCM/DCM. TNNI3 (I): HCM/RCM. TNNC1 (C): HCM. All cause inherited cardiomyopathy."),
+        "titin":      ("TTN",                             "Titin gene = TTN. Largest human gene. Truncating variants (TTNtv) cause ~25% of familial DCM."),
+        "dystrophin": ("DMD",                             "Dystrophin gene = DMD. Frameshift/nonsense = Duchenne MD. In-frame deletions = Becker MD."),
+        "fibrinogen": ("FGA · FGB · FGG",                 "Fibrinogen has 3 chains: FGA (alpha), FGB (beta — most clinically important), FGG (gamma)."),
         # Fully generic terms
         "protein":    (None, "Too generic — matches thousands of entries. Search a specific gene (TP53, BRCA1, EGFR) or UniProt accession (P04637)."),
         "enzyme":     (None, "Too generic. Search a specific enzyme gene (LDH, GPT, ACE, PCSK9) or use an EC number."),
@@ -7138,14 +7332,25 @@ if search and query and query!=st.session_state["last"]:
                     f"Non-human protein: '{query}' resolved to {_common} ({_sci_name}). "
                     f"Protellect only analyses human proteins. Try: TP53 · FLNC · BRCA1 · EGFR"
                 )
+            # ── Validate pdata has real content ───────────────────────────────
+            _seq_check = pdata.get("sequence",{}).get("value","") if pdata else ""
+            _gene_check = g_gene(pdata) if pdata else ""
+            if not _seq_check or len(_seq_check) < 5 or _gene_check in ("?",""):
+                raise ValueError(
+                    f"⚠️ '{query}' returned an incomplete protein record (no sequence data). "
+                    f"This usually means the search matched a partial or deprecated entry. "
+                    f"Try searching by exact gene symbol (e.g. FLNA for Filamin A, "
+                    f"ACTB for beta-actin, MYH7 for cardiac myosin) or by UniProt accession."
+                )
             st.session_state["pdata"]=pdata
             gene=g_gene(pdata); uid=pdata.get("primaryAccession","")
             st.session_state["gene"]=gene; st.session_state["uid"]=uid
-            # ── Disambiguation check ──────────────────────────────────────────
-            try:
+            # ── Search confidence banner ──────────────────────────────────────
+            _conf = pdata.get("_search_confidence","exact_gene_symbol")
+            if _conf == "protein_name_match":
                 _pn = pdata.get("proteinDescription",{}).get("recommendedName",{}).get("fullName",{}).get("value","") or ""
                 st.session_state["_search_disambiguation"] = _is_ambiguous_search(query, gene, _pn)
-            except Exception:
+            elif not st.session_state.get("_search_disambiguation"):
                 st.session_state["_search_disambiguation"] = None
             cv=fetch_clinvar(gene,max_v); st.session_state["cv"]=cv
             pdb=fetch_pdb(uid); st.session_state["pdb"]=pdb
@@ -7654,7 +7859,7 @@ for _cond, _cnt in (cv.get("summary",{}).get("top_conds",{}) or {}).items():
                 "mutation_type": _path_vars[0].get("variant_name","")[:40] if _path_vars else "Variant",
             })
         _cv_disease_names.add(_cond)
-protein_length=pdata.get("sequence",{}).get("length",1)
+protein_length = pdata.get("sequence",{}).get("length") or len(pdata.get("sequence",{}).get("value","")) or 0
 gi=st.session_state.get("gi") or compute_gi(cv,protein_length)
 
 # ── Conflict flags + ACMG badges + ML probability (shown in verdict area) ─
