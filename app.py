@@ -88,9 +88,10 @@ def login_page():
                 if user and user["pw"] == _hash(password):
                     st.session_state["auth_user"] = email
                     st.session_state["auth_name"] = user["name"]
-                    st.session_state["auth_plan"] = user["plan"]
-                    st.session_state["auth_searches_left"] = user["searches_left"]
-                    st.success(f"Welcome back, {user['name']}!")
+                    # Give registered users full pro access
+                    st.session_state["auth_plan"] = "pro"
+                    st.session_state["auth_searches_left"] = 999999
+                    st.success(f"Welcome back, {user['name']}! You have full Pro access.")
                     st.rerun()
                 else:
                     st.error("Invalid credentials. Use demo@protellect.com / protellect2024 to try.")
@@ -98,6 +99,13 @@ def login_page():
                 "<div style='color:#2a5060;font-size:.8rem;margin-top:.5rem;'>Demo: demo@protellect.com / protellect2024</div>",
                 unsafe_allow_html=True,
             )
+            st.markdown("<div style='margin:.8rem 0;text-align:center;color:#1e4060;font-size:.75rem;'>── or ──</div>", unsafe_allow_html=True)
+            if st.button("Continue as Guest (5 free analyses)", use_container_width=True, key="guest_btn"):
+                st.session_state["auth_user"]          = "guest"
+                st.session_state["auth_name"]          = "Guest Researcher"
+                st.session_state["auth_plan"]          = "free"
+                st.session_state["auth_searches_left"] = 5
+                st.rerun()
 
         with tab_up:
             st.markdown("<div style='color:#5a8090;font-size:.86rem;margin-bottom:.6rem;'>Create an account to get 5 free protein analyses. Upgrade anytime.</div>", unsafe_allow_html=True)
@@ -6206,13 +6214,11 @@ def render_molbio_workspace():
 
 
 # ─── Sidebar ────────────────────────────────────────────────────────
-# ── Open access — no login required ─────────────────────────────────────
-# Auto-set all users as pro (unlimited searches)
+# ── Authentication gate ──────────────────────────────────────────────────
+# Show login page if not authenticated
+# Users can sign in, register, or continue as guest (free plan)
 if not st.session_state.get("auth_user"):
-    st.session_state["auth_user"]          = "public"
-    st.session_state["auth_name"]          = "Researcher"
-    st.session_state["auth_plan"]          = "pro"
-    st.session_state["auth_searches_left"] = 999999
+    login_page()  # shows login/register/plans UI and calls st.stop()
 
 for k,v0 in {"pdata":None,"cv":None,"pdb":"","papers":[],"scored":[],"gene":"","uid":"",
              "assay":"","last":"","csv_df":None,"csv_type":"","goal_label":GOAL_OPTIONS[0],
