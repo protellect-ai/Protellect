@@ -992,6 +992,69 @@ def fetch_uniprot(query):
         validate_human(entry)  # raises if non-human
         return entry
 
+    # ── Hardcoded UniProt accessions — bypass search for common proteins ──────
+    # Direct accession lookup is faster, more reliable, and immune to search index issues
+    _GENE_TO_ACCESSION = {
+        # Structural / cytoskeletal
+        "FLNA":"P21333","FLNB":"O75369","FLNC":"Q14315",
+        "ACTB":"P60709","ACTA1":"P68133","ACTA2":"P62736","ACTC1":"P68032",
+        "MYH7":"P12883","MYH9":"P35579","MYH11":"P35749","MYL2":"P10916",
+        "TTN":"Q8WZ42","DSP":"P15924","DMD":"P11532","LMNA":"P02545",
+        "VIM":"P08670","DES":"P17661","SYNPO":"Q8TCG1",
+        # Kinases
+        "EGFR":"P00533","ERBB2":"P04626","BRAF":"P15056","KRAS":"P01116",
+        "NRAS":"P01111","HRAS":"P01112","ABL1":"P00519","BCR":"P11274",
+        "ALK":"Q9UM73","MET":"P08581","RET":"P07949","KIT":"P10721",
+        "PDGFRA":"P16234","FGFR1":"P11362","FGFR2":"P21802","FGFR3":"P22607",
+        "FGFR4":"P22455","PIK3CA":"P42336","PTEN":"P60484","AKT1":"P31749",
+        "MTOR":"P42345","CDK4":"P11802","CDK6":"P30279","CDK2":"P24941",
+        "ATM":"Q13315","ATR":"Q13535","CHEK1":"O14757","CHEK2":"O96017",
+        "LRRK2":"Q5S007","PINK1":"Q9BXM7","DYRK1A":"Q13627",
+        # Tumour suppressors / cancer
+        "TP53":"P04637","BRCA1":"P38398","BRCA2":"P51587","RB1":"P06400",
+        "APC":"P25054","VHL":"P40337","MLH1":"P40692","MSH2":"P43246",
+        "NF1":"P21359","NF2":"P35240","PTEN":"P60484","CDKN2A":"P42771",
+        "STK11":"Q15831","SMAD4":"Q13485","RUNX1":"Q01196",
+        # Ion channels / neuroscience
+        "SCN1A":"P35498","SCN2A":"Q99250","SCN5A":"Q14524","SCN8A":"Q9UQD0",
+        "KCNQ2":"O43526","KCNQ3":"O43525","KCNQ4":"P56696",
+        "CACNA1A":"O00555","CACNA1S":"Q13698","CACNA1C":"Q13936",
+        "GRIN2A":"Q12879","GRIN2B":"Q13224","GRIA2":"P42262",
+        "HCN1":"O60741","HCN4":"Q9Y3Q4","CFTR":"P13569",
+        "PIEZO1":"Q92508","PIEZO2":"A0JLT2",
+        # GPCRs
+        "ADRB2":"P07550","ADRB1":"P08588","ADRA1A":"P35348",
+        "DRD2":"P14416","DRD1":"P21728","DRD3":"P35462",
+        "HTR1A":"P08908","HTR2A":"P28223","HTR3A":"P46098",
+        "CHRM1":"P11229","CHRM2":"P08172","CHRM3":"P20309",
+        "OPRM1":"P35372","OPRD1":"P41143","OPRK1":"P41145",
+        "CXCR4":"P61073","CCR5":"P51681","CNR1":"P21554",
+        # Rare disease / Mendelian
+        "PKD1":"P98161","PKD2":"Q13563","HBB":"P68871","HBA1":"P69905",
+        "HEXA":"P06865","GBA":"P04062","PAH":"P00439","CFTR":"P13569",
+        "FBN1":"P35555","FBN2":"P35556","MECP2":"P51608","FMR1":"Q06787",
+        "HTT":"P42858","ATXN1":"P54253","ATXN3":"P54252",
+        "TSC1":"Q92574","TSC2":"P49815","WT1":"P19544",
+        "SYNGAP1":"Q9Y1Z5","SHANK3":"Q9BYB0","ADNP":"Q9H2P0",
+        "CDKL5":"O76039","FOXG1":"P55316","KDM5C":"P41229",
+        # Metabolism / cardiovascular
+        "LDLR":"P01130","PCSK9":"Q8NBP7","APOB":"P04114","APOE":"P02649",
+        "TNNT2":"P45379","TNNI3":"P19429","TNNC1":"P63316",
+        "MYBPC3":"Q14896","MYH7":"P12883","TPM1":"P09493","TPM2":"P07951",
+        "PLN":"P26678","RBM20":"Q5T481","TTR":"P02766",
+        # Ubiquitous / housekeeping
+        "ALB":"P02768","INS":"P01308","GH1":"P01241","IGF1":"P05019",
+        "TNF":"P01375","IL6":"P05231","IL1B":"P01584","IFNG":"P01579",
+        "TGFB1":"P01137","VEGFA":"P15692","EGF":"P01133",
+        # Collagens
+        "COL1A1":"P02452","COL1A2":"P08123","COL2A1":"P02458",
+        "COL3A1":"P02461","COL4A1":"P02462","COL4A2":"P08572",
+        "COL5A1":"P20908","COL5A2":"P05997","COL7A1":"Q02388",
+        # Extra
+        "ADIPOQ":"Q15848","MMP2":"P08253","MMP9":"P14780",
+        "ACE":"P12821","ACE2":"Q9BYF1","GJB2":"P29033",
+    }
+
     # ── Pre-resolve common protein names to gene symbols ──────────────────
     # Many researchers type the protein name, not the gene symbol.
     # This map resolves the most common ambiguous multi-word names.
@@ -1060,14 +1123,27 @@ def fetch_uniprot(query):
         )
         query = _resolved_gene  # Replace query with canonical gene symbol
 
-    # ── Stage 1: EXACT gene symbol match (highest confidence) ──────────────
-    # Try exact gene symbol first — if it hits, no ambiguity possible
+    # ── Stage 0: Direct accession lookup (fastest + most reliable) ──────────
     _q_upper = query.strip().upper()
+    _known_acc = _GENE_TO_ACCESSION.get(_q_upper)
+    if _known_acc:
+        try:
+            r_acc = requests.get(f"{base}/{_known_acc}",
+                                 headers={"Accept":"application/json"}, timeout=20)
+            if r_acc.status_code == 200:
+                acc_entry = r_acc.json()
+                validate_human(acc_entry)
+                acc_entry["_search_confidence"] = "exact_gene_symbol"
+                return acc_entry
+        except ValueError:
+            raise
+        except Exception:
+            pass  # Fall through to search
+
+    # ── Stage 1: EXACT gene symbol search ────────────────────────────────────
     exact_queries = [
-        # UniProt field syntax: gene: is exact match for gene symbols
         f"gene:{_q_upper} AND reviewed:true AND organism_id:9606",
         f"gene:{_q_upper} AND organism_id:9606",
-        # Try with quotes for multi-word gene names
         f'gene:"{_q_upper}" AND organism_id:9606',
     ]
     for qry in exact_queries:
@@ -1183,29 +1259,63 @@ def _is_ambiguous_search(query: str, result_gene: str, result_name: str) -> str 
 def fetch_clinvar(gene, max_v=150):
     """
     Fetch ClinVar variants for a gene. Handles both old and new ClinVar API formats.
-    Uses multiple search strategies and robust per-variant parsing.
+    Uses direct NCBI Gene ID lookup as stage 0 for common genes.
     """
+    # ── Stage 0: Known NCBI Gene IDs (fastest, avoids text search issues) ──
+    _GENE_NCBI_IDS = {
+        "FLNA":"2316","FLNB":"2317","FLNC":"2318",
+        "TP53":"7157","BRCA1":"672","BRCA2":"675",
+        "EGFR":"1956","KRAS":"3845","BRAF":"673","PTEN":"5728",
+        "SCN1A":"6323","SCN2A":"6326","SCN5A":"6331","SCN8A":"6334",
+        "KCNQ2":"3785","KCNQ3":"3786","CACNA1A":"773","CACNA1S":"779",
+        "GRIN2A":"2903","GRIN2B":"2904","SYNGAP1":"8831","SHANK3":"85358",
+        "LMNA":"4000","MYH7":"4625","MYBPC3":"4607","TTN":"7273",
+        "TNNT2":"7139","TNNI3":"7137","TPM1":"7168","DSP":"1832",
+        "PKD1":"5310","PKD2":"5311","HBB":"3043","HBA1":"3039",
+        "MECP2":"4204","FMR1":"2332","HTT":"3064","DMD":"1756",
+        "TSC1":"7248","TSC2":"7249","NF1":"4763","NF2":"4771",
+        "VHL":"7428","RB1":"5925","APC":"324","MLH1":"4292",
+        "LDLR":"3949","PCSK9":"255738","CFTR":"1080",
+        "PAH":"5053","GBA":"2629","HEXA":"3073",
+        "COL1A1":"1277","COL1A2":"1278","COL4A1":"1282",
+        "FBN1":"2200","FBN2":"2201","LRRK2":"120892",
+        "PINK1":"65018","ATXN1":"6310","ATXN3":"4287",
+        "ALB":"213","INS":"3630","ACE":"1636","ACE2":"59272",
+        "CDK4":"1019","CDK6":"1021","ATM":"472","ATR":"545",
+    }
+    ncbi_id = _GENE_NCBI_IDS.get(gene.upper(),"")
     ids = []
-    # Strategy 1: strict gene symbol search
-    search_terms = [
-        f"{gene}[gene] AND single_gene[prop]",
-        f"{gene}[genesymbol]",
-        f"{gene}[gene]",
-        f'"{gene}"[gene name]',
-    ]
-    for term in search_terms:
+    if ncbi_id:
         try:
-            r = requests.get(ESEARCH, params={
-                "db":"clinvar","term":term,"retmax":max_v,
-                "retmode":"json","sort":"clinical_significance"
+            r0 = requests.get(ESEARCH, params={
+                "db":"clinvar","term":f"{ncbi_id}[gene_id]",
+                "retmax":max_v,"retmode":"json"
             }, timeout=30)
-            r.raise_for_status()
-            new_ids = r.json().get("esearchresult",{}).get("idlist",[])
-            if new_ids:
-                ids = new_ids
-                break
-            time.sleep(0.3)
-        except: continue
+            r0.raise_for_status()
+            ids = r0.json().get("esearchresult",{}).get("idlist",[])
+        except: pass
+
+    # ── Stage 1: Text search fallback ──────────────────────────────────────
+    if not ids:
+        search_terms = [
+            f"{gene}[gene] AND single_gene[prop]",
+            f"{gene}[genesymbol]",
+            f"{gene}[gene]",
+            f'"{gene}"[gene name]',
+        ]
+        for term in search_terms:
+            try:
+                r = requests.get(ESEARCH, params={
+                    "db":"clinvar","term":term,"retmax":max_v,
+                    "retmode":"json","sort":"clinical_significance"
+                }, timeout=30)
+                r.raise_for_status()
+                new_ids = r.json().get("esearchresult",{}).get("idlist",[])
+                if new_ids:
+                    ids = new_ids
+                    break
+                time.sleep(0.3)
+            except: continue
 
     if not ids: return {"variants":[],"summary":{}}
     variants=[]
