@@ -1,0 +1,54 @@
+#!/usr/bin/env python3
+"""
+Push app.py to GitHub repo.
+Usage: python3 push_to_github.py ghp_YOUR_TOKEN_HERE
+"""
+import sys, requests, base64, json
+
+TOKEN = sys.argv[1] if len(sys.argv) > 1 else input("GitHub token: ").strip()
+REPO  = "protellect-ai/Protellect"
+FILE  = "app.py"
+BRANCH = "main"
+
+headers = {
+    "Authorization": f"token {TOKEN}",
+    "Accept": "application/vnd.github.v3+json",
+}
+
+# 1. Read local file
+with open("/home/claude/app.py", "rb") as f:
+    content = base64.b64encode(f.read()).decode()
+
+# 2. Get current SHA (needed for update)
+r = requests.get(
+    f"https://api.github.com/repos/{REPO}/contents/{FILE}",
+    headers=headers, params={"ref": BRANCH}
+)
+if r.status_code == 200:
+    sha = r.json()["sha"]
+    print(f"Current SHA: {sha[:10]}...")
+else:
+    sha = None
+    print("File not found on repo — will create it")
+
+# 3. Push
+payload = {
+    "message": "Update app.py — onboarding, Scholar pull, export docs, professional CSS",
+    "content": content,
+    "branch": BRANCH,
+}
+if sha:
+    payload["sha"] = sha
+
+r2 = requests.put(
+    f"https://api.github.com/repos/{REPO}/contents/{FILE}",
+    headers=headers, json=payload
+)
+if r2.status_code in (200, 201):
+    commit = r2.json().get("commit", {}).get("sha", "")[:10]
+    print(f"✅ Pushed successfully! Commit: {commit}")
+    print(f"   Streamlit will redeploy in ~2 minutes.")
+    print(f"   URL: https://protellect.streamlit.app")
+else:
+    print(f"❌ Failed: {r2.status_code}")
+    print(r2.text[:300])
