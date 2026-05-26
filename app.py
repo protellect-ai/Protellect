@@ -9098,6 +9098,23 @@ _VERDICT_LABELS = {
 _default_label = (_pursue.upper() + ": " + gene, _gi_safe.get("explanation",""))
 verdict_label, verdict_body = _VERDICT_LABELS.get(_verdict, _default_label)
 
+# ── Derive banner stats from gi ─────────────────────────────────────────────
+_n_path   = _gi_safe.get("n_pathogenic", 0)
+_n_total  = _gi_safe.get("n_total", 0)
+_density  = str(round((_gi_safe.get("density", 0) or 0) * 100, 2))
+_per100   = str(round((_gi_safe.get("per100", 0) or 0), 2))
+_cv_url   = f"https://www.ncbi.nlm.nih.gov/clinvar/?term={gene}[gene]"
+_up_url   = f"https://www.uniprot.org/uniprotkb/{uid}/entry" if uid else f"https://www.uniprot.org/uniprotkb?query={gene}"
+_why      = _gi_safe.get("explanation", "The genomic integrity score measures confirmed disease-causing variant density per 100 amino acids.")
+_hyp_inh  = diseases[0].get("inheritance","") if diseases else ""
+_hyp      = (
+    f"Haploinsufficiency likely — one functional copy insufficient (dominant inheritance, pLI={gnomad_data.get('pLI','?') if gnomad_data else '?'}). "
+    if "dominant" in _hyp_inh.lower() else
+    f"Biallelic loss required — both copies must be non-functional (recessive). "
+    if "recessive" in _hyp_inh.lower() else
+    f"Inheritance pattern: {_hyp_inh or 'review ClinVar for inheritance data'}. "
+) + (f"Top drug lead: {drugs_data[0].get('drug','')}." if drugs_data else "")
+
 _banner_html = (
     "<div class='" + css_p + "'>"
     "<div style='font-size:2rem;flex-shrink:0;padding-top:2px;'>" + _icon + "</div>"
