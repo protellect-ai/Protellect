@@ -9028,46 +9028,6 @@ def _render_enhanced_signals():
             f"<span style='color:#1e4060;font-size:.61rem;'>({src})</span></div>",
             unsafe_allow_html=True
         )
-if org_class and not org_class.get("is_human", True) and gene and gene not in ("","?"):
-    st.markdown(
-        "<div style='background:#0a0500;border:2px solid #ff8c42;border-radius:10px;"
-        "padding:.8rem 1.2rem;margin-bottom:.8rem;'>"
-        "<span style='color:#ff8c42;font-weight:800;'>⚠️ NON-HUMAN PROTEIN: "
-        + org_class.get("common_name","") + " (" + org_class.get("scientific_name","") + ")</span>"
-        "<div style='color:#7a5030;font-size:.86rem;margin-top:3px;'>"
-        + org_class.get("warning","") + "</div></div>",
-        unsafe_allow_html=True,
-    )
-
-# ── gnomAD constraint banner ─────────────────────────────────────────────────
-if gnomad_data:
-    pli = gnomad_data.get("pLI", 0)
-    oe_lof = gnomad_data.get("oe_lof", 1)
-    intol = gnomad_data.get("intolerant", False)
-    mis_intol = gnomad_data.get("mis_intolerant", False)
-    gnom_clr = "#ff2d55" if intol else "#ffd60a" if pli > 0.5 else "#3a6080"
-    gnom_label = ("Highly intolerant to loss-of-function — strongly essential gene (pLI="
-                  + str(pli) + ")" if intol else
-                  "Moderately constrained — some redundancy possible" if pli > 0.5 else
-                  "Tolerant to LoF — likely functionally redundant or compensated")
-    st.markdown(
-        "<div style='background:#020810;border:1px solid " + gnom_clr + "33;"
-        "border-radius:10px;padding:.7rem 1.2rem;margin-bottom:.8rem;"
-        "display:flex;align-items:center;gap:14px;'>"
-        "<div>"
-        "<div style='color:" + gnom_clr + ";font-weight:700;font-size:.88rem;'>📊 Population Genetics (gnomAD): " + gnom_label + "</div>"
-        "<div style='color:#4a7090;font-size:.8rem;margin-top:2px;'>"
-        "pLI=" + str(pli) + " · o/e LoF=" + str(oe_lof) + " · o/e Missense=" + str(gnomad_data.get('oe_mis','?'))
-        + " · <a href='" + gnomad_data.get('url','') + "' target='_blank' style='color:#5a90b0;'>gnomAD ↗</a>"
-        + (" · <span style='color:#ff2d55;'>Missense intolerant</span>" if mis_intol else "")
-        + "</div></div></div>",
-        unsafe_allow_html=True,
-    )
-
-if gi["pursue"]=="deprioritise":
-    st.markdown("<div class='bias-warn'><p>⚠️ <b style='color:#ff2d55;'>Genomics Warning:</b> This protein carries no confirmed disease-causing germline variants. The principle — <em>genetics must be the starting point of any biology</em> — means we should not commit wet-lab resources here based on structural data or cell-culture results alone. Famous proteins like β2-arrestin (ARRB2), β-adrenergic receptors, and GRKs share this pattern: extensively studied, no dominant disease variants, likely non-essential in vivo. <b style='color:#ffd60a;'>Protein structures are not a validation of biology. DNA sequences are.</b></p></div>", unsafe_allow_html=True)
-
-
 # ─── Chemical Structure helpers ────────────────────────────────────────────────
 
 def kyte_doolittle(seq, window=9):
@@ -13822,4 +13782,3 @@ dr();
             )
         prog_html += "</div>"
         st.markdown(prog_html, unsafe_allow_html=True)
-
