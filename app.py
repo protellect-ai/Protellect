@@ -8014,6 +8014,12 @@ with st.sidebar:
         except Exception:
             pass
 
+    # ── Lab chatbot button ──────────────────────────────────────────────────
+    try:
+        render_lab_chatbot()
+    except Exception:
+        pass
+
     # ── Plan display ───────────────────────────────────────────────────────
     _plan_sb = st.session_state.get("auth_plan","pro")
     _plan_label_sb = {"pro":"Pro · Unlimited","enterprise":"Enterprise","free":"Free (5 searches)"}.get(_plan_sb, _plan_sb.title())
@@ -9065,6 +9071,32 @@ if active_goal and active_goal != GOAL_OPTIONS[0]:
         _goal_note += f"For mechanistic studies, focus on variants at functional domains — these will most directly disrupt the pathway of interest. "
     elif "drug" in active_goal.lower():
         _goal_note += f"For drug discovery: AlphaFold structure → fpocket druggability → AlphaMissense triage → SPR binding → biochemical assay. Never spend wet-lab budget before computational triage. "
+
+# ── Build verdict banner variables from gi score ──────────────────────────
+_gi_safe = gi if gi else {}
+_pursue   = _gi_safe.get("pursue", "neutral")
+_verdict  = _gi_safe.get("verdict", "INSUFFICIENT DATA")
+_icon_map = {"prioritise":"●","investigate":"◐","caution":"◑","neutral":"○"}
+_icon     = _gi_safe.get("icon", _icon_map.get(_pursue, "○"))
+v_clr     = (_gi_safe.get("colour") or
+             ("#ff2d55" if _pursue=="prioritise" else
+              "#ffd60a" if _pursue in ("investigate","caution") else "#3a6080"))
+css_p     = ("pursue-yes"     if _pursue=="prioritise" else
+             "pursue-caution" if _pursue in ("investigate","caution") else
+             "pursue-no")
+
+# Verdict label and body
+_VERDICT_LABELS = {
+    "DISEASE-CRITICAL":   ("PURSUE: " + gene, "Strong genetic evidence. Multiple confirmed disease-causing variants. Justified for full wet-lab investment."),
+    "DISEASE-ASSOCIATED": ("PURSUE: " + gene, "Good genetic evidence. Confirmed P/LP variants present. Recommend validation experiments."),
+    "MODERATE":           ("INVESTIGATE: " + gene, "Moderate evidence. Some pathogenic variants but insufficient for confident verdict. Run computational triage first."),
+    "LOW-EVIDENCE":       ("INVESTIGATE: " + gene, "Limited ClinVar evidence. Understudied protein. Prioritise computational analysis before wet-lab spend."),
+    "MINIMAL":            ("DEPRIORITISE: " + gene, "Very few disease-causing variants detected. Protein may be bypassable in vivo. Reassess target selection."),
+    "UNDERSTUDIED":       ("INSUFFICIENT DATA: " + gene, "Too few ClinVar entries. Cannot make a genetics-based recommendation yet."),
+    "NO CLINVAR DATA":    ("INSUFFICIENT DATA: " + gene, "No ClinVar data returned. Check gene symbol or try again — may be a network issue."),
+}
+_default_label = (_pursue.upper() + ": " + gene, _gi_safe.get("explanation",""))
+verdict_label, verdict_body = _VERDICT_LABELS.get(_verdict, _default_label)
 
 _banner_html = (
     "<div class='" + css_p + "'>"
