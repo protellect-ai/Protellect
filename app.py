@@ -6578,6 +6578,139 @@ def render_molbio_workspace():
 
 
 # ─── Sidebar ────────────────────────────────────────────────────────
+
+# ── Floating Lab Chatbot Popup (bottom-right) ────────────────────────────────
+st.markdown("""
+<style>
+#proto-chat-btn {
+    position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+    width: 52px; height: 52px; border-radius: 50%;
+    background: linear-gradient(135deg, #00d4e8, #6478ff);
+    border: none; cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0,212,232,.35);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem; transition: transform .2s, box-shadow .2s;
+}
+#proto-chat-btn:hover { transform: scale(1.1); box-shadow: 0 6px 28px rgba(0,212,232,.5); }
+#proto-chat-panel {
+    position: fixed; bottom: 88px; right: 24px; z-index: 9998;
+    width: 340px; max-height: 480px;
+    background: #0d1219; border: 1px solid #1e2d3f;
+    border-radius: 14px; box-shadow: 0 8px 40px rgba(0,0,0,.6);
+    display: none; flex-direction: column; overflow: hidden;
+    animation: slideUp .2s ease;
+}
+@keyframes slideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+#proto-chat-panel.open { display: flex; }
+#proto-chat-header {
+    background: linear-gradient(135deg,#080c12,#0d1219);
+    border-bottom: 1px solid #1e2d3f;
+    padding: 12px 16px; display: flex; align-items: center;
+    justify-content: space-between;
+}
+#proto-chat-header span { color: #dce8f5; font-weight: 600; font-size: .88rem;
+    font-family: DM Sans,sans-serif; }
+#proto-chat-close { background:none; border:none; color:#4a6478; cursor:pointer;
+    font-size:1.1rem; padding:0; line-height:1; }
+#proto-chat-close:hover { color:#dce8f5; }
+#proto-chat-messages {
+    flex: 1; overflow-y: auto; padding: 12px 14px;
+    display: flex; flex-direction: column; gap: 8px;
+}
+#proto-chat-messages::-webkit-scrollbar { width: 4px; }
+#proto-chat-messages::-webkit-scrollbar-track { background: transparent; }
+#proto-chat-messages::-webkit-scrollbar-thumb { background: #1e2d3f; border-radius:4px; }
+.pchat-msg { padding: 8px 12px; border-radius: 10px; font-size: .8rem;
+    line-height: 1.5; font-family: DM Sans,sans-serif; max-width: 90%; }
+.pchat-msg.bot { background: #141b25; color: #8da8bf; align-self: flex-start; }
+.pchat-msg.user { background: rgba(0,212,232,.1); color: #00d4e8;
+    border: 1px solid rgba(0,212,232,.2); align-self: flex-end; }
+#proto-chat-footer { border-top: 1px solid #1e2d3f; padding: 10px 12px;
+    display: flex; gap: 8px; }
+#proto-chat-input { flex: 1; background: #080c12; border: 1px solid #1e2d3f;
+    border-radius: 8px; color: #dce8f5; padding: 8px 12px;
+    font-size: .8rem; font-family: DM Sans,sans-serif; outline: none; }
+#proto-chat-input:focus { border-color: #00d4e8; }
+#proto-chat-send { background: rgba(0,212,232,.1); border: 1px solid rgba(0,212,232,.3);
+    color: #00d4e8; border-radius: 7px; padding: 7px 12px; cursor: pointer;
+    font-size: .8rem; font-weight: 600; white-space: nowrap; }
+#proto-chat-send:hover { background: rgba(0,212,232,.2); }
+</style>
+
+<button id="proto-chat-btn" onclick="toggleChat()" title="Lab Assistant">🤖</button>
+
+<div id="proto-chat-panel">
+  <div id="proto-chat-header">
+    <span>🧬 Lab Assistant</span>
+    <button id="proto-chat-close" onclick="toggleChat()">✕</button>
+  </div>
+  <div id="proto-chat-messages">
+    <div class="pchat-msg bot">Hi! I can configure your workspace — tell me about your lab, the proteins you study, or what you want to analyse.</div>
+  </div>
+  <div id="proto-chat-footer">
+    <input id="proto-chat-input" placeholder="e.g. Focus on SCN1A epilepsy..." 
+           onkeydown="if(event.key==='Enter')sendChat()" />
+    <button id="proto-chat-send" onclick="sendChat()">Send</button>
+  </div>
+</div>
+
+<script>
+function toggleChat() {
+    const p = document.getElementById('proto-chat-panel');
+    p.classList.toggle('open');
+    if (p.classList.contains('open')) {
+        document.getElementById('proto-chat-input').focus();
+    }
+}
+
+function sendChat() {
+    const inp = document.getElementById('proto-chat-input');
+    const msgs = document.getElementById('proto-chat-messages');
+    const text = inp.value.trim();
+    if (!text) return;
+    inp.value = '';
+
+    // Add user message
+    const um = document.createElement('div');
+    um.className = 'pchat-msg user';
+    um.textContent = text;
+    msgs.appendChild(um);
+    msgs.scrollTop = msgs.scrollHeight;
+
+    // Add bot thinking
+    const bm = document.createElement('div');
+    bm.className = 'pchat-msg bot';
+    bm.textContent = '...';
+    msgs.appendChild(bm);
+    msgs.scrollTop = msgs.scrollHeight;
+
+    // Call Anthropic API
+    fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 300,
+            system: 'You are the Protellect Lab Assistant. You help biomedical researchers configure their workspace and answer questions about protein analysis, ClinVar variants, gnomAD constraint scores, and experimental design. Be concise — 2-3 sentences max. If the user describes their lab, tell them what domain/settings to use.',
+            messages: [{ role: 'user', content: text }]
+        })
+    })
+    .then(r => r.json())
+    .then(d => {
+        bm.textContent = d.content?.[0]?.text || 'Sorry, I could not get a response.';
+        msgs.scrollTop = msgs.scrollHeight;
+    })
+    .catch(() => {
+        bm.textContent = 'Network error. Check your connection and try again.';
+    });
+}
+</script>
+""", unsafe_allow_html=True)
+
 # ── Authentication gate ──────────────────────────────────────────────────
 # Show login page if not authenticated
 # Users can sign in, register, or continue as guest (free plan)
@@ -10618,6 +10751,18 @@ if st.session_state["disease_proteins"]:
 
 # ════════════ TAB 0 — SUMMARY ════════════
 with tab0:
+    # ── Pull all data from session state ─────────────────────────────────────
+    gnomad_data  = st.session_state.get("gnomad") or {}
+    drugs_data   = st.session_state.get("drugs") or []
+    trials_data  = st.session_state.get("trials") or []
+    patient_data = st.session_state.get("patients") or {}
+    diseases     = g_diseases(pdata) if pdata else []
+    ot_data      = st.session_state.get("ot") or {}
+    am_data      = st.session_state.get("am") or {}
+    string_data  = st.session_state.get("string") or []
+    clingen_data = st.session_state.get("clingen") or {}
+    abstracts    = st.session_state.get("abstracts") or []
+
     # Animated header
     st.markdown(f"""
     <style>
