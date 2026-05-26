@@ -191,7 +191,7 @@ def decrement_search():
     pass
 
 
-st.set_page_config(page_title="Protellect", page_icon="🧬",
+st.set_page_config(page_title="Protellect", page_icon="🔬",
                    layout="wide", initial_sidebar_state="expanded")
 
 LOGO_B64 = "PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAwIiB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCI+CiAgPGRlZnM+CiAgICA8cmFkaWFsR3JhZGllbnQgaWQ9ImJnIiBjeD0iNTAlIiBjeT0iNTAlIiByPSI1MCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjMDAxYTJlIiBzdG9wLW9wYWNpdHk9IjAuNiIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMwMDA1MDgiIHN0b3Atb3BhY2l0eT0iMCIvPgogICAgPC9yYWRpYWxHcmFkaWVudD4KICAgIDxmaWx0ZXIgaWQ9Imdsb3ciIHg9Ii01MCUiIHk9Ii01MCUiIHdpZHRoPSIyMDAlIiBoZWlnaHQ9IjIwMCUiPgogICAgICA8ZmVHYXVzc2lhbkJsdXIgc3RkRGV2aWF0aW9uPSIyLjUiIHJlc3VsdD0iYmx1ciIvPgogICAgICA8ZmVNZXJnZT48ZmVNZXJnZU5vZGUgaW49ImJsdXIiLz48ZmVNZXJnZU5vZGUgaW49IlNvdXJjZUdyYXBoaWMiLz48L2ZlTWVyZ2U+CiAgICA8L2ZpbHRlcj4KICAgIDxmaWx0ZXIgaWQ9InNvZnRnbG93Ij4KICAgICAgPGZlR2F1c3NpYW5CbHVyIHN0ZERldmlhdGlvbj0iMS41IiByZXN1bHQ9ImJsdXIiLz4KICAgICAgPGZlTWVyZ2U+PGZlTWVyZ2VOb2RlIGluPSJibHVyIi8+PGZlTWVyZ2VOb2RlIGluPSJTb3VyY2VHcmFwaGljIi8+PC9mZU1lcmdlPgogICAgPC9maWx0ZXI+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImhlbGl4MSIgeDE9IjAlIiB5MT0iMCUiIHgyPSIwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjMDBmZmVlIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iNDAlIiBzdG9wLWNvbG9yPSIjMDBlNWZmIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iIzAwNTVjYyIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iaGVsaXgyIiB4MT0iMCUiIHkxPSIxMDAlIiB4Mj0iMCUiIHkyPSIwJSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMwMGZmZWUiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSI0MCUiIHN0b3AtY29sb3I9IiMwMGM4ZmYiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMDA0NGFhIi8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJub2RlR3JhZCIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNmZmZmZmYiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMDBlNWZmIi8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KCiAgPCEtLSBPdXRlciByaW5nIC0tPgogIDxjaXJjbGUgY3g9IjEwMCIgY3k9IjEwMCIgcj0iOTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwZTVmZiIgc3Ryb2tlLXdpZHRoPSIwLjYiIG9wYWNpdHk9IjAuMTUiLz4KICA8Y2lyY2xlIGN4PSIxMDAiIGN5PSIxMDAiIHI9Ijc1IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMGU1ZmYiIHN0cm9rZS13aWR0aD0iMC40IiBvcGFjaXR5PSIwLjEiLz4KICA8Y2lyY2xlIGN4PSIxMDAiIGN5PSIxMDAiIHI9IjkyIiBmaWxsPSJ1cmwoI2JnKSIvPgoKICA8IS0tIFRpY2sgbWFya3Mgb24gb3V0ZXIgcmluZyAtLT4KICA8ZyBzdHJva2U9IiMwMGU1ZmYiIHN0cm9rZS13aWR0aD0iMC44IiBvcGFjaXR5PSIwLjI1Ij4KICAgIDxsaW5lIHgxPSIxMDAiIHkxPSIxMCIgeDI9IjEwMCIgeTI9IjE4Ii8+CiAgICA8bGluZSB4MT0iMTAwIiB5MT0iMTgyIiB4Mj0iMTAwIiB5Mj0iMTkwIi8+CiAgICA8bGluZSB4MT0iMTAiIHkxPSIxMDAiIHgyPSIxOCIgeTI9IjEwMCIvPgogICAgPGxpbmUgeDE9IjE4MiIgeTE9IjEwMCIgeDI9IjE5MCIgeTI9IjEwMCIvPgogICAgPGxpbmUgeDE9IjM2IiB5MT0iMzYiIHgyPSI0MSIgeTI9IjQxIi8+CiAgICA8bGluZSB4MT0iMTU5IiB5MT0iMzYiIHgyPSIxNjQiIHkyPSI0MSIvPgogICAgPGxpbmUgeDE9IjM2IiB5MT0iMTY0IiB4Mj0iNDEiIHkyPSIxNTkiLz4KICAgIDxsaW5lIHgxPSIxNTkiIHkxPSIxNjQiIHgyPSIxNjQiIHkyPSIxNTkiLz4KICA8L2c+CgogIDwhLS0gRE5BIHN0cmFuZCBBIOKAlCBzaW51c29pZGFsIHBhdGggbGVmdCAtLT4KICA8cGF0aCBkPSJNIDgyIDIyIEMgNjAgNDAsIDY4IDU4LCA4NiA3MiBDIDEwNCA4NiwgMTEyIDEwNCwgOTIgMTIwIEMgNzIgMTM2LCA3NiAxNTYsIDg4IDE3NCIKICAgICAgICBmaWxsPSJub25lIiBzdHJva2U9InVybCgjaGVsaXgxKSIgc3Ryb2tlLXdpZHRoPSIzLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIKICAgICAgICBmaWx0ZXI9InVybCgjZ2xvdykiIG9wYWNpdHk9IjAuOTUiLz4KCiAgPCEtLSBETkEgc3RyYW5kIEIg4oCUIG9wcG9zaXRlIHBoYXNlIC0tPgogIDxwYXRoIGQ9Ik0gMTEyIDIyIEMgMTM0IDQwLCAxMjYgNTgsIDEwOCA3MiBDIDkwIDg2LCA4MiAxMDQsIDEwMiAxMjAgQyAxMjIgMTM2LCAxMTggMTU2LCAxMDYgMTc0IgogICAgICAgIGZpbGw9Im5vbmUiIHN0cm9rZT0idXJsKCNoZWxpeDIpIiBzdHJva2Utd2lkdGg9IjMuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogICAgICAgIGZpbHRlcj0idXJsKCNnbG93KSIgb3BhY2l0eT0iMC45NSIvPgoKICA8IS0tIFJ1bmdzIOKAlCBwcmVjaXNlIGF0IHdhdmUgaW50ZXJzZWN0aW9ucyAtLT4KICA8ZyBmaWx0ZXI9InVybCgjc29mdGdsb3cpIiBvcGFjaXR5PSIwLjkiPgogICAgPGxpbmUgeDE9IjgyIiB5MT0iMzAiIHgyPSIxMTIiIHkyPSIzMCIgc3Ryb2tlPSIjMDBmZmVlIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogICAgPGxpbmUgeDE9Ijc0IiB5MT0iNDgiIHgyPSIxMTgiIHkyPSI0OCIgc3Ryb2tlPSIjMDBlNWZmIiBzdHJva2Utd2lkdGg9IjEuOCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBvcGFjaXR5PSIwLjciLz4KICAgIDxsaW5lIHgxPSI3MCIgeTE9IjY2IiB4Mj0iMTIyIiB5Mj0iNjYiIHN0cm9rZT0iIzAwZmZlZSIgc3Ryb2tlLXdpZHRoPSIyLjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogICAgPGxpbmUgeDE9Ijc0IiB5MT0iODQiIHgyPSIxMTgiIHkyPSI4NCIgc3Ryb2tlPSIjMDBlNWZmIiBzdHJva2Utd2lkdGg9IjEuOCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBvcGFjaXR5PSIwLjciLz4KICAgIDxsaW5lIHgxPSI4NCIgeTE9IjEwMiIgeDI9IjExMCIgeTI9IjEwMiIgc3Ryb2tlPSIjMDBmZmVlIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogICAgPGxpbmUgeDE9Ijg2IiB5MT0iMTIwIiB4Mj0iMTA4IiB5Mj0iMTIwIiBzdHJva2U9IiMwMGU1ZmYiIHN0cm9rZS13aWR0aD0iMS44IiBzdHJva2UtbGluZWNhcD0icm91bmQiIG9wYWNpdHk9IjAuNyIvPgogICAgPGxpbmUgeDE9Ijg0IiB5MT0iMTM4IiB4Mj0iMTA4IiB5Mj0iMTM4IiBzdHJva2U9IiMwMGZmZWUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgICA8bGluZSB4MT0iODgiIHkxPSIxNTYiIHgyPSIxMDYiIHkyPSIxNTYiIHN0cm9rZT0iIzAwZTVmZiIgc3Ryb2tlLXdpZHRoPSIxLjgiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgb3BhY2l0eT0iMC43Ii8+CiAgPC9nPgoKICA8IS0tIFJ1bmcgZW5kcG9pbnRzIOKAlCBsaXQgbm9kZXMgLS0+CiAgPGcgZmlsdGVyPSJ1cmwoI2dsb3cpIj4KICAgIDxjaXJjbGUgY3g9IjgyIiBjeT0iMzAiIHI9IjIuOCIgZmlsbD0iIzAwZmZlZSIgb3BhY2l0eT0iMC45NSIvPgogICAgPGNpcmNsZSBjeD0iMTEyIiBjeT0iMzAiIHI9IjIuOCIgZmlsbD0iIzAwZTVmZiIgb3BhY2l0eT0iMC45NSIvPgogICAgPGNpcmNsZSBjeD0iNzAiIGN5PSI2NiIgcj0iMy4yIiBmaWxsPSIjMDBmZmVlIi8+CiAgICA8Y2lyY2xlIGN4PSIxMjIiIGN5PSI2NiIgcj0iMy4yIiBmaWxsPSIjMDBlNWZmIi8+CiAgICA8Y2lyY2xlIGN4PSI4NCIgY3k9IjEwMiIgcj0iMi44IiBmaWxsPSIjMDBmZmVlIiBvcGFjaXR5PSIwLjk1Ii8+CiAgICA8Y2lyY2xlIGN4PSIxMTAiIGN5PSIxMDIiIHI9IjIuOCIgZmlsbD0iIzAwZTVmZiIgb3BhY2l0eT0iMC45NSIvPgogICAgPGNpcmNsZSBjeD0iODQiIGN5PSIxMzgiIHI9IjIuOCIgZmlsbD0iIzAwZmZlZSIgb3BhY2l0eT0iMC45Ii8+CiAgICA8Y2lyY2xlIGN4PSIxMDgiIGN5PSIxMzgiIHI9IjIuOCIgZmlsbD0iIzAwZTVmZiIgb3BhY2l0eT0iMC45Ii8+CiAgPC9nPgoKICA8IS0tIE5ldXJhbCBjaXJjdWl0IOKAlCBicmFuY2hlcyBmcm9tIHJ1bmcgbm9kZXMgLS0+CiAgPCEtLSBUb3AgcmlnaHQgY2x1c3RlciAtLT4KICA8ZyBzdHJva2U9IiMwMGU1ZmYiIGZpbGw9Im5vbmUiIG9wYWNpdHk9IjAuNiIgZmlsdGVyPSJ1cmwoI3NvZnRnbG93KSI+CiAgICA8bGluZSB4MT0iMTIyIiB5MT0iNjYiIHgyPSIxNTIiIHkyPSI1MiIgc3Ryb2tlLXdpZHRoPSIxLjQiLz4KICAgIDxsaW5lIHgxPSIxNTIiIHkxPSI1MiIgeDI9IjE3MiIgeTI9IjYyIiBzdHJva2Utd2lkdGg9IjEuMSIvPgogICAgPGxpbmUgeDE9IjE1MiIgeTE9IjUyIiB4Mj0iMTYwIiB5Mj0iMzgiIHN0cm9rZS13aWR0aD0iMS4xIi8+CiAgICA8Y2lyY2xlIGN4PSIxNTIiIGN5PSI1MiIgcj0iMy41IiBmaWxsPSIjMDBlNWZmIiBvcGFjaXR5PSIwLjg1Ii8+CiAgICA8Y2lyY2xlIGN4PSIxNzIiIGN5PSI2MiIgcj0iMi4yIiBmaWxsPSIjMDBlNWZmIiBvcGFjaXR5PSIwLjciLz4KICAgIDxjaXJjbGUgY3g9IjE2MCIgY3k9IjM4IiByPSIyIiBmaWxsPSIjMDBmZmVlIiBvcGFjaXR5PSIwLjY1Ii8+CiAgICA8bGluZSB4MT0iMTcyIiB5MT0iNjIiIHgyPSIxODQiIHkyPSI1NCIgc3Ryb2tlLXdpZHRoPSIwLjgiIG9wYWNpdHk9IjAuNCIvPgogICAgPGNpcmNsZSBjeD0iMTg0IiBjeT0iNTQiIHI9IjEuNSIgZmlsbD0iIzAwZTVmZiIgb3BhY2l0eT0iMC41Ii8+CiAgPC9nPgoKICA8IS0tIFRvcCBsZWZ0IGNsdXN0ZXIgLS0+CiAgPGcgc3Ryb2tlPSIjMDBlNWZmIiBmaWxsPSJub25lIiBvcGFjaXR5PSIwLjU1IiBmaWx0ZXI9InVybCgjc29mdGdsb3cpIj4KICAgIDxsaW5lIHgxPSI3MCIgeTE9IjY2IiB4Mj0iNDIiIHkyPSI1MiIgc3Ryb2tlLXdpZHRoPSIxLjQiLz4KICAgIDxsaW5lIHgxPSI0MiIgeTE9IjUyIiB4Mj0iMjQiIHkyPSI2MiIgc3Ryb2tlLXdpZHRoPSIxLjEiLz4KICAgIDxsaW5lIHgxPSI0MiIgeTE9IjUyIiB4Mj0iMzQiIHkyPSIzNiIgc3Ryb2tlLXdpZHRoPSIxLjEiLz4KICAgIDxjaXJjbGUgY3g9IjQyIiBjeT0iNTIiIHI9IjMuNSIgZmlsbD0iIzAwZTVmZiIgb3BhY2l0eT0iMC44NSIvPgogICAgPGNpcmNsZSBjeD0iMjQiIGN5PSI2MiIgcj0iMi4yIiBmaWxsPSIjMDBmZmVlIiBvcGFjaXR5PSIwLjciLz4KICAgIDxjaXJjbGUgY3g9IjM0IiBjeT0iMzYiIHI9IjIiIGZpbGw9IiMwMGU1ZmYiIG9wYWNpdHk9IjAuNjUiLz4KICA8L2c+CgogIDwhLS0gQm90dG9tIHJpZ2h0IGNsdXN0ZXIgLS0+CiAgPGcgc3Ryb2tlPSIjMDBlNWZmIiBmaWxsPSJub25lIiBvcGFjaXR5PSIwLjUiIGZpbHRlcj0idXJsKCNzb2Z0Z2xvdykiPgogICAgPGxpbmUgeDE9IjEwOCIgeTE9IjEzOCIgeDI9IjE0MCIgeTI9IjE1MiIgc3Ryb2tlLXdpZHRoPSIxLjQiLz4KICAgIDxsaW5lIHgxPSIxNDAiIHkxPSIxNTIiIHgyPSIxNTgiIHkyPSIxNDQiIHN0cm9rZS13aWR0aD0iMS4xIi8+CiAgICA8bGluZSB4MT0iMTQwIiB5MT0iMTUyIiB4Mj0iMTQ4IiB5Mj0iMTY4IiBzdHJva2Utd2lkdGg9IjEuMSIvPgogICAgPGNpcmNsZSBjeD0iMTQwIiBjeT0iMTUyIiByPSIzLjUiIGZpbGw9IiMwMGU1ZmYiIG9wYWNpdHk9IjAuOCIvPgogICAgPGNpcmNsZSBjeD0iMTU4IiBjeT0iMTQ0IiByPSIyLjIiIGZpbGw9IiMwMGZmZWUiIG9wYWNpdHk9IjAuNjUiLz4KICAgIDxjaXJjbGUgY3g9IjE0OCIgY3k9IjE2OCIgcj0iMiIgZmlsbD0iIzAwZTVmZiIgb3BhY2l0eT0iMC42Ii8+CiAgPC9nPgoKICA8IS0tIEJvdHRvbSBsZWZ0IGNsdXN0ZXIgLS0+CiAgPGcgc3Ryb2tlPSIjMDBlNWZmIiBmaWxsPSJub25lIiBvcGFjaXR5PSIwLjUiIGZpbHRlcj0idXJsKCNzb2Z0Z2xvdykiPgogICAgPGxpbmUgeDE9Ijg0IiB5MT0iMTM4IiB4Mj0iNTQiIHkyPSIxNTIiIHN0cm9rZS13aWR0aD0iMS40Ii8+CiAgICA8bGluZSB4MT0iNTQiIHkxPSIxNTIiIHgyPSIzNiIgeTI9IjE0NCIgc3Ryb2tlLXdpZHRoPSIxLjEiLz4KICAgIDxjaXJjbGUgY3g9IjU0IiBjeT0iMTUyIiByPSIzLjUiIGZpbGw9IiMwMGU1ZmYiIG9wYWNpdHk9IjAuOCIvPgogICAgPGNpcmNsZSBjeD0iMzYiIGN5PSIxNDQiIHI9IjIuMiIgZmlsbD0iIzAwZmZlZSIgb3BhY2l0eT0iMC42NSIvPgogIDwvZz4KCiAgPCEtLSBDZW50cmFsIHB1bHNlIOKAlCBpbnRlbGxpZ2VuY2UgY29yZSAtLT4KICA8Y2lyY2xlIGN4PSI5NyIgY3k9Ijk2IiByPSIxMCIgZmlsbD0iIzAwZTVmZiIgb3BhY2l0eT0iMC4wNiIvPgogIDxjaXJjbGUgY3g9Ijk3IiBjeT0iOTYiIHI9IjYiICBmaWxsPSIjMDBmZmVlIiBvcGFjaXR5PSIwLjE1Ii8+CiAgPGNpcmNsZSBjeD0iOTciIGN5PSI5NiIgcj0iMyIgIGZpbGw9IiNmZmZmZmYiIG9wYWNpdHk9IjAuODUiIGZpbHRlcj0idXJsKCNnbG93KSIvPgoKICA8IS0tIENyb3NzaGFpciBhdCBjZW50cmUgLS0+CiAgPGcgc3Ryb2tlPSIjMDBlNWZmIiBzdHJva2Utd2lkdGg9IjAuNiIgb3BhY2l0eT0iMC4zIj4KICAgIDxsaW5lIHgxPSI5NyIgeTE9Ijg4IiB4Mj0iOTciIHkyPSI5MiIvPgogICAgPGxpbmUgeDE9Ijk3IiB5MT0iMTAwIiB4Mj0iOTciIHkyPSIxMDQiLz4KICAgIDxsaW5lIHgxPSI4OSIgeTE9Ijk2IiB4Mj0iOTMiIHkyPSI5NiIvPgogICAgPGxpbmUgeDE9IjEwMSIgeTE9Ijk2IiB4Mj0iMTA1IiB5Mj0iOTYiLz4KICA8L2c+Cjwvc3ZnPg=="
@@ -337,143 +337,283 @@ _logo_src = f"data:image/svg+xml;base64,{LOGO_B64}"
 # ─── CSS ──────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-html,body,[class*="css"]{font-family:'Inter',sans-serif!important;font-size:15px;}
-.stApp{background:#000205;}
-[data-testid="stSidebar"]{background:#010408!important;border-right:1px solid #071828;}
-.ph{background:linear-gradient(135deg,#010306,#030d1a);border:1px solid #0c2040;border-radius:14px;
-  padding:1rem 1.8rem .7rem;margin-bottom:.5rem;position:relative;overflow:hidden;}
-.ph::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
-  background:linear-gradient(90deg,transparent,#00e5ff44,transparent);}
-.pt{font-size:2rem;font-weight:800;letter-spacing:-.5px;margin:0;
-  background:linear-gradient(90deg,#00e5ff,#6478ff,#00e5ff);background-size:200%;
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-  animation:sh 4s linear infinite;}
-.ps{color:#1e4060;font-size:1rem;margin:.2rem 0 0;}
-@keyframes sh{0%{background-position:0%}100%{background-position:200%}}
-.pursue-yes{background:linear-gradient(135deg,#080103,#0e0308);border:2px solid #ff2d55;
-  border-radius:12px;padding:.9rem 1.4rem;margin-bottom:.8rem;display:flex;gap:12px;align-items:center;}
-.pursue-no{background:linear-gradient(135deg,#020505,#030c16);border:2px dashed #3a6080;
-  border-radius:12px;padding:.9rem 1.4rem;margin-bottom:.8rem;display:flex;gap:12px;align-items:center;}
-.pursue-caution{background:linear-gradient(135deg,#0a0900,#120e00);border:2px solid #ffd60a;
-  border-radius:12px;padding:.9rem 1.4rem;margin-bottom:.8rem;display:flex;gap:12px;align-items:center;}
-.mc{background:linear-gradient(145deg,#03090f,#020810);border:1px solid #0c2040;
-  border-radius:12px;padding:.9rem 1rem;text-align:center;position:relative;overflow:hidden;transition:transform .2s;}
-.mc:hover{transform:translateY(-2px);}
-.mc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--acc);}
-.mv{font-size:1.9rem;font-weight:800;line-height:1;color:var(--clr,#00e5ff);}
-.ml2{font-size:.81rem;color:#1e4060;margin-top:3px;text-transform:uppercase;letter-spacing:.7px;}
-.card{background:#010508;border:1px solid #071828;border-radius:12px;padding:1rem 1.3rem;margin-bottom:.7rem;}
-.card h4{color:#00e5ff;font-size:.98rem;font-weight:700;margin:0 0 .4rem;}
-.card p{color:#3a6080;font-size:1.02rem;line-height:1.6;margin:0;}
-.badge{display:inline-block;padding:2px 9px;border-radius:16px;font-size:.81rem;font-weight:800;}
-.bC{background:rgba(255,45,85,.12);color:#ff2d55;border:1px solid #ff2d5540;}
-.bH{background:rgba(255,140,66,.12);color:#ff8c42;border:1px solid #ff8c4240;}
-.bM{background:rgba(255,214,10,.1);color:#ffd60a;border:1px solid #ffd60a35;}
-.bN{background:rgba(58,90,122,.2);color:#3a6080;border:1px solid #1e404050;}
-.stTabs{position:sticky;top:0;z-index:100;background:#000308;padding-top:3px;}
-.stTabs [data-baseweb="tab-list"]{background:#000308!important;gap:3px;border-bottom:1px solid #071828;overflow:hidden!important;user-select:none!important;}
-.stTabs [data-baseweb="tab-list"] *{user-select:none!important;}
-.stTabs [data-baseweb="tab-highlight"]{transition:none!important;}
-.stTabs [data-baseweb="tab"]{background:transparent;border-radius:8px 8px 0 0;
-  padding:6px 14px;color:#0d2a40!important;font-weight:600;font-size:1.02rem;}
-.stTabs [aria-selected="true"]{background:#06111e!important;color:#00e5ff!important;border-bottom:2px solid #00e5ff!important;}
-.sh2{display:flex;align-items:center;gap:8px;margin:0 0 .7rem;padding-bottom:5px;border-bottom:1px solid #0c2040;}
-.sh2 h3{color:#a0c8e8;font-size:1rem;font-weight:700;margin:0;}
-.dv{border:none;border-top:1px solid #091830;margin:1.1rem 0;}
-.cite{border-left:2px solid #00e5ff22;padding:6px 10px;margin:3px 0;background:#040e1c;border-radius:0 8px 8px 0;}
-.cite a{color:#2a80a4;text-decoration:none;font-size:.96rem;}
-.cite a:hover{color:#00e5ff;}
-.cm{color:#4a7090;font-size:.96rem;margin-top:1px;}
-.src-badge{display:inline-block;background:#04080f;border:1px solid #1e4060;color:#2a6080;
-  padding:1px 8px;border-radius:6px;font-size:1.02rem;margin-left:5px;text-decoration:none;}
-.src-badge:hover{border-color:#00e5ff44;color:#4a90c0;}
-.pt2{width:100%;border-collapse:collapse;font-size:.79rem;}
-.pt2 thead tr{background:#020810;}
-.pt2 th{color:#00e5ff;padding:8px 12px;text-align:left;font-size:.78rem;font-weight:700;
-  text-transform:uppercase;letter-spacing:.7px;border-bottom:1px solid #0c2040;}
-.pt2 td{padding:8px 12px;border-bottom:1px solid #040c18;color:#7ab0cc;vertical-align:middle;}
-.pt2 tr:hover td{background:#05101e;}
-.sb-t{font-size:.73rem;font-weight:700;color:#5a9ab0;text-transform:uppercase;
-  letter-spacing:1px;margin:.8rem 0 .3rem;padding-bottom:3px;border-bottom:1px solid #0c2040;}
-.stButton>button{background:linear-gradient(135deg,#003d55,#002868)!important;
-  color:#00e5ff!important;border:1px solid #00e5ff22!important;border-radius:8px!important;font-weight:700!important;}
-.stButton>button:hover{border-color:#00e5ff55!important;box-shadow:0 4px 18px rgba(0,229,255,.15)!important;}
-.stTextInput input,.stTextArea textarea{background:#040d18!important;border:1px solid #0c2040!important;color:#c0d8f8!important;border-radius:8px!important;}
-details{border:1px solid #0c2040!important;border-radius:10px!important;background:#050f1d!important;}
-.gi-critical{background:#0d020a;border:2px solid #ff2d55;border-radius:12px;padding:1.1rem 1.4rem;margin-bottom:.7rem;}
-.gi-moderate{background:#0a0900;border:2px solid #ffd60a;border-radius:12px;padding:1.1rem 1.4rem;margin-bottom:.7rem;}
-.gi-redundant{background:#04080f;border:2px dashed #3a6080;border-radius:12px;padding:1.1rem 1.4rem;margin-bottom:.7rem;}
-.gi-unknown{background:#04080f;border:1px solid #1e4060;border-radius:12px;padding:1.1rem 1.4rem;margin-bottom:.7rem;}
-.gi-stat{display:inline-block;background:#04080f;border-radius:7px;padding:4px 10px;margin:3px 3px 0 0;font-size:1.02rem;}
-.plain{color:#5a8090;font-size:.94rem;font-style:italic;}
-.dis-row{display:flex;align-items:flex-start;gap:10px;background:#050e1c;border:1px solid #0c2040;
-  border-radius:9px;padding:10px 12px;margin:4px 0;}
-.dis-name{color:#c0dff0;font-size:.83rem;font-weight:600;}
-.dis-desc{color:#5a8090;font-size:1.02rem;margin-top:2px;line-height:1.5;}
-.gpcr-box{background:linear-gradient(135deg,#030f1e,#04101c);border:1px solid #00e5ff33;border-radius:12px;padding:1.1rem 1.4rem;color:#7ab8d0;}
-.cascade-stage{background:#050d1a;border:1px solid #0c2040;border-radius:10px;padding:.8rem 1rem;margin:.4rem 0;}
-.cascade-stage h5{color:#00e5ff;font-size:.83rem;font-weight:700;margin:0 0 4px;}
-.cascade-stage p{color:#2a5070;font-size:.96rem;margin:0;line-height:1.5;}
-.bias-warn{background:#04080f;border:1px solid #ff2d5525;border-radius:10px;padding:.9rem 1.2rem;margin:.7rem 0;}
-.bias-warn p{color:#c08090;font-size:.81rem;margin:0;line-height:1.6;}
-.dis-protein-row{display:flex;align-items:center;gap:10px;background:#050d18;border:1px solid #0c2040;
-  border-radius:8px;padding:8px 12px;margin:4px 0;transition:border-color .2s;}
-.dis-protein-row:hover{border-color:#2e5070;}
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap');
 
-/* Logo */
-.proto-logo{display:block;margin:0 auto 4px;width:54px;height:54px;object-fit:contain;filter:drop-shadow(0 0 12px #1a5a3088);}
-.proto-logo-sm{display:inline-block;width:26px;height:26px;object-fit:contain;vertical-align:middle;margin-right:8px;filter:drop-shadow(0 0 6px #1a5a3066);}
-.proto-logo-header{display:inline-block;width:44px;height:44px;object-fit:contain;vertical-align:middle;margin-right:10px;filter:drop-shadow(0 0 10px #2a8a5088);}
-.tutorial-overlay{background:#01030a;border:1px solid #0d2545;border-radius:16px;padding:1.5rem 2rem;}
-.tut-step{background:#020810;border:1px solid #0d2545;border-radius:10px;padding:.9rem 1.1rem;margin:.5rem 0;}
-.tut-step h4{color:#00e5ff;font-size:1rem;margin:0 0 .3rem;}
-.tut-step p{color:#7ab8d0;font-size:.9rem;margin:0;line-height:1.5;}
-.tut-num{display:inline-block;background:#00e5ff;color:#000;border-radius:50%;width:22px;height:22px;text-align:center;line-height:22px;font-weight:800;font-size:.82rem;margin-right:8px;flex-shrink:0;}
-
-
-/* ── Global animations ── */
-@keyframes fadeInUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
-@keyframes slideInLeft{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:translateX(0)}}
-@keyframes pulseGlow{0%,100%{box-shadow:0 0 0 rgba(0,229,255,0)}50%{box-shadow:0 0 20px rgba(0,229,255,.22)}}
-@keyframes barFill{from{width:0!important}to{width:var(--bar-w,100%)}}
-@keyframes countUp{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
-@keyframes borderPulse{0%,100%{border-color:#0c2040}50%{border-color:#00e5ff44}}
-.mc{animation:fadeInUp .55s ease both;}
-.mc:nth-child(1){animation-delay:.05s}.mc:nth-child(2){animation-delay:.1s}
-.mc:nth-child(3){animation-delay:.15s}.mc:nth-child(4){animation-delay:.2s}
-.mc:nth-child(5){animation-delay:.25s}.mc:nth-child(6){animation-delay:.3s}
-.sum-card{animation:slideInLeft .45s ease both;}
-.dis-row{animation:fadeInUp .3s ease both;}
-.pursue-yes,.pursue-no,.pursue-caution{animation:fadeInUp .4s ease both;animation:borderPulse 3s ease infinite;}
-.card{animation:fadeInUp .4s ease both;}
-.badge{transition:transform .2s;}.badge:hover{transform:scale(1.1);}
-.sh2{animation:fadeInUp .35s ease both;}
-.stDownloadButton>button{background:linear-gradient(135deg,#004428,#002d18)!important;
-  color:#00c896!important;border:1px solid #00c89644!important;font-weight:700!important;border-radius:8px!important;}
-.stDownloadButton>button:hover{box-shadow:0 4px 20px rgba(0,200,150,.25)!important;transform:translateY(-1px);}
-
-/* Domain selection cards */
-[data-testid="stHorizontalBlock"] .stButton>button {
-    white-space: pre-line !important;
-    min-height: 80px !important;
-    height: auto !important;
-    text-align: left !important;
-    padding: 14px 16px !important;
-    background: linear-gradient(135deg, #020810, #03101e) !important;
-    border: 1px solid #0d2545 !important;
-    border-radius: 12px !important;
-    font-size: .82rem !important;
-    line-height: 1.55 !important;
-    font-weight: 600 !important;
-    transition: all .22s ease !important;
-    width: 100% !important;
+/* ── Root tokens ─────────────────────────────────────────────── */
+:root {
+  --bg:      #080c12;
+  --bg2:     #0d1219;
+  --bg3:     #111720;
+  --surface: #141b25;
+  --border:  #1e2d3f;
+  --border2: #243448;
+  --text:    #dce8f5;
+  --text2:   #8da8bf;
+  --text3:   #4a6478;
+  --cyan:    #00d4e8;
+  --cyan2:   #38e8f8;
+  --green:   #1db87a;
+  --rose:    #f0385a;
+  --amber:   #e8a020;
+  --violet:  #8b6cf7;
+  --r:       10px;
 }
-[data-testid="stHorizontalBlock"] .stButton>button:hover {
-    border-color: rgba(0,229,255,.3) !important;
-    background: linear-gradient(135deg, #030d1a, #04121f) !important;
-    transform: translateY(-2px) !important;
-    box-shadow: 0 6px 24px rgba(0,229,255,.08) !important;
+
+/* ── Base ────────────────────────────────────────────────────── */
+html,body,[class*="css"] {
+  font-family: 'DM Sans', system-ui, sans-serif !important;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text) !important;
+}
+.stApp { background: var(--bg) !important; }
+
+/* ── Sidebar ─────────────────────────────────────────────────── */
+[data-testid="stSidebar"] {
+  background: var(--bg2) !important;
+  border-right: 1px solid var(--border) !important;
+}
+[data-testid="stSidebar"] * { color: var(--text2) !important; }
+[data-testid="stSidebar"] .stTextInput input,
+[data-testid="stSidebar"] .stTextArea textarea {
+  background: var(--bg3) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+  border-radius: 8px !important;
+  font-family: 'DM Sans', sans-serif !important;
+}
+[data-testid="stSidebar"] .stSelectbox > div > div {
+  background: var(--bg3) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+
+/* ── Header bar ──────────────────────────────────────────────── */
+.ph {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: .9rem 1.5rem .8rem;
+  margin-bottom: .6rem;
+  display: flex; align-items: center; gap: 14px;
+}
+.ph::after { display:none; }
+.pt {
+  font-size: 1.5rem; font-weight: 700; letter-spacing: -.4px; margin: 0;
+  color: var(--text);
+  background: none; -webkit-text-fill-color: unset;
+  animation: none;
+}
+.pt span { color: var(--cyan); }
+.ps { color: var(--text3); font-size: .82rem; margin: 1px 0 0; }
+
+/* ── Verdict banners ─────────────────────────────────────────── */
+.pursue-yes {
+  background: rgba(240,56,90,.06);
+  border: 1.5px solid rgba(240,56,90,.35);
+  border-radius: var(--r); padding: 1rem 1.3rem;
+  margin-bottom: .7rem; display: flex; gap: 12px; align-items: flex-start;
+}
+.pursue-no {
+  background: rgba(30,45,63,.3);
+  border: 1.5px dashed var(--border2);
+  border-radius: var(--r); padding: 1rem 1.3rem;
+  margin-bottom: .7rem; display: flex; gap: 12px; align-items: flex-start;
+}
+.pursue-caution {
+  background: rgba(232,160,32,.06);
+  border: 1.5px solid rgba(232,160,32,.35);
+  border-radius: var(--r); padding: 1rem 1.3rem;
+  margin-bottom: .7rem; display: flex; gap: 12px; align-items: flex-start;
+}
+
+/* ── Metric cards ────────────────────────────────────────────── */
+.mc {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r); padding: .9rem 1rem; text-align: center;
+  position: relative; overflow: hidden; transition: border-color .2s, transform .2s;
+}
+.mc::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background: var(--acc, var(--cyan)); }
+.mc:hover { border-color: var(--border2); transform: translateY(-2px); }
+.mv { font-size: 1.75rem; font-weight: 700; line-height: 1.1; color: var(--clr, var(--cyan)); font-family: 'DM Mono', monospace; }
+.ml2 { font-size: .68rem; color: var(--text3); margin-top: 3px; text-transform: uppercase; letter-spacing: .8px; font-weight: 500; }
+
+/* ── Cards ───────────────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r); padding: 1rem 1.3rem; margin-bottom: .6rem;
+}
+.card h4 { color: var(--cyan); font-size: .92rem; font-weight: 600; margin: 0 0 .4rem; }
+.card p { color: var(--text2); font-size: .84rem; line-height: 1.65; margin: 0; }
+
+/* ── Badges ──────────────────────────────────────────────────── */
+.badge { display:inline-block; padding:2px 9px; border-radius:5px; font-size:.72rem; font-weight:700; font-family:'DM Mono',monospace; }
+.bC { background:rgba(240,56,90,.12); color:#f0385a; border:1px solid rgba(240,56,90,.3); }
+.bH { background:rgba(232,160,32,.1);  color:#e8a020; border:1px solid rgba(232,160,32,.3); }
+.bM { background:rgba(232,160,32,.07); color:#c89020; border:1px solid rgba(232,160,32,.2); }
+.bN { background:rgba(74,100,120,.15); color:var(--text3); border:1px solid var(--border); }
+
+/* ── Tabs ────────────────────────────────────────────────────── */
+.stTabs { position: sticky; top: 0; z-index: 100; background: var(--bg); padding-top: 2px; }
+.stTabs [data-baseweb="tab-list"] {
+  background: var(--bg) !important;
+  gap: 2px; border-bottom: 1px solid var(--border);
+  overflow: hidden !important;
+}
+.stTabs [data-baseweb="tab"] {
+  background: transparent; border-radius: 6px 6px 0 0;
+  padding: 6px 14px; color: var(--text3) !important;
+  font-weight: 500; font-size: .82rem;
+  letter-spacing: .01em;
+}
+.stTabs [aria-selected="true"] {
+  background: var(--bg2) !important;
+  color: var(--cyan) !important;
+  border-bottom: 2px solid var(--cyan) !important;
+  font-weight: 600 !important;
+}
+.stTabs [data-baseweb="tab-highlight"] { transition: none !important; }
+
+/* ── Section headers ─────────────────────────────────────────── */
+.sh2 {
+  display: flex; align-items: center; gap: 8px;
+  margin: 0 0 .7rem; padding-bottom: 5px;
+  border-bottom: 1px solid var(--border);
+}
+.sh2 h3 { color: var(--text); font-size: .92rem; font-weight: 600; margin: 0; }
+
+/* ── Dividers / utilities ────────────────────────────────────── */
+.dv { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
+.cite { border-left: 2px solid rgba(0,212,232,.2); padding:5px 10px; margin:3px 0; background:var(--bg3); border-radius:0 6px 6px 0; }
+.cite a { color: var(--text3); text-decoration: none; font-size: .84rem; }
+.cite a:hover { color: var(--cyan); }
+.cm { color: var(--text3); font-size: .84rem; margin-top: 1px; }
+.src-badge {
+  display:inline-block; background:var(--bg3); border:1px solid var(--border2);
+  color: var(--text3); padding:1px 8px; border-radius:5px;
+  font-size:.75rem; margin-left:5px; text-decoration:none; font-family:'DM Mono',monospace;
+}
+.src-badge:hover { border-color: var(--cyan); color: var(--cyan); }
+.plain { color: var(--text3); font-size: .84rem; font-style: italic; }
+
+/* ── Table ───────────────────────────────────────────────────── */
+.pt2 { width:100%; border-collapse:collapse; font-size:.82rem; }
+.pt2 thead tr { background: var(--bg2); }
+.pt2 th { color: var(--text3); padding:8px 12px; text-align:left; font-size:.72rem; font-weight:600; text-transform:uppercase; letter-spacing:.8px; border-bottom:1px solid var(--border); }
+.pt2 td { padding:8px 12px; border-bottom:1px solid var(--border); color:var(--text2); vertical-align:middle; }
+.pt2 tr:hover td { background: var(--bg3); }
+
+/* ── Sidebar labels ──────────────────────────────────────────── */
+.sb-t {
+  font-size:.68rem; font-weight:600; color:var(--text3);
+  text-transform:uppercase; letter-spacing:1px;
+  margin:.8rem 0 .3rem; padding-bottom:3px; border-bottom:1px solid var(--border);
+}
+
+/* ── Inputs ──────────────────────────────────────────────────── */
+.stTextInput input, .stTextArea textarea {
+  background: var(--bg3) !important; border:1px solid var(--border) !important;
+  color: var(--text) !important; border-radius:8px !important;
+  font-family:'DM Sans',sans-serif !important;
+}
+.stTextInput input:focus, .stTextArea textarea:focus {
+  border-color: var(--cyan) !important; outline: none !important;
+  box-shadow: 0 0 0 2px rgba(0,212,232,.1) !important;
+}
+details { border:1px solid var(--border) !important; border-radius:8px !important; background:var(--bg3) !important; }
+
+/* ── GI verdict classes ──────────────────────────────────────── */
+.gi-critical  { background:rgba(240,56,90,.05); border:1.5px solid rgba(240,56,90,.3); border-radius:var(--r); padding:1rem 1.3rem; margin-bottom:.6rem; }
+.gi-moderate  { background:rgba(232,160,32,.05); border:1.5px solid rgba(232,160,32,.3); border-radius:var(--r); padding:1rem 1.3rem; margin-bottom:.6rem; }
+.gi-redundant { background:var(--bg3); border:1px dashed var(--border2); border-radius:var(--r); padding:1rem 1.3rem; margin-bottom:.6rem; }
+.gi-unknown   { background:var(--bg3); border:1px solid var(--border); border-radius:var(--r); padding:1rem 1.3rem; margin-bottom:.6rem; }
+.gi-stat { display:inline-block; background:var(--bg3); border:1px solid var(--border); border-radius:6px; padding:3px 9px; margin:2px; font-size:.75rem; color:var(--text2); font-family:'DM Mono',monospace; }
+
+/* ── Misc cards ──────────────────────────────────────────────── */
+.dis-row { display:flex; align-items:flex-start; gap:10px; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:9px 12px; margin:3px 0; }
+.dis-name { color:var(--text); font-size:.84rem; font-weight:600; }
+.dis-desc { color:var(--text2); font-size:.8rem; margin-top:2px; line-height:1.5; }
+.gpcr-box { background:var(--bg3); border:1px solid rgba(0,212,232,.2); border-radius:var(--r); padding:1rem 1.3rem; color:var(--text2); }
+.cascade-stage { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:.8rem 1rem; margin:.4rem 0; }
+.cascade-stage h5 { color:var(--cyan); font-size:.82rem; font-weight:600; margin:0 0 3px; }
+.cascade-stage p { color:var(--text2); font-size:.8rem; margin:0; line-height:1.5; }
+.bias-warn { background:var(--bg3); border:1px solid rgba(240,56,90,.2); border-radius:8px; padding:.8rem 1.1rem; margin:.6rem 0; }
+.bias-warn p { color:var(--text2); font-size:.8rem; margin:0; line-height:1.6; }
+.dis-protein-row { display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--border); border-radius:7px; padding:7px 12px; margin:3px 0; transition:border-color .2s; }
+.dis-protein-row:hover { border-color: var(--border2); }
+
+/* ── Buttons ─────────────────────────────────────────────────── */
+.stButton > button {
+  background: var(--bg3) !important;
+  color: var(--cyan) !important;
+  border: 1px solid var(--border2) !important;
+  border-radius: 7px !important;
+  font-weight: 600 !important;
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: .82rem !important;
+  transition: all .18s !important;
+}
+.stButton > button:hover {
+  border-color: var(--cyan) !important;
+  background: rgba(0,212,232,.06) !important;
+  box-shadow: 0 2px 12px rgba(0,212,232,.1) !important;
+}
+.stButton > button[kind="primary"] {
+  background: rgba(0,212,232,.08) !important;
+  border-color: rgba(0,212,232,.4) !important;
+}
+.stDownloadButton > button {
+  background: rgba(29,184,122,.08) !important;
+  color: var(--green) !important;
+  border: 1px solid rgba(29,184,122,.3) !important;
+  border-radius: 7px !important; font-weight: 600 !important;
+}
+.stDownloadButton > button:hover { box-shadow: 0 2px 12px rgba(29,184,122,.15) !important; }
+
+/* ── Logo ────────────────────────────────────────────────────── */
+.proto-logo { display:block; margin:0 auto 4px; width:48px; height:48px; object-fit:contain; }
+.proto-logo-sm { display:inline-block; width:24px; height:24px; object-fit:contain; vertical-align:middle; margin-right:7px; }
+.proto-logo-header { display:inline-block; width:40px; height:40px; object-fit:contain; vertical-align:middle; margin-right:10px; }
+
+/* ── Tutorial ────────────────────────────────────────────────── */
+.tutorial-overlay { background:var(--bg2); border:1px solid var(--border); border-radius:var(--r); padding:1.4rem 1.8rem; }
+.tut-step { background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:.8rem 1rem; margin:.4rem 0; }
+.tut-step h4 { color:var(--cyan); font-size:.9rem; margin:0 0 .25rem; font-weight:600; }
+.tut-step p { color:var(--text2); font-size:.82rem; margin:0; line-height:1.5; }
+.tut-num { display:inline-flex; align-items:center; justify-content:center; background:var(--cyan); color:var(--bg); border-radius:50%; width:20px; height:20px; font-weight:700; font-size:.75rem; margin-right:8px; flex-shrink:0; }
+
+/* ── Animations ──────────────────────────────────────────────── */
+@keyframes fadeInUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+@keyframes slideInLeft { from{opacity:0;transform:translateX(-12px)} to{opacity:1;transform:translateX(0)} }
+@keyframes pulseGlow { 0%,100%{box-shadow:0 0 0 rgba(0,212,232,0)} 50%{box-shadow:0 0 16px rgba(0,212,232,.15)} }
+.mc { animation: fadeInUp .45s ease both; }
+.mc:nth-child(1){animation-delay:.04s} .mc:nth-child(2){animation-delay:.08s}
+.mc:nth-child(3){animation-delay:.12s} .mc:nth-child(4){animation-delay:.16s}
+.mc:nth-child(5){animation-delay:.20s} .mc:nth-child(6){animation-delay:.24s}
+.dis-row { animation: fadeInUp .3s ease both; }
+.card { animation: fadeInUp .35s ease both; }
+.sh2 { animation: slideInLeft .3s ease both; }
+
+/* ── Domain selection cards ──────────────────────────────────── */
+[data-testid="stHorizontalBlock"] .stButton > button {
+  white-space: pre-line !important;
+  min-height: 80px !important; height: auto !important;
+  text-align: left !important; padding: 13px 16px !important;
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--r) !important;
+  font-size: .82rem !important; line-height: 1.55 !important;
+  font-weight: 500 !important; transition: all .2s ease !important;
+  width: 100% !important; color: var(--text2) !important;
+}
+[data-testid="stHorizontalBlock"] .stButton > button:hover {
+  border-color: rgba(0,212,232,.35) !important;
+  background: var(--bg3) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 20px rgba(0,212,232,.07) !important;
+  color: var(--text) !important;
 }
 
 </style>
@@ -6447,7 +6587,7 @@ if not st.session_state.get("auth_user"):
 for k,v0 in {"pdata":None,"cv":None,"pdb":"","papers":[],"scored":[],"gene":"","uid":"",
              "assay":"","last":"","csv_df":None,"csv_type":"","goal_label":GOAL_OPTIONS[0],
              "goal_custom":"","sensitivity":50,"gi":None,"partner_query":"",
-             "partner_cv":None,"partner_gi":None,"disease_search":"","disease_proteins":[],"csv_triage_active":False,"show_tutorial":True,"gnomad":{},"string":[],"trials":[],"drugs":[],"abstracts":[],"org":{},"ai_result":{},"ot":{},"am":{},"isoforms":[],"hotspots":[],"patients":{},"excel_bytes":None,"domain_ctx":{},"acmg_auto":{},"conflicts":[],"ml_result":{},"lab_configured":False,"lab_chat_open":False,"lab_setup_complete":False,"lab_name":"","lab_pi":"","lab_focus":"","lab_domain":"","lab_proteins":[],"lab_diseases":[],"lab_techniques":[],"lab_budget":"medium","lab_model_organism":"","lab_goal":"","lab_chat_history":[],"protein_query_val":"","clingen":{},"screener_results":[],"screener_genes_run":[],"screener_running":False,"screener_filters":{},"screener_history":[],
+             "partner_cv":None,"partner_gi":None,"disease_search":"","disease_proteins":[],"csv_triage_active":False,"show_tutorial":True,"gnomad":{},"string":[],"trials":[],"drugs":[],"abstracts":[],"org":{},"ai_result":{},"ot":{},"am":{},"isoforms":[],"hotspots":[],"patients":{},"excel_bytes":None,"domain_ctx":{},"acmg_auto":{},"conflicts":[],"ml_result":{},"lab_configured":False,"lab_chat_open":False,"lab_setup_complete":False,"lab_name":"","lab_pi":"","lab_focus":"","lab_domain":"","lab_proteins":[],"lab_diseases":[],"lab_techniques":[],"lab_budget":"medium","lab_model_organism":"","lab_goal":"","lab_chat_history":[],"protein_query_val":"","ob_complete":False,"ob_step":1,"ob_papers":[],"clingen":{},"screener_results":[],"screener_genes_run":[],"screener_running":False,"screener_filters":{},"screener_history":[],
              "research_domain":None,"domain_expanded":None,"_last_domain":None}.items():
     if k not in st.session_state: st.session_state[k]=v0
 
@@ -6804,6 +6944,606 @@ def render_rare_disease_workspace():
                 st.session_state["_trigger_search"] = ia_gene; st.rerun()
 
 
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  FEATURE 1 — SEMANTIC SCHOLAR PAPER FETCH
+# ══════════════════════════════════════════════════════════════════════════════
+
+def fetch_scholar_papers(query: str, n: int = 8) -> list:
+    """
+    Fetch recent papers from Semantic Scholar API (free, no API key).
+    Returns list of dicts: title, authors, year, abstract, citations, url.
+    """
+    try:
+        r = requests.get(
+            "https://api.semanticscholar.org/graph/v1/paper/search",
+            params={
+                "query": query, "limit": n,
+                "fields": "title,authors,year,abstract,citationCount,url,externalIds",
+            },
+            headers={"User-Agent": "Protellect/1.0"},
+            timeout=12,
+        )
+        if r.status_code == 200:
+            return [
+                {
+                    "title":     p.get("title", ""),
+                    "authors":   ", ".join(a.get("name", "") for a in (p.get("authors") or [])[:3]),
+                    "year":      p.get("year", ""),
+                    "abstract":  (p.get("abstract") or "")[:280],
+                    "citations": p.get("citationCount", 0),
+                    "url":       p.get("url") or "",
+                }
+                for p in r.json().get("data", [])
+                if p.get("title")
+            ]
+    except Exception:
+        pass
+    return []
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  FEATURE 2 — ONBOARDING WIZARD
+# ══════════════════════════════════════════════════════════════════════════════
+
+def render_onboarding():
+    """
+    3-step lab onboarding wizard.
+    Step 1: Lab profile (name, PI, focus, proteins, diseases, techniques, domain)
+    Step 2: Scholar pull — fetches recent papers via Semantic Scholar API
+    Step 3: Workspace config — pick tabs + sensitivity
+    """
+    # Init state
+    _OB_DEFAULTS = {
+        "ob_step": 1, "ob_lab_name": "", "ob_pi": "", "ob_focus": "",
+        "ob_proteins": "", "ob_diseases": "", "ob_techniques": "",
+        "ob_papers": [], "ob_tabs_selected": None, "ob_domain": "",
+        "_ob_scholar_query": "",
+    }
+    for k, v in _OB_DEFAULTS.items():
+        if k not in st.session_state:
+            st.session_state[k] = v
+
+    step = st.session_state.get("ob_step", 1)
+
+    # ── Progress stepper ──────────────────────────────────────────────────────
+    STEPS = ["Lab Profile", "Research", "Workspace", "Done"]
+    prog_html = "<div style='display:flex;align-items:center;margin-bottom:2rem;'>"
+    for i, s in enumerate(STEPS, 1):
+        active = i == step
+        done   = i < step
+        c = "#00d4e8" if active else "#1db87a" if done else "#1e2d3f"
+        tc = "var(--text)" if active else "#1db87a" if done else "var(--text3)"
+        fw = "700" if active else "400"
+        lbl = "✓" if done else str(i)
+        prog_html += (
+            f"<div style='display:flex;align-items:center;'>"
+            f"<div style='width:28px;height:28px;border-radius:50%;background:{c}18;"
+            f"border:2px solid {c};display:flex;align-items:center;justify-content:center;"
+            f"font-size:.72rem;font-weight:700;color:{c};flex-shrink:0;'>{lbl}</div>"
+            f"<div style='font-size:.75rem;color:{tc};font-weight:{fw};margin-left:6px;white-space:nowrap;'>{s}</div>"
+            f"</div>"
+        )
+        if i < len(STEPS):
+            prog_html += f"<div style='flex:1;height:1px;background:{c}33;margin:0 8px;min-width:20px;'></div>"
+    prog_html += "</div>"
+    st.markdown(prog_html, unsafe_allow_html=True)
+
+    # ── STEP 1: Lab profile ───────────────────────────────────────────────────
+    if step == 1:
+        st.markdown(
+            "<div style='color:var(--text);font-size:.95rem;font-weight:600;margin-bottom:.25rem;'>"
+            "Tell us about your lab</div>"
+            "<div style='color:var(--text3);font-size:.8rem;margin-bottom:1.2rem;'>"
+            "This configures your domain, terminology, experiment ranking, and sensitivity. "
+            "Everything can be changed later from the Workspace tab.</div>",
+            unsafe_allow_html=True
+        )
+        c1, c2 = st.columns(2)
+        with c1:
+            lab  = st.text_input("Lab name", placeholder="Smith Lab · Kinase Biology Unit",
+                                 value=st.session_state["ob_lab_name"], key="ob_ln_inp")
+            pi   = st.text_input("Principal investigator", placeholder="Dr. Sarah Smith",
+                                 value=st.session_state["ob_pi"], key="ob_pi_inp")
+            dom  = st.selectbox("Research domain", [
+                "— Select —", "Neuroscience", "Oncology", "Pharmaceuticals",
+                "Microbiome", "Molecular Biology", "Rare Disease"
+            ], key="ob_dom_sel")
+        with c2:
+            focus = st.text_area(
+                "Research focus",
+                placeholder="e.g. Genetic epilepsies — SCN1A/SCN2A variants, iPSC neuron models, Dravet syndrome precision medicine",
+                height=120, value=st.session_state["ob_focus"], key="ob_fc_inp"
+            )
+
+        c3, c4 = st.columns(2)
+        with c3:
+            prots = st.text_input("Key genes / proteins", placeholder="SCN1A, KCNQ2, SYNGAP1",
+                                  value=st.session_state["ob_proteins"], key="ob_pr_inp")
+            dis   = st.text_input("Diseases studied", placeholder="Dravet syndrome, GEFS+",
+                                  value=st.session_state["ob_diseases"], key="ob_di_inp")
+        with c4:
+            tech  = st.text_area("Techniques", placeholder="patch-clamp, iPSC, CRISPR, WES/WGS, Western blot",
+                                 height=95, value=st.session_state["ob_techniques"], key="ob_te_inp")
+
+        st.markdown("<div style='height:.3rem'></div>", unsafe_allow_html=True)
+        col_skip, col_next = st.columns([3, 1])
+        with col_skip:
+            if st.button("Skip setup — go straight to the app", key="ob_skip"):
+                st.session_state["ob_complete"] = True
+                st.rerun()
+        with col_next:
+            if st.button("Continue →", key="ob_s1_next", type="primary", use_container_width=True):
+                if not focus.strip():
+                    st.error("Please describe your research focus — even a single sentence.")
+                else:
+                    st.session_state.update({
+                        "ob_lab_name": lab, "ob_pi": pi, "ob_focus": focus,
+                        "ob_proteins": prots, "ob_diseases": dis,
+                        "ob_techniques": tech,
+                        "ob_domain": dom if dom != "— Select —" else "",
+                        "_ob_scholar_query": (focus + " " + prots.split(",")[0]).strip() if prots else focus,
+                        "ob_step": 2,
+                    })
+                    st.rerun()
+
+    # ── STEP 2: Scholar pull ──────────────────────────────────────────────────
+    elif step == 2:
+        q = st.session_state.get("_ob_scholar_query", st.session_state["ob_focus"])
+        st.markdown(
+            "<div style='color:var(--text);font-size:.95rem;font-weight:600;margin-bottom:.25rem;'>"
+            "Pulling your lab's research context</div>",
+            unsafe_allow_html=True
+        )
+        st.markdown(
+            f"<div style='color:var(--text3);font-size:.8rem;margin-bottom:.9rem;'>"
+            f"Searching Semantic Scholar for recent papers matching: "
+            f"<code style='color:var(--cyan);font-family:DM Mono,monospace;'>{q[:70]}</code></div>",
+            unsafe_allow_html=True
+        )
+
+        if not st.session_state["ob_papers"]:
+            with st.spinner("Fetching papers..."):
+                papers = fetch_scholar_papers(q, n=6)
+                if st.session_state["ob_proteins"]:
+                    g1 = st.session_state["ob_proteins"].split(",")[0].strip()
+                    extra = fetch_scholar_papers(f"{g1} protein disease variants mechanism", n=4)
+                    seen = {p["title"] for p in papers}
+                    papers += [p for p in extra if p["title"] not in seen]
+                st.session_state["ob_papers"] = papers[:9]
+
+        papers = st.session_state["ob_papers"]
+        if papers:
+            st.markdown(
+                f"<div style='color:var(--green);font-size:.78rem;font-weight:600;margin-bottom:.6rem;'>"
+                f"{len(papers)} papers loaded — pre-loaded into your AI report context</div>",
+                unsafe_allow_html=True
+            )
+            for p in papers:
+                cc = p.get("citations", 0)
+                cc_clr = "#00d4e8" if cc > 100 else "var(--text2)" if cc > 10 else "var(--text3)"
+                url = p.get("url") or "#"
+                st.markdown(
+                    f"<div style='background:var(--surface);border:1px solid var(--border);"
+                    f"border-radius:7px;padding:9px 12px;margin-bottom:5px;'>"
+                    f"<div style='display:flex;justify-content:space-between;gap:8px;align-items:flex-start;'>"
+                    f"<a href='{url}' target='_blank' style='color:var(--text);font-size:.82rem;"
+                    f"font-weight:600;text-decoration:none;line-height:1.35;flex:1;'>"
+                    f"{p['title'][:88]}{'…' if len(p['title'])>88 else ''}</a>"
+                    f"<span style='color:{cc_clr};font-size:.7rem;font-weight:700;white-space:nowrap;"
+                    f"font-family:DM Mono,monospace;flex-shrink:0;'>{cc:,} cit.</span>"
+                    f"</div>"
+                    f"<div style='color:var(--text3);font-size:.72rem;margin-top:2px;'>"
+                    f"{p.get('authors','')} · {p.get('year','')}</div>"
+                    f"</div>",
+                    unsafe_allow_html=True
+                )
+        else:
+            st.markdown(
+                "<div style='background:var(--surface);border:1px solid var(--border);"
+                "border-radius:7px;padding:10px 14px;color:var(--text3);font-size:.8rem;'>"
+                "Could not fetch papers — the network may be restricted on this deployment. "
+                "Papers will be loaded automatically when you run the AI Report for a protein.</div>",
+                unsafe_allow_html=True
+            )
+
+        st.markdown("<div style='height:.4rem'></div>", unsafe_allow_html=True)
+        col_back, col_next = st.columns([1, 1])
+        with col_back:
+            if st.button("← Back", key="ob_s2_back"):
+                st.session_state["ob_step"] = 1
+                st.session_state["ob_papers"] = []
+                st.rerun()
+        with col_next:
+            if st.button("Continue →", key="ob_s2_next", type="primary", use_container_width=True):
+                st.session_state["ob_step"] = 3
+                st.rerun()
+
+    # ── STEP 3: Workspace config ──────────────────────────────────────────────
+    elif step == 3:
+        st.markdown(
+            "<div style='color:var(--text);font-size:.95rem;font-weight:600;margin-bottom:.25rem;'>"
+            "Configure your workspace</div>"
+            "<div style='color:var(--text3);font-size:.8rem;margin-bottom:1rem;'>"
+            "Choose which tabs to show. You can change this anytime from the Workspace tab.</div>",
+            unsafe_allow_html=True
+        )
+
+        ALL_TABS = [
+            ("Summary",      "Verdict, metrics, disease table, top experiments"),
+            ("Triage",       "Variant landscape, ClinVar pathogenicity, ML scoring"),
+            ("Case Study",   "Mutation cascade animation, clinical interpretation"),
+            ("Explorer",     "3D structure, domains, AlphaMissense landscape"),
+            ("Experiments",  "ROI-ranked protocols specific to your protein"),
+            ("AI Report",    "Claude synthesis with live web search"),
+            ("Workspace",    "History, screener, lab configurator, export"),
+            ("Disease Link", "Disease–protein causal linkage analysis"),
+            ("Chemistry",    "Hydrophobicity, PTM map, backbone renderer"),
+            ("Pharma",       "Druggability atlas, GPCR analysis, drug scores"),
+        ]
+
+        DOMAIN_DEFAULTS = {
+            "Neuroscience":      ["Summary","Triage","Explorer","Experiments","Chemistry","Pharma"],
+            "Oncology":          ["Summary","Triage","Case Study","Experiments","Disease Link"],
+            "Pharmaceuticals":   ["Summary","Triage","Explorer","Experiments","Chemistry","Pharma"],
+            "Microbiome":        ["Summary","Triage","Experiments","AI Report"],
+            "Molecular Biology": ["Summary","Triage","Explorer","Chemistry","Experiments"],
+            "Rare Disease":      ["Summary","Triage","Experiments","Workspace","Disease Link"],
+        }
+
+        dom = st.session_state.get("ob_domain", "")
+        if st.session_state.get("ob_tabs_selected") is None:
+            st.session_state["ob_tabs_selected"] = DOMAIN_DEFAULTS.get(dom, [t for t,_ in ALL_TABS])
+
+        if dom and dom in DOMAIN_DEFAULTS:
+            st.markdown(
+                f"<div style='background:rgba(0,212,232,.05);border:1px solid rgba(0,212,232,.18);"
+                f"border-radius:6px;padding:6px 12px;margin-bottom:.8rem;font-size:.78rem;color:var(--text2);'>"
+                f"Suggested tabs for <b style='color:var(--cyan);'>{dom}</b> pre-selected below.</div>",
+                unsafe_allow_html=True
+            )
+
+        sel = []
+        c1, c2 = st.columns(2)
+        for i, (name, desc) in enumerate(ALL_TABS):
+            checked = name in st.session_state["ob_tabs_selected"]
+            with (c1 if i % 2 == 0 else c2):
+                if st.checkbox(f"**{name}** — {desc}", value=checked, key=f"ob_ck_{name}"):
+                    sel.append(name)
+        st.session_state["ob_tabs_selected"] = sel
+
+        st.markdown("<div style='margin:.7rem 0 .25rem;color:var(--text);font-size:.82rem;font-weight:600;'>Sensitivity threshold</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:var(--text3);font-size:.75rem;margin-bottom:.3rem;'>Controls strictness of the genomic integrity filter.</div>", unsafe_allow_html=True)
+        sens = st.slider("", 10, 90, 50, 5, key="ob_sens_sl", label_visibility="collapsed")
+        s_lbl = "Strict — only high-confidence targets" if sens >= 65 else "Balanced" if sens >= 35 else "Exploratory — broad screening"
+        st.markdown(f"<div style='color:var(--text3);font-size:.73rem;margin-top:1px;'>{s_lbl}</div>", unsafe_allow_html=True)
+
+        st.markdown("<div style='height:.4rem'></div>", unsafe_allow_html=True)
+        col_back, col_finish = st.columns([1, 1])
+        with col_back:
+            if st.button("← Back", key="ob_s3_back"):
+                st.session_state["ob_step"] = 2
+                st.rerun()
+        with col_finish:
+            if st.button("Enter Protellect →", key="ob_s3_finish", type="primary", use_container_width=True):
+                # Apply all settings to workspace
+                st.session_state["sensitivity"] = sens
+                dom2 = st.session_state.get("ob_domain", "")
+                if dom2:
+                    st.session_state["research_domain"] = dom2
+                    st.session_state["_last_domain"] = dom2
+                prots_raw = st.session_state.get("ob_proteins", "")
+                prots_list = [p.strip().upper() for p in prots_raw.split(",") if p.strip()]
+                if prots_list:
+                    st.session_state["lab_proteins"]      = prots_list
+                    st.session_state["protein_query_val"] = prots_list[0]
+                dis_raw = st.session_state.get("ob_diseases", "")
+                if dis_raw:
+                    st.session_state["disease_search"] = dis_raw.split(",")[0].strip()
+                st.session_state.update({
+                    "lab_name":       st.session_state["ob_lab_name"],
+                    "lab_pi":         st.session_state["ob_pi"],
+                    "lab_focus":      st.session_state["ob_focus"],
+                    "lab_techniques": [t.strip() for t in st.session_state["ob_techniques"].split(",") if t.strip()],
+                    "lab_setup_complete": True,
+                    "ob_complete":    True,
+                })
+                st.rerun()
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  FEATURE 3 — EXPORT DOCUMENTATION
+# ══════════════════════════════════════════════════════════════════════════════
+
+def generate_export_report(pdata, cv, gi, gnomad_data, diseases,
+                           scored, gene, uid, drugs_data, trials_data, ot_data) -> bytes:
+    """
+    Generate a comprehensive markdown documentation report for a protein analysis.
+    Includes: executive summary, protein identity, disease table, variant table,
+    gnomAD constraint, experiment roadmap (4 phases), drugs, trials, confidence notes.
+    """
+    from datetime import datetime as _dt
+    now  = _dt.now().strftime("%Y-%m-%d %H:%M UTC")
+    lab  = st.session_state.get("lab_name", "")
+    pi   = st.session_state.get("lab_pi", "")
+    sens = st.session_state.get("sensitivity", 50)
+
+    L = []   # lines list
+
+    # ── Cover ─────────────────────────────────────────────────────────────────
+    L += [
+        f"# Protellect Analysis — {gene}",
+        f"",
+        f"| Field | Value |",
+        f"|-------|-------|",
+        f"| Gene | {gene} |",
+        f"| UniProt | [{uid}](https://www.uniprot.org/uniprotkb/{uid}/entry) |",
+        f"| Generated | {now} |",
+    ]
+    if lab: L.append(f"| Lab | {lab} |")
+    if pi:  L.append(f"| PI  | {pi}  |")
+    L.append(f"| Sensitivity | {sens} |")
+    L += ["", "---", ""]
+
+    # ── Executive summary ─────────────────────────────────────────────────────
+    L.append("## Executive Summary")
+    L.append("")
+    if gi:
+        density = gi.get("density", 0) * 100
+        n_path  = gi.get("n_pathogenic", 0)
+        n_total = gi.get("n_total", 0)
+        verdict = gi.get("verdict", "")
+        seq_len = pdata.get("sequence", {}).get("length", 0) if pdata else 0
+        pli_val = gnomad_data.get("pLI", "N/A") if gnomad_data else "N/A"
+        oe_lof  = gnomad_data.get("oe_lof_upper", "N/A") if gnomad_data else "N/A"
+        mis_z   = gnomad_data.get("mis_z", "N/A") if gnomad_data else "N/A"
+        L += [
+            f"| Metric | Value | Interpretation |",
+            f"|--------|-------|----------------|",
+            f"| **Verdict** | {verdict} | |",
+            f"| Genomic Integrity Score | {density:.1f}% | {n_path}/{n_total} P/LP variants · {seq_len} aa |",
+            f"| gnomAD pLI | {pli_val} | {'Essential (>0.9)' if isinstance(pli_val, float) and pli_val > 0.9 else 'Tolerates LoF' if pli_val != 'N/A' else 'N/A'} |",
+            f"| oe_lof_upper | {oe_lof} | {'Constrained (<0.35)' if isinstance(oe_lof, float) and oe_lof < 0.35 else 'Not constrained' if oe_lof != 'N/A' else 'N/A'} |",
+            f"| mis_z | {mis_z} | {'Constrained missense' if isinstance(mis_z, float) and mis_z > 3.09 else 'Normal' if mis_z != 'N/A' else 'N/A'} |",
+            f"| Associated diseases | {len(diseases)} | |",
+            f"| Known drugs | {len(drugs_data) if drugs_data else 0} | |",
+            f"| Active trials | {len(trials_data) if trials_data else 0} | |",
+            "",
+        ]
+        expl = gi.get("explanation", "")
+        if expl:
+            L += [f"> **Interpretation:** {expl}", ""]
+    L += ["---", ""]
+
+    # ── Protein identity ──────────────────────────────────────────────────────
+    if pdata:
+        pname = (
+            (pdata.get("proteinDescription", {}) or {})
+            .get("recommendedName", {})
+            .get("fullName", {})
+            .get("value", "") or gene
+        )
+        func_text = ""
+        for c in pdata.get("comments", []):
+            if c.get("commentType") == "FUNCTION":
+                for t in c.get("texts", []):
+                    func_text = t.get("value", "")[:600]
+                    break
+            if func_text:
+                break
+        seq_val = pdata.get("sequence", {}).get("value", "") or ""
+        L += [
+            "## Protein Identity",
+            "",
+            f"**Full name:** {pname}  ",
+            f"**Gene:** {gene} · **UniProt:** {uid}  ",
+            f"**Length:** {len(seq_val) or pdata.get('sequence',{}).get('length',0)} aa  ",
+            "",
+            "**Function:**",
+            f"> {func_text}" if func_text else "> See UniProt entry for full functional annotation.",
+            "",
+            "---",
+            "",
+        ]
+
+    # ── Disease associations ──────────────────────────────────────────────────
+    if diseases:
+        L += ["## Disease Associations", ""]
+        L += ["| Disease | Inheritance | ClinVar variants | Evidence tier |"]
+        L += ["|---------|------------|-----------------|--------------|"]
+        for d in diseases[:20]:
+            ev_tier = d.get("_evidence_tier", {})
+            ev_label = ev_tier.get("label", "UniProt") if isinstance(ev_tier, dict) else "UniProt"
+            L.append(
+                f"| {d.get('name','')} | {d.get('inheritance','')} "
+                f"| {d.get('n_variants',0)} | {ev_label} |"
+            )
+        L += ["", "---", ""]
+
+    # ── ClinVar pathogenic variants ───────────────────────────────────────────
+    if cv and cv.get("variants"):
+        plp = sorted(
+            [v for v in cv["variants"] if v.get("score", 0) >= 4],
+            key=lambda x: x.get("cv_stars", 0), reverse=True
+        )
+        L += [
+            "## Confirmed Pathogenic Variants (ClinVar)",
+            "",
+            f"Showing {min(20, len(plp))} of {len(plp)} P/LP variants.",
+            "",
+            "| Variant | Classification | Condition | Stars | URL |",
+            "|---------|---------------|-----------|-------|-----|",
+        ]
+        for v in plp[:20]:
+            stars = "★" * v.get("cv_stars", 0) + "☆" * (4 - v.get("cv_stars", 0))
+            url   = v.get("url", "")
+            L.append(
+                f"| {v.get('variant_name','')[:38]} | {v.get('sig','')} "
+                f"| {v.get('condition','')[:28]} | {stars} "
+                f"| {'[Link](' + url + ')' if url else ''} |"
+            )
+        L += ["", "---", ""]
+
+    # ── gnomAD constraint ─────────────────────────────────────────────────────
+    if gnomad_data:
+        L += [
+            "## Population Constraint (gnomAD v4)",
+            "",
+            "| Metric | Value | Interpretation |",
+            "|--------|-------|----------------|",
+            f"| pLI | {gnomad_data.get('pLI','N/A')} | LoF intolerance (>0.9 = essential) |",
+            f"| oe_lof_upper | {gnomad_data.get('oe_lof_upper','N/A')} | Observed/expected LoF (CCRS <0.35 = constrained) |",
+            f"| oe_lof | {gnomad_data.get('oe_lof','N/A')} | Observed/expected LoF ratio |",
+            f"| mis_z | {gnomad_data.get('mis_z','N/A')} | Missense z-score (>3.09 = constrained) |",
+            f"| oe_mis | {gnomad_data.get('oe_mis','N/A')} | Observed/expected missense ratio |",
+            "",
+            "---",
+            "",
+        ]
+
+    # ── Experiments ───────────────────────────────────────────────────────────
+    n_crit = sum(1 for v in (scored or []) if v.get("ml_rank") == "CRITICAL")
+    n_high = sum(1 for v in (scored or []) if v.get("ml_rank") == "HIGH")
+    top_names = ", ".join(
+        v.get("variant_name", "")[:20]
+        for v in (scored or [])[:3]
+        if v.get("ml_rank") in ("CRITICAL","HIGH")
+    ) or "—"
+    dis0 = diseases[0]["name"][:40] if diseases else "associated condition"
+    pli_v = gnomad_data.get("pLI", 0) if gnomad_data else 0
+
+    L += [
+        "## Recommended Experiment Roadmap",
+        "",
+        "Ordered by evidence-to-cost ratio. Each step's data informs the next.",
+        "Do not skip phases — wet-lab budget should only follow computational triage.",
+        "",
+        "### Phase 0 — Computational (Free · 1–3 days)",
+        "",
+        f"1. **AlphaMissense triage** — Cross-reference {n_crit} CRITICAL + {n_high} HIGH ML-ranked variants "
+        f"with AlphaMissense. Tier 1 criteria: ClinVar ≥4★ + AM ≥0.70 + gnomAD AF <0.001% + pLDDT ≥70. "
+        f"Priority variants: {top_names}.",
+        f"2. **gnomAD constraint review** — pLI = {pli_v}. "
+        f"{'Essential gene — LoF-based therapeutics justified.' if (pli_v or 0) > 0.9 else 'Moderate constraint — confirm mechanism before LoF drug approach.'}",
+        "3. **AlphaFold structural mapping** — Map variant positions onto pLDDT. pLDDT <50 = disordered; "
+        "AM scores unreliable in these regions. Focus structural work on pLDDT >70 positions.",
+        "",
+        "### Phase 1 — Low-cost biochemical ($500–5K · 2–4 weeks)",
+        "",
+        "1. **Recombinant expression + Western blot** (~$500) — Express WT + top 3 variants "
+        "in E. coli BL21 (soluble domains) or HEK293T (full-length). Anti-His/FLAG tag. "
+        "Absent mutant band = degraded (LoF via NMD/proteasome confirmed).",
+        "2. **Thermal shift assay / DSF** (~$1–2K) — WT vs each variant. "
+        "ΔTm ≥1°C = structurally destabilising → directly actionable. "
+        "ΔTm <1°C but pathogenic = functional mechanism, not stability.",
+        f"3. **Cell viability assay** (~$3K) — Overexpress variants in {dis0}-relevant line. "
+        "CellTiter-Glo at 72h. Rescue with WT co-expression to confirm on-target effect.",
+        "",
+        "### Phase 2 — Mechanistic ($15K–50K · 6–12 weeks)",
+        "",
+        "1. **iPSC or patient-derived cells** — Functional assay specific to protein class. "
+        "Isogenic control (CRISPR-corrected) mandatory to distinguish variant effect from genetic background.",
+        "2. **CRISPR knock-in** — Introduce top 2 variants into iPSC. Compare to isogenic WT. "
+        "Protein-class-specific readout (e.g. electrophysiology for ion channels, immunofluorescence for structural).",
+        "",
+        "### Phase 3 — In vivo ($50K–200K · 3–6 months)",
+        "",
+        "1. **Zebrafish morpholino** — 5-day knockdown. WT mRNA rescue confirms specificity. "
+        "Cost-effective first in-vivo screen.",
+        "2. **Mouse germline knock-in** — Variant-specific model. Only after Phase 2 unambiguously confirms mechanism.",
+        "",
+        "### Phase 4 — Clinical translation ($1M+ · years)",
+        "",
+        "IND + regulatory strategy must be planned from Phase 2 data. "
+        f"{'Orphan Drug Designation eligibility: check for <200,000 US patients.' if diseases else ''}",
+        "",
+        "---",
+        "",
+    ]
+
+    # ── Known drugs ───────────────────────────────────────────────────────────
+    if drugs_data:
+        L += [
+            "## Known Drugs and Compounds",
+            "",
+            "| Drug | Interaction type | Score | Source |",
+            "|------|-----------------|-------|--------|",
+        ]
+        for d in (drugs_data or [])[:15]:
+            L.append(
+                f"| {d.get('drug','')} | {d.get('interaction_type','')} "
+                f"| {d.get('score','')} | {d.get('source','')} |"
+            )
+        L += [""]
+
+    # ── Active trials ─────────────────────────────────────────────────────────
+    if trials_data:
+        L += [
+            "## Active Clinical Trials",
+            "",
+            "| Trial | Status | Phase | Condition |",
+            "|-------|--------|-------|-----------|",
+        ]
+        for t in (trials_data or [])[:10]:
+            L.append(
+                f"| {t.get('title','')[:50]} | {t.get('status','')} "
+                f"| {t.get('phase','')} | {t.get('condition','')[:30]} |"
+            )
+        L += [""]
+
+    # ── Confidence notes ──────────────────────────────────────────────────────
+    L += [
+        "---",
+        "",
+        "## Data Confidence and Limitations",
+        "",
+        "- **ClinVar:** Variant classifications are submitter-reported. Single-submitter (1★) "
+        "entries should be independently verified before any clinical or wet-lab commitment.",
+        "- **gnomAD:** Population constraint scores are probabilistic, not deterministic. "
+        "Small genes may be underpowered for constraint analysis.",
+        "- **AlphaMissense:** AI-predicted pathogenicity. Threshold 0.70 recommended for Tier 1. "
+        "Scores in disordered regions (pLDDT <50) are less reliable.",
+        "- **This report does not constitute clinical advice.** All findings require "
+        "validation in appropriate experimental models before any clinical application.",
+        "",
+        "---",
+        f"",
+        f"*Generated by [Protellect](https://protellect.streamlit.app) · {now}*",
+    ]
+
+    return "\n".join(L).encode("utf-8")
+
+
+def render_export_button(pdata, cv, gi, gnomad_data, diseases,
+                         scored, gene, uid, drugs_data, trials_data, ot_data):
+    """Render export documentation buttons in sidebar."""
+    if not (pdata and gene):
+        return
+    from datetime import datetime as _dt2
+    st.sidebar.markdown("<div class='sb-t'>Export</div>", unsafe_allow_html=True)
+    doc_bytes = generate_export_report(
+        pdata, cv, gi, gnomad_data, diseases or [],
+        scored or [], gene, uid,
+        drugs_data or [], trials_data or [], ot_data or {}
+    )
+    fname = f"Protellect_{gene}_{_dt2.now().strftime('%Y%m%d')}.md"
+    st.sidebar.download_button(
+        "Download report (.md)",
+        doc_bytes, file_name=fname,
+        mime="text/markdown",
+        key="exp_md_sb", use_container_width=True,
+    )
+    if st.session_state.get("excel_bytes"):
+        st.sidebar.download_button(
+            "Download spreadsheet (.xlsx)",
+            st.session_state["excel_bytes"],
+            file_name=f"Protellect_{gene}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            key="exp_xl_sb", use_container_width=True,
+        )
+
+
 RESEARCH_DOMAINS = {
     "Neuroscience": {
         "icon": "🧠", "color": "#6366f1", "color2": "#818cf8",
@@ -6963,6 +7703,40 @@ RESEARCH_DOMAINS = {
 }
 
 
+
+# ── Onboarding (shown once per session after login) ────────────────────────────
+if not st.session_state.get("ob_complete"):
+    _ob_nm = st.session_state.get("auth_name","Researcher")
+    st.markdown(
+        f"<div style='max-width:740px;margin:0 auto;padding-top:1.5rem;'>"
+        f"<div style='display:flex;align-items:center;gap:12px;margin-bottom:1.5rem;'>"
+        f"<img src='data:image/svg+xml;base64,{LOGO_B64}' style='width:38px;height:38px;object-fit:contain;'>"
+        f"<div><div style='color:var(--text);font-size:1.05rem;font-weight:700;'>Welcome to Protellect</div>"
+        f"<div style='color:var(--text3);font-size:.8rem;'>Configure your workspace, {(_ob_nm or 'Researcher').split()[0]}</div></div>"
+        f"</div></div>",
+        unsafe_allow_html=True
+    )
+    with st.container():
+        render_onboarding()
+    st.stop()
+
+# ── Onboarding (once per session, after login) ───────────────────────────────
+if not st.session_state.get("ob_complete"):
+    _nm = st.session_state.get("auth_name","Researcher")
+    _first = (_nm or "Researcher").split()[0]
+    st.markdown(
+        f"<div style='max-width:760px;margin:0 auto;padding-top:1.2rem;'>"
+        f"<div style='display:flex;align-items:center;gap:12px;margin-bottom:1.4rem;'>"
+        f"<img src='data:image/svg+xml;base64,{LOGO_B64}' style='width:36px;height:36px;object-fit:contain;'>"
+        f"<div>"
+        f"<div style='color:var(--text);font-size:1rem;font-weight:700;'>Welcome to Protellect</div>"
+        f"<div style='color:var(--text3);font-size:.78rem;'>Set up your workspace, {_first}</div>"
+        f"</div></div></div>",
+        unsafe_allow_html=True
+    )
+    with st.container():
+        render_onboarding()
+    st.stop()
 
 # ── Domain selection page ──────────────────────────────────────────────────────
 # ── Domain selection page ──────────────────────────────────────────────────────
@@ -7178,8 +7952,27 @@ with st.sidebar:
         if run_csv_triage:
             st.session_state["csv_triage_active"] = True
     
-    st.markdown("<div class='sb-t'>🧫 Assay Notes</div>", unsafe_allow_html=True)
+    st.markdown("<div class='sb-t'>Assay Notes</div>", unsafe_allow_html=True)
     assay_txt=st.text_area("Assay description",height=70,placeholder="e.g. Western blot shows 3× expression increase…",label_visibility="collapsed")
+
+    # ── Export documentation ─────────────────────────────────────────────
+    try:
+        _ep = st.session_state.get("pdata")
+        _eg = st.session_state.get("gene","")
+        if _ep and _eg:
+            render_export_button(
+                _ep, st.session_state.get("cv",{}),
+                st.session_state.get("gi",{}),
+                st.session_state.get("gnomad",{}),
+                st.session_state.get("scored",[])[:0],  # diseases pulled inside fn
+                st.session_state.get("scored",[]),
+                _eg, st.session_state.get("uid",""),
+                st.session_state.get("drugs",[]),
+                st.session_state.get("trials",[]),
+                st.session_state.get("ot",{}),
+            )
+    except Exception:
+        pass
 
     # ── Lab profile summary (shown when configured via chatbot) ───────────
     _lb_done = st.session_state.get("lab_setup_complete", False)
@@ -7199,6 +7992,27 @@ with st.sidebar:
             f"</div></div>",
             unsafe_allow_html=True
         )
+
+    # ── Export documentation ────────────────────────────────────────────────
+    _exp_pdata = st.session_state.get("pdata")
+    _exp_gene = st.session_state.get("gene","")
+    if _exp_pdata and _exp_gene:
+        try:
+            render_export_button(
+                _exp_pdata,
+                st.session_state.get("cv",{}),
+                st.session_state.get("gi",{}),
+                st.session_state.get("gnomad",{}),
+                [],  # diseases pulled inside
+                st.session_state.get("scored",[]),
+                _exp_gene,
+                st.session_state.get("uid",""),
+                st.session_state.get("drugs",[]),
+                st.session_state.get("trials",[]),
+                st.session_state.get("ot",{}),
+            )
+        except Exception:
+            pass
 
     # ── Plan display ───────────────────────────────────────────────────────
     _plan_sb = st.session_state.get("auth_plan","pro")
@@ -7401,7 +8215,7 @@ with st.container():
             st.rerun()
 
 
-tab0,tab1,tab2,tab3,tab4,tab5,tab6,tab7,tab8,tab9=st.tabs(["📋  Summary","🔴  Triage","📋  Case Study","🔬  Explorer","🧪  Experiments","🤖  AI Report","🗂️  Workspace","🔗  Disease Link","⚗️  Chemistry","💊  Pharma"])
+tab0,tab1,tab2,tab3,tab4,tab5,tab6,tab7,tab8,tab9=st.tabs(["Summary","Triage","Case Study","Explorer","Experiments","AI Report","Workspace","Disease Link","Chemistry","Pharma"])
 
 _rd_final = st.session_state.get("research_domain","")
 _pdata_f = st.session_state.get("pdata",{})
