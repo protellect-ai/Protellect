@@ -61,7 +61,7 @@ def login_page():
     st.markdown("""
     <style>
     .login-wrap{max-width:420px;margin:60px auto 0;padding:2rem 2.5rem;
-      background:#020810;border:1px solid #0d2545;border-radius:16px;}
+      background:#020617;border:1px solid #0d2545;border-radius:16px;}
     .login-logo{text-align:center;margin-bottom:1.4rem;}
     .login-title{color:#38bdf8;font-size:1.6rem;font-weight:800;text-align:center;margin-bottom:.3rem;}
     .login-sub{color:#3a6080;font-size:.88rem;text-align:center;margin-bottom:1.4rem;}
@@ -200,7 +200,7 @@ LOGO_SVG_RAW = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" 
   <defs>
     <radialGradient id="bg" cx="50%" cy="50%" r="50%">
       <stop offset="0%" stop-color="#001a2e" stop-opacity="0.6"/>
-      <stop offset="100%" stop-color="#000508" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#020617" stop-opacity="0"/>
     </radialGradient>
     <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
       <feGaussianBlur stdDeviation="2.5" result="blur"/>
@@ -211,13 +211,13 @@ LOGO_SVG_RAW = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" 
       <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
     <linearGradient id="helix1" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#00ffee"/>
+      <stop offset="0%" stop-color="#38bdf8"/>
       <stop offset="40%" stop-color="#38bdf8"/>
       <stop offset="100%" stop-color="#0055cc"/>
     </linearGradient>
     <linearGradient id="helix2" x1="0%" y1="100%" x2="0%" y2="0%">
-      <stop offset="0%" stop-color="#00ffee"/>
-      <stop offset="40%" stop-color="#00c8ff"/>
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="40%" stop-color="#38bdf8"/>
       <stop offset="100%" stop-color="#0044aa"/>
     </linearGradient>
     <linearGradient id="nodeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -255,25 +255,25 @@ LOGO_SVG_RAW = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" 
 
   <!-- Rungs — precise at wave intersections -->
   <g filter="url(#softglow)" opacity="0.9">
-    <line x1="82" y1="30" x2="112" y2="30" stroke="#00ffee" stroke-width="2" stroke-linecap="round"/>
+    <line x1="82" y1="30" x2="112" y2="30" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"/>
     <line x1="74" y1="48" x2="118" y2="48" stroke="#38bdf8" stroke-width="1.8" stroke-linecap="round" opacity="0.7"/>
-    <line x1="70" y1="66" x2="122" y2="66" stroke="#00ffee" stroke-width="2.2" stroke-linecap="round"/>
+    <line x1="70" y1="66" x2="122" y2="66" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round"/>
     <line x1="74" y1="84" x2="118" y2="84" stroke="#38bdf8" stroke-width="1.8" stroke-linecap="round" opacity="0.7"/>
-    <line x1="84" y1="102" x2="110" y2="102" stroke="#00ffee" stroke-width="2" stroke-linecap="round"/>
+    <line x1="84" y1="102" x2="110" y2="102" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"/>
     <line x1="86" y1="120" x2="108" y2="120" stroke="#38bdf8" stroke-width="1.8" stroke-linecap="round" opacity="0.7"/>
-    <line x1="84" y1="138" x2="108" y2="138" stroke="#00ffee" stroke-width="2" stroke-linecap="round"/>
+    <line x1="84" y1="138" x2="108" y2="138" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"/>
     <line x1="88" y1="156" x2="106" y2="156" stroke="#38bdf8" stroke-width="1.8" stroke-linecap="round" opacity="0.7"/>
   </g>
 
   <!-- Rung endpoints — lit nodes -->
   <g filter="url(#glow)">
-    <circle cx="82" cy="30" r="2.8" fill="#00ffee" opacity="0.95"/>
+    <circle cx="82" cy="30" r="2.8" fill="#38bdf8" opacity="0.95"/>
     <circle cx="112" cy="30" r="2.8" fill="#38bdf8" opacity="0.95"/>
-    <circle cx="70" cy="66" r="3.2" fill="#00ffee"/>
+    <circle cx="70" cy="66" r="3.2" fill="#38bdf8"/>
     <circle cx="122" cy="66" r="3.2" fill="#38bdf8"/>
-    <circle cx="84" cy="102" r="2.8" fill="#00ffee" opacity="0.95"/>
+    <circle cx="84" cy="102" r="2.8" fill="#38bdf8" opacity="0.95"/>
     <circle cx="110" cy="102" r="2.8" fill="#38bdf8" opacity="0.95"/>
-    <circle cx="84" cy="138" r="2.8" fill="#00ffee" opacity="0.9"/>
+    <circle cx="84" cy="138" r="2.8" fill="#38bdf8" opacity="0.9"/>
     <circle cx="108" cy="138" r="2.8" fill="#38bdf8" opacity="0.9"/>
   </g>
 
@@ -285,7 +285,7 @@ LOGO_SVG_RAW = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" 
     <line x1="152" y1="52" x2="160" y2="38" stroke-width="1.1"/>
     <circle cx="152" cy="52" r="3.5" fill="#38bdf8" opacity="0.85"/>
     <circle cx="172" cy="62" r="2.2" fill="#38bdf8" opacity="0.7"/>
-    <circle cx="160" cy="38" r="2" fill="#00ffee" opacity="0.65"/>
+    <circle cx="160" cy="38" r="2" fill="#38bdf8" opacity="0.65"/>
     <line x1="172" y1="62" x2="184" y2="54" stroke-width="0.8" opacity="0.4"/>
     <circle cx="184" cy="54" r="1.5" fill="#38bdf8" opacity="0.5"/>
   </g>
@@ -296,7 +296,7 @@ LOGO_SVG_RAW = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" 
     <line x1="42" y1="52" x2="24" y2="62" stroke-width="1.1"/>
     <line x1="42" y1="52" x2="34" y2="36" stroke-width="1.1"/>
     <circle cx="42" cy="52" r="3.5" fill="#38bdf8" opacity="0.85"/>
-    <circle cx="24" cy="62" r="2.2" fill="#00ffee" opacity="0.7"/>
+    <circle cx="24" cy="62" r="2.2" fill="#38bdf8" opacity="0.7"/>
     <circle cx="34" cy="36" r="2" fill="#38bdf8" opacity="0.65"/>
   </g>
 
@@ -306,7 +306,7 @@ LOGO_SVG_RAW = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" 
     <line x1="140" y1="152" x2="158" y2="144" stroke-width="1.1"/>
     <line x1="140" y1="152" x2="148" y2="168" stroke-width="1.1"/>
     <circle cx="140" cy="152" r="3.5" fill="#38bdf8" opacity="0.8"/>
-    <circle cx="158" cy="144" r="2.2" fill="#00ffee" opacity="0.65"/>
+    <circle cx="158" cy="144" r="2.2" fill="#38bdf8" opacity="0.65"/>
     <circle cx="148" cy="168" r="2" fill="#38bdf8" opacity="0.6"/>
   </g>
 
@@ -315,12 +315,12 @@ LOGO_SVG_RAW = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" 
     <line x1="84" y1="138" x2="54" y2="152" stroke-width="1.4"/>
     <line x1="54" y1="152" x2="36" y2="144" stroke-width="1.1"/>
     <circle cx="54" cy="152" r="3.5" fill="#38bdf8" opacity="0.8"/>
-    <circle cx="36" cy="144" r="2.2" fill="#00ffee" opacity="0.65"/>
+    <circle cx="36" cy="144" r="2.2" fill="#38bdf8" opacity="0.65"/>
   </g>
 
   <!-- Central pulse — intelligence core -->
   <circle cx="97" cy="96" r="10" fill="#38bdf8" opacity="0.06"/>
-  <circle cx="97" cy="96" r="6"  fill="#00ffee" opacity="0.15"/>
+  <circle cx="97" cy="96" r="6"  fill="#38bdf8" opacity="0.15"/>
   <circle cx="97" cy="96" r="3"  fill="#ffffff" opacity="0.85" filter="url(#glow)"/>
 
   <!-- Crosshair at centre -->
@@ -341,12 +341,12 @@ st.markdown("""
 
 /* ── Root tokens ─────────────────────────────────────────────── */
 :root {
-  --bg:      #0a0f1e;
-  --bg2:     #0f1729;
-  --bg3:     #161f33;
-  --surface: #1a2438;
-  --border:  #2a3554;
-  --border2: #364266;
+  --bg:      #020617;
+  --bg2:     #050d24;
+  --bg3:     #0a1530;
+  --surface: #0f1a36;
+  --border:  #1e2a4a;
+  --border2: #2a3a5e;
   --text:    #e6edf7;
   --text2:   #94a3b8;
   --text3:   #5b6b80;
@@ -689,11 +689,83 @@ GOAL_OPTIONS = [" Identify therapeutic targets"," Understand disease mechanism",
 
 def p(term): return PLAIN.get(term, term)
 def badge(rank): return f"<span class='badge {RANK_CSS.get(rank,'bN')}'>{rank}</span>"
+
+# ── Inline SVG icon system (Lucide-style) ────────────────────────────────────
+SVG_ICONS = {
+    "microscope":"<path d='M6 18h8'/><path d='M3 22h18'/><path d='M14 22a7 7 0 1 0 0-14h-1'/><path d='M9 14h2'/><path d='M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2Z'/><path d='M12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3'/>",
+    "dna":"<path d='M2 15c6.667-6 13.333 0 20-6'/><path d='M9 22c1.798-1.998 2.518-3.995 2.807-5.993'/><path d='M15 2c-1.798 1.998-2.518 3.995-2.807 5.993'/><path d='m17 6-2.5-2.5'/><path d='m14 8-1-1'/><path d='m7 18 2.5 2.5'/><path d='m3.5 14.5.5.5'/><path d='m20 9 .5.5'/><path d='m6.5 12.5 1 1'/><path d='m16.5 10.5 1 1'/><path d='m10 16 1.5 1.5'/>",
+    "pill":"<path d='m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z'/><path d='m8.5 8.5 7 7'/>",
+    "chart":"<line x1='12' y1='20' x2='12' y2='10'/><line x1='18' y1='20' x2='18' y2='4'/><line x1='6' y1='20' x2='6' y2='16'/>",
+    "target":"<circle cx='12' cy='12' r='10'/><circle cx='12' cy='12' r='6'/><circle cx='12' cy='12' r='2'/>",
+    "flask":"<path d='M9 3v6l-3.5 7a2 2 0 0 0 1.8 2.9h9.4a2 2 0 0 0 1.8-2.9L15 9V3'/><path d='M8 3h8'/>",
+    "brain":"<path d='M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z'/><path d='M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z'/>",
+    "search":"<circle cx='11' cy='11' r='7'/><line x1='21' y1='21' x2='16.65' y2='16.65'/>",
+    "book":"<path d='M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z'/><path d='M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z'/>",
+    "atom":"<circle cx='12' cy='12' r='1'/><path d='M20.2 20.2c2.04-2.03.02-7.36-4.5-11.9-4.54-4.52-9.87-6.54-11.9-4.5-2.04 2.03-.02 7.36 4.5 11.9 4.54 4.52 9.87 6.54 11.9 4.5Z'/><path d='M15.7 15.7c4.52-4.54 6.54-9.87 4.5-11.9-2.03-2.04-7.36-.02-11.9 4.5-4.52 4.54-6.54 9.87-4.5 11.9 2.03 2.04 7.36.02 11.9-4.5Z'/>",
+    "warning":"<path d='m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z'/><line x1='12' y1='9' x2='12' y2='13'/><line x1='12' y1='17' x2='12.01' y2='17'/>",
+    "network":"<circle cx='12' cy='12' r='2'/><circle cx='4' cy='4' r='2'/><circle cx='20' cy='4' r='2'/><circle cx='4' cy='20' r='2'/><circle cx='20' cy='20' r='2'/><path d='m5.5 5.5 5 5'/><path d='m18.5 5.5-5 5'/><path d='m5.5 18.5 5-5'/><path d='m18.5 18.5-5-5'/>",
+    "globe":"<circle cx='12' cy='12' r='10'/><line x1='2' y1='12' x2='22' y2='12'/><path d='M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z'/>",
+    "building":"<rect x='4' y='2' width='16' height='20' rx='2'/><path d='M9 22v-4h6v4'/><path d='M8 6h.01'/><path d='M16 6h.01'/><path d='M12 6h.01'/><path d='M12 10h.01'/><path d='M12 14h.01'/><path d='M16 10h.01'/><path d='M16 14h.01'/><path d='M8 10h.01'/><path d='M8 14h.01'/>",
+    "zap":"<polygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/>",
+    "activity":"<polyline points='22 12 18 12 15 21 9 3 6 12 2 12'/>",
+    "clipboard":"<path d='M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2'/><rect x='8' y='2' width='8' height='4' rx='1'/>",
+    "layers":"<polygon points='12 2 2 7 12 12 22 7 12 2'/><polyline points='2 17 12 22 22 17'/><polyline points='2 12 12 17 22 12'/>",
+    "user":"<path d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'/><circle cx='12' cy='7' r='4'/>",
+    "shield":"<path d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'/>",
+    "check":"<polyline points='20 6 9 17 4 12'/>",
+    "x":"<line x1='18' y1='6' x2='6' y2='18'/><line x1='6' y1='6' x2='18' y2='18'/>",
+    "rocket":"<path d='M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z'/><path d='m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z'/><path d='M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0'/><path d='M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5'/>",
+    "beaker":"<path d='M4.5 3h15'/><path d='M6 3v16a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V3'/><path d='M6 14h12'/>",
+}
+
+def svg_icon(name, size=18, color="#38bdf8"):
+    body = SVG_ICONS.get(name, SVG_ICONS["target"])
+    return (f"<svg xmlns='http://www.w3.org/2000/svg' width='{size}' height='{size}' viewBox='0 0 24 24' "
+            f"fill='none' stroke='{color}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' "
+            f"style='vertical-align:middle;display:inline-block;flex-shrink:0;'>{body}</svg>")
+
+def _auto_icon_name(title):
+    """Pick an icon name from a section title's keywords."""
+    t = (title or "").lower()
+    rules = [
+        (["mutation","variant","genomic","dna","sequenc","clinvar","alphamissense"], "dna"),
+        (["drug","pharma","compound","inhibitor","medic","pkpd","admet"], "pill"),
+        (["experiment","assay","cascad","follow up","follow-up","wet-lab","wet lab"], "flask"),
+        (["explorer","structure","3d","alphafold","fold","protein expl"], "microscope"),
+        (["scorecard","metric","analytics","data","stats","score","trend"], "chart"),
+        (["target","goal","priority","precision","hit","druggab"], "target"),
+        (["brain","neuro","synap","axon","epilep"], "brain"),
+        (["paper","publication","literature","abstract","pubmed","semantic"], "book"),
+        (["report","intelligen","verdict","summary","ai report"], "book"),
+        (["chemistry","molecule","molecular","atomic"], "atom"),
+        (["warning","caution","alert","risk","conflict"], "warning"),
+        (["interaction","network","string","pathway","partner","interac"], "network"),
+        (["population","frequenc","global","world","gnomad","epidemio"], "globe"),
+        (["regulator","fda","ema","approval","designation"], "building"),
+        (["kinase","phospho","enzyme","cascad"], "zap"),
+        (["disease","link","associat","causal","clinical"], "activity"),
+        (["search","find","lookup","query","disambig"], "search"),
+        (["workspace","history","saved","domain expan","case stud"], "layers"),
+        (["patient","cohort","person","trial"], "user"),
+        (["regulatory","quality"], "shield"),
+        (["roadmap","strategy","launch","pursue"], "rocket"),
+    ]
+    for kws, name in rules:
+        if any(k in t for k in kws): return name
+    return "target"
+
 def sh(icon, title):
-    if icon and str(icon).strip():
-        st.markdown(f"<div class='sh2'><span style='font-size:1.1rem'>{icon}</span><h3>{title}</h3></div>", unsafe_allow_html=True)
+    """Section header. If icon is empty or a known SVG name, render the SVG. Else treat icon as inline text/HTML."""
+    if not icon or (isinstance(icon, str) and icon.strip() == ""):
+        icon_html = svg_icon(_auto_icon_name(title))
+    elif isinstance(icon, str) and icon in SVG_ICONS:
+        icon_html = svg_icon(icon)
     else:
-        st.markdown(f"<div class='sh2'><h3>{title}</h3></div>", unsafe_allow_html=True)
+        icon_html = f"<span style='font-size:1.1rem'>{icon}</span>"
+    st.markdown(
+        f"<div class='sh2' style='display:flex;align-items:center;gap:10px;'>{icon_html}<h3 style='margin:0;'>{title}</h3></div>",
+        unsafe_allow_html=True,
+    )
 def mc(val, label, clr="#38bdf8", acc=None):
     a = acc or f"linear-gradient(90deg,{clr},{clr}88)"
     return f"<div class='mc' style='--clr:{clr};--acc:{a};'><div class='mv'>{val}</div><div class='ml2'>{label}</div></div>"
@@ -3828,7 +3900,7 @@ def viewer_html(pdb_text, scored, height=480):
     pdb_esc=pdb_text.replace("\\","\\\\").replace("`","\\`").replace("${","\\${")
     return f"""<!DOCTYPE html><html><head>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.1.0/3Dmol-min.js"></script>
-<style>*{{margin:0;padding:0;box-sizing:border-box;}}body{{background:#04080f;font-family:Inter,sans-serif;display:flex;flex-direction:column;height:{height}px;}}
+<style>*{{margin:0;padding:0;box-sizing:border-box;}}body{{background:#020617;font-family:Inter,sans-serif;display:flex;flex-direction:column;height:{height}px;}}
 #ctrl{{display:flex;gap:4px;padding:6px 8px;background:#050f1e;border-bottom:1px solid #0c2040;flex-wrap:wrap;flex-shrink:0;}}
 .btn{{background:#05101e;color:#2a5070;border:1px solid #0c2040;padding:3px 10px;border-radius:14px;cursor:pointer;font-size:11px;transition:all .2s;}}
 .btn:hover,.btn.on{{background:#38bdf8;color:#000;font-weight:700;border-color:#38bdf8;}}
@@ -3873,7 +3945,7 @@ if(!pdb||pdb.length<100){{
 document.getElementById('v').innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#8da8bf;font-family:Inter,sans-serif;font-size:13px;">No structure data — AlphaFold model unavailable for this protein.</div>';
 throw new Error('no pdb');
 }}
-const v=$3Dmol.createViewer(document.getElementById('v'),{{backgroundColor:'#04080f'}});
+const v=$3Dmol.createViewer(document.getElementById('v'),{{backgroundColor:'#020617'}});
 try{{v.addModel(pdb,'pdb');}}catch(e){{
 document.getElementById('v').innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#fb7185;font-family:Inter,sans-serif;font-size:12px;padding:20px;text-align:center;">PDB parse error: '+(e.message||e).toString().slice(0,160)+'</div>';
 throw e;
@@ -3957,7 +4029,7 @@ def mutation_cascade_html(gene, is_gpcr, pursue, top_variants):
     return f"""<!DOCTYPE html><html><head>
 <style>
 *{{margin:0;padding:0;box-sizing:border-box;font-family:Inter,sans-serif;}}
-body{{background:#04080f;color:#c0d8f8;padding:16px;}}
+body{{background:#020617;color:#c0d8f8;padding:16px;}}
 #slider-wrap{{margin-bottom:16px;}}
 #stg-slider{{width:100%;-webkit-appearance:none;appearance:none;height:6px;
   border-radius:3px;background:linear-gradient(90deg,{pursue_color},#1e4060);outline:none;}}
@@ -4076,12 +4148,12 @@ def variant_landscape_fig(variants, protein_length, scored):
     for x,y,c in zip(positions,ys,colours):
         fig.add_trace(go.Scatter(x=[x,x],y=[0,y],mode="lines",line=dict(color=c,width=1),showlegend=False,hoverinfo="skip"))
     fig.add_trace(go.Scatter(x=positions,y=ys,mode="markers",
-        marker=dict(color=colours,size=7,opacity=.85,line=dict(color="#04080f",width=.5)),
+        marker=dict(color=colours,size=7,opacity=.85,line=dict(color="#020617",width=.5)),
         text=labels,hovertemplate="%{text}",showlegend=False))
     fig.add_hrect(y0=0,y1=.8,fillcolor="rgba(6,30,6,0.2)",line_width=0,annotation_text="Harmless zone",annotation_font_size=9,annotation_font_color="#1a4030")
     fig.add_hrect(y0=3.5,y1=6,fillcolor="rgba(80,0,20,0.15)",line_width=0,annotation_text="Disease-causing zone",annotation_font_size=9,annotation_font_color="#5a1020")
     maxpos=max(protein_length or 100,max(positions)+10)
-    fig.update_layout(paper_bgcolor="#04080f",plot_bgcolor="#04080f",font_color="#1e4060",
+    fig.update_layout(paper_bgcolor="#020617",plot_bgcolor="#020617",font_color="#1e4060",
         xaxis=dict(title="Position in protein chain (amino acid number)",range=[0,maxpos],gridcolor="#060f1c",color="#0e2840"),
         yaxis=dict(title="Disease severity score",range=[-0.1,6.2],
             tickvals=[0,2,4,5],ticktext=["Harmless","Unknown","Likely Disease","Disease-causing"],
@@ -4957,7 +5029,7 @@ def build_mutation_dynamics_html(
     return f"""<!DOCTYPE html><html><head>
 <style>
 *{{margin:0;padding:0;box-sizing:border-box;font-family:Inter,sans-serif;}}
-body{{background:#010306;color:#c0d8f8;padding:14px;overflow-x:hidden;}}
+body{{background:#020617;color:#c0d8f8;padding:14px;overflow-x:hidden;}}
 h3{{color:#38bdf8;font-size:.95rem;font-weight:700;margin-bottom:8px;}}
 /* Controls */
 #ctrl{{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center;}}
@@ -4984,14 +5056,14 @@ h3{{color:#38bdf8;font-size:.95rem;font-weight:700;margin-bottom:8px;}}
 #stage-nav{{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap;}}
 .snav{{background:#030d1a;border:1px solid #0d2545;color:#1e4060;padding:3px 10px;border-radius:6px;cursor:pointer;font-size:.72rem;transition:all .2s;}}
 .snav.active{{font-weight:700;}}
-#stage-display{{background:#020810;border:1px solid #0d2545;border-radius:10px;padding:12px 14px;transition:all .4s;}}
+#stage-display{{background:#020617;border:1px solid #0d2545;border-radius:10px;padding:12px 14px;transition:all .4s;}}
 #stage-title{{font-size:.9rem;font-weight:700;margin-bottom:5px;}}
 #stage-body{{font-size:.82rem;line-height:1.6;color:#5a8090;}}
 /* Cell viz */
 #cellviz{{display:flex;gap:10px;margin-top:8px;align-items:flex-end;}}
-.cviz-col{{flex:1;background:#020810;border:1px solid #0d2545;border-radius:8px;padding:8px;text-align:center;}}
+.cviz-col{{flex:1;background:#020617;border:1px solid #0d2545;border-radius:8px;padding:8px;text-align:center;}}
 .cviz-label{{font-size:.66rem;color:#1e4060;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;}}
-.cviz-bar-wrap{{height:60px;background:#040d18;border-radius:4px;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;}}
+.cviz-bar-wrap{{height:60px;background:#050d24;border-radius:4px;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;}}
 .cviz-bar{{border-radius:4px;transition:height .8s cubic-bezier(.34,1.56,.64,1);}}
 .cviz-val{{font-size:.76rem;font-weight:700;margin-top:3px;}}
 /* Legend */
@@ -5348,22 +5420,22 @@ def build_disease_timeline_html(
     return f"""<!DOCTYPE html><html><head>
 <style>
 *{{margin:0;padding:0;box-sizing:border-box;font-family:Inter,sans-serif;}}
-body{{background:#010306;color:#c0d8f8;padding:14px;}}
+body{{background:#020617;color:#c0d8f8;padding:14px;}}
 h3{{color:#38bdf8;font-size:.9rem;font-weight:700;margin-bottom:8px;}}
 select{{background:#030d1a;border:1px solid #0d2545;color:#8ab8cc;padding:5px 10px;border-radius:7px;font-size:.82rem;width:100%;margin-bottom:10px;}}
 #dis-panel{{display:flex;gap:12px;}}
 #dis-list{{width:210px;flex-shrink:0;overflow-y:auto;max-height:320px;}}
-.dis-btn{{display:flex;align-items:center;gap:7px;background:#020810;border:1px solid #0d2545;
+.dis-btn{{display:flex;align-items:center;gap:7px;background:#020617;border:1px solid #0d2545;
   border-radius:8px;padding:7px 10px;margin:3px 0;cursor:pointer;transition:all .2s;width:100%;text-align:left;}}
 .dis-btn:hover,.dis-btn.sel{{background:#030d1a;border-color:#38bdf844;}}
 .dis-btn.sel{{border-left:3px solid #38bdf8;}}
 .dis-name{{color:#8ab8cc;font-size:.78rem;font-weight:600;}}
 .dis-meta{{color:#2a5070;font-size:.7rem;}}
-#dis-detail{{flex:1;background:#020810;border:1px solid #0d2545;border-radius:10px;padding:12px;}}
+#dis-detail{{flex:1;background:#020617;border:1px solid #0d2545;border-radius:10px;padding:12px;}}
 .det-title{{color:#38bdf8;font-weight:800;font-size:.92rem;margin-bottom:6px;}}
 .det-desc{{color:#5a8090;font-size:.82rem;line-height:1.5;margin-bottom:10px;}}
 .timeline-outer{{position:relative;margin:10px 0;}}
-.tl-bar{{position:relative;height:16px;background:#040d18;border-radius:8px;overflow:hidden;margin-bottom:4px;}}
+.tl-bar{{position:relative;height:16px;background:#050d24;border-radius:8px;overflow:hidden;margin-bottom:4px;}}
 .tl-early{{position:absolute;top:0;bottom:0;background:#00c89633;border-radius:8px;transition:all .6s ease;}}
 .tl-range{{position:absolute;top:0;bottom:0;background:linear-gradient(90deg,#ffd60a88,#ff2d5588);border-radius:8px;transition:all .6s ease;}}
 .tl-peak{{position:absolute;top:0;bottom:0;width:3px;background:#ff2d55;transition:all .6s ease;}}
@@ -5561,10 +5633,10 @@ def build_druggability_map_html(
     return f"""<!DOCTYPE html><html><head>
 <style>
 *{{margin:0;padding:0;box-sizing:border-box;font-family:Inter,sans-serif;}}
-body{{background:#010306;color:#c0d8f8;padding:14px;}}
+body{{background:#020617;color:#c0d8f8;padding:14px;}}
 h3{{color:#38bdf8;font-size:.9rem;font-weight:700;margin-bottom:8px;}}
 #top-metrics{{display:flex;gap:8px;margin-bottom:12px;}}
-.tmet{{flex:1;background:#020810;border:1px solid #0d2545;border-radius:8px;padding:7px;text-align:center;}}
+.tmet{{flex:1;background:#020617;border:1px solid #0d2545;border-radius:8px;padding:7px;text-align:center;}}
 .tmet-v{{font-size:1rem;font-weight:800;}}
 .tmet-l{{font-size:.66rem;color:#1e4060;margin-top:2px;}}
 #protein-map{{position:relative;margin:10px 0;}}
@@ -5575,7 +5647,7 @@ h3{{color:#38bdf8;font-size:.9rem;font-weight:700;margin-bottom:8px;}}
 .target-zone:hover{{top:0;bottom:0;border-radius:8px;z-index:10;}}
 .tz-label{{font-size:.62rem;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.8);white-space:nowrap;}}
 #strategies{{margin-top:12px;}}
-.strat-card{{background:#020810;border:1px solid #0d2545;border-radius:10px;padding:10px 12px;margin:5px 0;
+.strat-card{{background:#020617;border:1px solid #0d2545;border-radius:10px;padding:10px 12px;margin:5px 0;
   cursor:pointer;transition:all .25s;}}
 .strat-card:hover,.strat-card.sel{{border-left-width:3px;}}
 .strat-header{{display:flex;align-items:center;gap:9px;margin-bottom:5px;}}
@@ -5585,8 +5657,8 @@ h3{{color:#38bdf8;font-size:.9rem;font-weight:700;margin-bottom:8px;}}
 .strat-basis{{color:#4a7090;margin-bottom:4px;}}
 .strat-approach{{color:#6a9ab0;margin-bottom:4px;}}
 .strat-tl{{color:#3a6080;font-size:.74rem;}}
-#drug-list{{margin-top:10px;background:#020810;border:1px solid #0d2545;border-radius:10px;padding:10px;}}
-.drug-row{{display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid #040c18;}}
+#drug-list{{margin-top:10px;background:#020617;border:1px solid #0d2545;border-radius:10px;padding:10px;}}
+.drug-row{{display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid #050d24;}}
 .drug-row:last-child{{border-bottom:none;}}
 .drug-name{{color:#8ab8cc;font-weight:600;font-size:.82rem;flex:1;}}
 .drug-type{{color:#3a6080;font-size:.74rem;}}
@@ -5638,7 +5710,7 @@ function highlightZone(i,clr,z){{
   if(detail) detail.remove();
   const d=document.createElement('div');
   d.id='zone-detail';
-  d.style.cssText='background:#020810;border:1px solid '+clr+'55;border-radius:9px;padding:9px 12px;margin-top:6px;';
+  d.style.cssText='background:#020617;border:1px solid '+clr+'55;border-radius:9px;padding:9px 12px;margin-top:6px;';
   d.innerHTML=`<div style="color:${{clr}};font-weight:700;font-size:.86rem;margin-bottom:4px;">Hotspot #${{z.id}} — Prime drug target zone</div>
     <div style="color:#5a8090;font-size:.82rem;">Residues ${{z.start}}–${{z.end}} · <b style="color:${{clr}};">${{z.count}} pathogenic variants</b> · ${{z.fold}}× above background density</div>
     <div style="color:#3a6080;font-size:.78rem;margin-top:4px;">This cluster represents a structurally critical region where multiple disease-causing mutations converge. A single drug molecule stabilising or blocking this region could address multiple patient genotypes simultaneously.</div>`;
@@ -5719,7 +5791,7 @@ def show_tutorial_dialog():
     ]
     for i,(icon,title,body) in enumerate(steps,1):
         st.markdown(
-            f"<div style='display:flex;gap:12px;background:#020810;border:1px solid #0d2545;border-radius:10px;padding:.8rem 1rem;margin:.4rem 0;align-items:flex-start;'>"
+            f"<div style='display:flex;gap:12px;background:#020617;border:1px solid #0d2545;border-radius:10px;padding:.8rem 1rem;margin:.4rem 0;align-items:flex-start;'>"
             f"<div style='display:flex;align-items:center;gap:7px;flex-shrink:0;'>"
             f"<span style='background:#38bdf8;color:#000;border-radius:50%;width:20px;height:20px;text-align:center;line-height:20px;font-weight:800;font-size:.75rem;flex-shrink:0;display:inline-block;'>{i}</span>"
             f"<span style='font-size:1rem;'>{icon}</span></div>"
@@ -5761,7 +5833,7 @@ def render_oncology_workspace():
         with card_cols[ci]:
             is_sel = sel == cname
             border = f"2px solid {cd['clr']}" if is_sel else f"1px solid {cd['clr']}22"
-            bg = f"{cd['clr']}12" if is_sel else "#010810"
+            bg = f"{cd['clr']}12" if is_sel else "#020617"
             st.markdown(f"<div style='background:{bg};border:{border};border-radius:9px;padding:.6rem;text-align:center;'>"
                 f"<div style='font-size:1.4rem;'>{cd['icon']}</div>"
                 f"<div style='color:{cd['clr']};font-weight:700;font-size:.68rem;margin-top:2px;'>{cname}</div></div>", unsafe_allow_html=True)
@@ -5803,7 +5875,7 @@ def render_oncology_workspace():
             tx = ("Germline HRD", "Olaparib — OlympiAD/POLO. Confirm HRD score ≥42 (Myriad myChoice).")
 
         if tx:
-            st.markdown(f"<div style='background:#000a03;border:2px solid #22c55e;border-left:5px solid #22c55e;border-radius:0 10px 10px 0;padding:10px 14px;margin-bottom:.6rem;'>"
+            st.markdown(f"<div style='background:#020617;border:2px solid #22c55e;border-left:5px solid #22c55e;border-radius:0 10px 10px 0;padding:10px 14px;margin-bottom:.6rem;'>"
                 f"<div style='color:#22c55e;font-weight:700;font-size:.82rem;'> Actionable: {tx[0]}</div>"
                 f"<div style='color:#3a6080;font-size:.76rem;line-height:1.6;margin-top:3px;'>{tx[1]}</div></div>", unsafe_allow_html=True)
         else:
@@ -5821,10 +5893,10 @@ def render_oncology_workspace():
 
         # Causes + screening
         st.markdown(f"<div style='margin-top:.5rem;display:flex;gap:8px;'>"
-            f"<div style='flex:1;background:#010810;border:1px solid #ff8c4222;border-radius:7px;padding:6px 9px;'>"
+            f"<div style='flex:1;background:#020617;border:1px solid #ff8c4222;border-radius:7px;padding:6px 9px;'>"
             f"<div style='color:#ff8c42;font-size:.66rem;font-weight:700;margin-bottom:3px;'>CAUSES</div>"
             + "".join(f"<div style='color:#3a6080;font-size:.68rem;padding:1px 0;'>• {c}</div>" for c in cd["causes"])
-            + f"</div><div style='flex:1;background:#010810;border:1px solid #22c55e22;border-radius:7px;padding:6px 9px;'>"
+            + f"</div><div style='flex:1;background:#020617;border:1px solid #22c55e22;border-radius:7px;padding:6px 9px;'>"
             f"<div style='color:#22c55e;font-size:.66rem;font-weight:700;margin-bottom:3px;'>SCREENING</div>"
             f"<div style='color:#3a6080;font-size:.69rem;line-height:1.5;'>{cd['screen']}</div>"
             f"<div style='color:#ff2d55;font-size:.66rem;font-weight:700;margin:.4rem 0 2px;'>METASTASIS</div>"
@@ -5848,7 +5920,7 @@ def render_neuroscience_workspace():
     if mode == " Synapse Explorer":
         # Animated neural synapse canvas
         components.html("""<!DOCTYPE html><html><head>
-<style>body{margin:0;background:#000205;overflow:hidden;font-family:Inter,sans-serif;}
+<style>body{margin:0;background:#020617;overflow:hidden;font-family:Inter,sans-serif;}
 canvas{display:block;}
 #tip{position:absolute;background:rgba(0,2,10,.97);border:1px solid #6366f133;
   border-radius:9px;padding:8px 12px;color:#b0d8f0;font-size:11px;display:none;
@@ -5890,7 +5962,7 @@ function draw(){
  x.clearRect(0,0,W,H);
  // Background
  const bg=x.createLinearGradient(0,0,W,H);
- bg.addColorStop(0,'#000205');bg.addColorStop(1,'#020b1a');
+ bg.addColorStop(0,'#020617');bg.addColorStop(1,'#020b1a');
  x.fillStyle=bg;x.fillRect(0,0,W,H);
  // Pre-synaptic box
  x.beginPath();x.roundRect(px(.07),py(.18),px(.42),py(.32),12);
@@ -6001,13 +6073,13 @@ draw();
         for ch, protein, cclr, detail in CHANS:
             cols_ch = st.columns([0.22, 0.78])
             with cols_ch[0]:
-                st.markdown(f"<div style='background:#010810;border:2px solid {cclr};border-radius:9px;padding:.6rem;text-align:center;'>"
+                st.markdown(f"<div style='background:#020617;border:2px solid {cclr};border-radius:9px;padding:.6rem;text-align:center;'>"
                     f"<div style='color:{cclr};font-weight:800;font-size:.85rem;'>{ch}</div>"
                     f"<div style='color:#1e4060;font-size:.62rem;'>{protein}</div></div>", unsafe_allow_html=True)
                 if st.button(f"Analyse", key=f"ch_b_{ch}", use_container_width=True):
                     st.session_state["_trigger_search"] = ch; st.rerun()
             with cols_ch[1]:
-                st.markdown(f"<div style='background:#010810;border-left:3px solid {cclr};padding:8px 12px;border-radius:0 8px 8px 0;font-size:.73rem;color:#4a7090;line-height:1.7;white-space:pre-line;'>{detail}</div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='background:#020617;border-left:3px solid {cclr};padding:8px 12px;border-radius:0 8px 8px 0;font-size:.73rem;color:#4a7090;line-height:1.7;white-space:pre-line;'>{detail}</div>", unsafe_allow_html=True)
             st.markdown("<div style='margin-bottom:.3rem;'></div>", unsafe_allow_html=True)
 
     else:  # BBB Calculator
@@ -6194,7 +6266,7 @@ def render_oncology_panel(gene, pdata, cv, scored, gi, gnomad, ot_data, am_score
 
     for sname, sclr, sdesc in strategies:
         st.markdown(
-            f"<div style='background:#010810;border:1px solid {sclr}33;border-left:3px solid {sclr};"
+            f"<div style='background:#020617;border:1px solid {sclr}33;border-left:3px solid {sclr};"
             f"border-radius:0 8px 8px 0;padding:9px 12px;margin:.4rem 0;'>"
             f"<div style='color:{sclr};font-size:.78rem;font-weight:700;margin-bottom:3px;'> {sname}</div>"
             f"<div style='color:#3a6080;font-size:.76rem;line-height:1.6;'>{sdesc}</div>"
@@ -6247,7 +6319,7 @@ def render_microbiome_page():
     if _mic_mode == " Annotation Engine":
         sh("", "Vague → Specific Annotation Engine")
         st.markdown(
-            "<div style='background:#010810;border:1px solid #071828;border-radius:10px;padding:10px 14px;margin-bottom:.8rem;'>"
+            "<div style='background:#020617;border:1px solid #071828;border-radius:10px;padding:10px 14px;margin-bottom:.8rem;'>"
             "<div style='color:#22c55e;font-weight:700;font-size:.84rem;margin-bottom:4px;'>The PI's Problem — Solved</div>"
             "<div style='color:#3a6080;font-size:.78rem;line-height:1.65;'>"
             "Metagenomic functional annotation returns vague terms: 'biosynthesis', 'chemosynthesis', 'protein aggregation' — "
@@ -6267,7 +6339,7 @@ def render_microbiome_page():
 
         with col_ann2:
             st.markdown(
-                "<div style='background:#010810;border:1px solid #071828;border-radius:8px;padding:9px 12px;'>"
+                "<div style='background:#020617;border:1px solid #071828;border-radius:8px;padding:9px 12px;'>"
                 "<div style='color:#38bdf8;font-size:.74rem;font-weight:700;margin-bottom:5px;'>Supported vague terms</div>"
                 + "".join(f"<div style='color:#1e4060;font-size:.69rem;padding:2px 0;border-bottom:1px solid #050e18;'>• {k.title()}</div>" for k in VAGUE_TO_SPECIFIC.keys())
                 + "</div>",
@@ -6323,7 +6395,7 @@ def render_microbiome_page():
                     )
                 with col_a:
                     st.markdown(
-                        f"<div style='background:#000a03;border:1px solid #22c55e22;border-radius:8px;padding:9px 12px;height:100%;'>"
+                        f"<div style='background:#020617;border:1px solid #22c55e22;border-radius:8px;padding:9px 12px;height:100%;'>"
                         f"<div style='color:#22c55e;font-size:.7rem;font-weight:700;margin-bottom:4px;'> AFTER (Specific)</div>"
                         f"<div style='color:#4a8060;font-size:.77rem;line-height:1.7;white-space:pre-wrap;'>{result_text}</div>"
                         f"</div>",
@@ -6381,7 +6453,7 @@ def render_microbiome_page():
                 col_t1, col_t2 = st.columns([1.2, 0.8])
                 with col_t1:
                     st.markdown(
-                        f"<div style='background:#010810;border-left:3px solid {clr};padding:8px 12px;border-radius:0 8px 8px 0;margin-bottom:7px;'>"
+                        f"<div style='background:#020617;border-left:3px solid {clr};padding:8px 12px;border-radius:0 8px 8px 0;margin-bottom:7px;'>"
                         f"<div style='color:{clr};font-weight:700;font-size:.84rem;margin-bottom:3px;'>{info['full_name']}</div>"
                         f"<div style='color:#1e4060;font-size:.72rem;'>{info['phylum']}</div>"
                         f"<div style='color:#3a6080;font-size:.72rem;margin-top:2px;'> {info['ecology']}</div>"
@@ -6393,7 +6465,7 @@ def render_microbiome_page():
                         st.markdown(f"<div style='color:#4a7090;font-size:.75rem;padding:2px 0;border-bottom:1px solid #050e18;'>• {fn}</div>", unsafe_allow_html=True)
                 with col_t2:
                     st.markdown(
-                        f"<div style='background:#010810;border:1px solid {clr}33;border-radius:8px;padding:9px 12px;'>"
+                        f"<div style='background:#020617;border:1px solid {clr}33;border-radius:8px;padding:9px 12px;'>"
                         f"<div style='color:{clr};font-size:.72rem;font-weight:700;margin-bottom:5px;'> Clinical Significance</div>"
                         f"<div style='color:#3a6080;font-size:.75rem;line-height:1.65;'>{info.get('clinical','')}</div>"
                         f"</div>",
@@ -6401,7 +6473,7 @@ def render_microbiome_page():
                     )
                     # Animated microbe visualisation
                     components.html(f"""
-<style>body{{margin:0;background:#010810;display:flex;align-items:center;justify-content:center;height:100px;}}</style>
+<style>body{{margin:0;background:#020617;display:flex;align-items:center;justify-content:center;height:100px;}}</style>
 <canvas id="mc_{genus[:4]}" width="200" height="95"></canvas>
 <script>
 const c=document.getElementById('mc_{genus[:4]}'),x=c.getContext('2d');let t=0;
@@ -6448,7 +6520,7 @@ dr();
         ]
         for iname, receptor, iclr, desc in interactions:
             st.markdown(
-                f"<div style='background:#010810;border:1px solid {iclr}22;border-radius:9px;padding:9px 12px;margin:.3rem 0;display:flex;gap:10px;'>"
+                f"<div style='background:#020617;border:1px solid {iclr}22;border-radius:9px;padding:9px 12px;margin:.3rem 0;display:flex;gap:10px;'>"
                 f"<div style='flex:0;min-width:90px;text-align:center;'>"
                 f"<div style='color:{iclr};font-size:.72rem;font-weight:700;'>{iname}</div>"
                 f"<div style='color:#3a6080;font-size:.62rem;'>↓</div>"
@@ -6489,9 +6561,9 @@ def render_microbiome_workspace():
 def render_pharma_workspace():
     """Pharmaceuticals workspace — GPCR pipeline, druggability calculator, drug development guide."""
     st.markdown("""
-    <div style='background:linear-gradient(135deg,#000810,#001520);border:1px solid #00d4ff33;
+    <div style='background:linear-gradient(135deg,#000810,#001520);border:1px solid #38bdf833;
       border-radius:14px;padding:1.1rem 1.4rem;margin-bottom:1rem;'>
-      <div style='font-size:1.3rem;font-weight:800;color:#00d4ff;margin-bottom:4px;'>
+      <div style='font-size:1.3rem;font-weight:800;color:#38bdf8;margin-bottom:4px;'>
          Drug Discovery Platform</div>
       <div style='color:#003a50;font-size:.82rem;line-height:1.6;'>
         GPCR Filamin piggyback assay, druggability scoring, ADMET rules, HTS pipeline, and clinical development timeline.
@@ -6511,8 +6583,8 @@ def render_pharma_workspace():
             ("Interpretation", "Ser2152 phosphorylation = proximal GPCR activation readout (more proximal than β-arrestin or cAMP). Works for ~300 Class A GPCRs carrying H8 motif."),
         ]
         for day, detail in steps_filamin:
-            st.markdown(f"<div style='display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #050e18;'><span style='color:#00d4ff;font-size:.68rem;font-weight:700;min-width:75px;'>{day}</span><span style='color:#3a6080;font-size:.72rem;line-height:1.55;'>{detail}</span></div>", unsafe_allow_html=True)
-        st.markdown("<a href='https://pubmed.ncbi.nlm.nih.gov/26124276/' target='_blank' style='color:#00d4ff;font-size:.7rem;'>PMID:26124276 ↗</a>", unsafe_allow_html=True)
+            st.markdown(f"<div style='display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #050e18;'><span style='color:#38bdf8;font-size:.68rem;font-weight:700;min-width:75px;'>{day}</span><span style='color:#3a6080;font-size:.72rem;line-height:1.55;'>{detail}</span></div>", unsafe_allow_html=True)
+        st.markdown("<a href='https://pubmed.ncbi.nlm.nih.gov/26124276/' target='_blank' style='color:#38bdf8;font-size:.7rem;'>PMID:26124276 ↗</a>", unsafe_allow_html=True)
 
     with ph2:
         sh("", "ADMET Rules & Drug Development Gates")
@@ -6529,7 +6601,7 @@ def render_pharma_workspace():
             ("Ames test", "Negative", "Genotoxicity — IND-enabling requirement"),
         ]
         for rule, criteria, note in admet:
-            st.markdown(f"<div style='display:flex;gap:6px;padding:3px 0;border-bottom:1px solid #050e18;'><span style='color:#00d4ff;font-size:.67rem;min-width:120px;font-weight:600;'>{rule}</span><span style='color:#3a6080;font-size:.67rem;'>{criteria} <span style='color:#1e4060;'>({note})</span></span></div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='display:flex;gap:6px;padding:3px 0;border-bottom:1px solid #050e18;'><span style='color:#38bdf8;font-size:.67rem;min-width:120px;font-weight:600;'>{rule}</span><span style='color:#3a6080;font-size:.67rem;'>{criteria} <span style='color:#1e4060;'>({note})</span></span></div>", unsafe_allow_html=True)
 
     sh("", "Drug Development Timeline")
     timeline = [
@@ -6545,7 +6617,7 @@ def render_pharma_workspace():
     tl_cols = st.columns(4)
     for ti, (phase, years, tclr, tdesc) in enumerate(timeline):
         with tl_cols[ti % 4]:
-            st.markdown(f"<div style='background:#010810;border:1px solid {tclr}33;border-top:3px solid {tclr};border-radius:8px;padding:8px 10px;margin:4px 0;height:140px;overflow:hidden;'><div style='color:{tclr};font-size:.7rem;font-weight:700;'>{phase}</div><div style='color:#1e4060;font-size:.62rem;margin:2px 0;'>{years}</div><div style='color:#3a6080;font-size:.64rem;line-height:1.45;'>{tdesc[:100]}…</div></div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='background:#020617;border:1px solid {tclr}33;border-top:3px solid {tclr};border-radius:8px;padding:8px 10px;margin:4px 0;height:140px;overflow:hidden;'><div style='color:{tclr};font-size:.7rem;font-weight:700;'>{phase}</div><div style='color:#1e4060;font-size:.62rem;margin:2px 0;'>{years}</div><div style='color:#3a6080;font-size:.64rem;line-height:1.45;'>{tdesc[:100]}…</div></div>", unsafe_allow_html=True)
 
 
 def render_molbio_workspace():
@@ -6590,7 +6662,7 @@ def render_molbio_workspace():
             ("6 · Cryo-EM (>100 kDa)", "Single-particle analysis on 300kV Titan Krios. Near-atomic (2–4Å) for stable complexes. Conformational heterogeneity captured. RELION/cryoSPARC for data processing."),
         ]
         for step, sdesc in sb_steps:
-            st.markdown(f"<div style='background:#010810;border:1px solid #f9731622;border-radius:8px;padding:7px 10px;margin:3px 0;'><div style='color:#fb923c;font-size:.72rem;font-weight:700;'>{step}</div><div style='color:#3a6080;font-size:.7rem;line-height:1.5;margin-top:2px;'>{sdesc}</div></div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='background:#020617;border:1px solid #f9731622;border-radius:8px;padding:7px 10px;margin:3px 0;'><div style='color:#fb923c;font-size:.72rem;font-weight:700;'>{step}</div><div style='color:#3a6080;font-size:.7rem;line-height:1.5;margin-top:2px;'>{sdesc}</div></div>", unsafe_allow_html=True)
 
 
 # ─── Sidebar ────────────────────────────────────────────────────────
@@ -6660,11 +6732,11 @@ st.markdown("""
 #proto-chat-send:hover { background: rgba(0,212,232,.2); }
 </style>
 
-<button id="proto-chat-btn" onclick="toggleChat()" title="Lab Assistant"></button>
+<button id="proto-chat-btn" onclick="toggleChat()" title="Lab Assistant"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></button>
 
 <div id="proto-chat-panel">
   <div id="proto-chat-header">
-    <span> Lab Assistant</span>
+    <span style="display:inline-flex;align-items:center;gap:8px;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3v6l-3.5 7a2 2 0 0 0 1.8 2.9h9.4a2 2 0 0 0 1.8-2.9L15 9V3"/><path d="M8 3h8"/></svg>Lab Assistant</span>
     <button id="proto-chat-close" onclick="toggleChat()">✕</button>
   </div>
   <div id="proto-chat-messages">
@@ -7713,7 +7785,7 @@ def render_export_button(pdata, cv, gi, gnomad_data, diseases,
 
 RESEARCH_DOMAINS = {
     "Neuroscience": {
-        "icon": "", "color": "#6366f1", "color2": "#818cf8",
+        "icon": "brain", "color": "#6366f1", "color2": "#818cf8",
         "tagline": "Synaptic proteins · Neural circuits · Neurodegeneration · BBB · Ion channels",
         "desc": "Deep synaptic biology — presynaptic vesicle machinery, glutamate/GABA receptors, PSD scaffolds, axonal transport, and neurodegeneration. BBB requirements flagged automatically.",
         "proteins": ["APP","SNCA","MAPT","LRRK2","TARDBP","HTT","GBA","SOD1","SHANK3","NRXN1","GRIN2B","GRIA1","DLG4","SNAP25","SYT1","VAMP2","SCN1A","KCNQ2","CACNA1A","KIF5A"],
@@ -7734,7 +7806,7 @@ RESEARCH_DOMAINS = {
         "disease_protein_map": {"Alzheimer's":["APP","PSEN1","PSEN2","APOE","TREM2"],"Parkinson's":["SNCA","LRRK2","PINK1","PARKIN","GBA"],"ALS":["SOD1","TARDBP","FUS","C9orf72","TBK1"],"Epilepsy":["SCN1A","SCN2A","SCN8A","KCNQ2","GRIN2A"],"ASD":["SHANK3","SYNGAP1","NRXN1","ADNP","TSC1"]},
     },
     "Oncology": {
-        "icon": "", "color": "#f43f5e", "color2": "#fb7185",
+        "icon": "activity", "color": "#f43f5e", "color2": "#fb7185",
         "tagline": "Metastasis · Early Detection · Patient-Specific · Driver Mutations · Tumour Biology",
         "desc": "Patient-first oncology. Enter cancer type and variant for personalised treatment stratification. Metastasis cascade, early detection, somatic/germline split, companion Dx.",
         "proteins": ["TP53","KRAS","BRCA1","BRCA2","EGFR","MYC","PTEN","BRAF","RB1","CDK4","PIK3CA","APC","VHL","IDH1","ALK","ROS1","ERBB2","PALB2"],
@@ -7755,7 +7827,7 @@ RESEARCH_DOMAINS = {
         "metastasis_cascade": [("1·EMT","E-cadherin↓ vimentin↑","TWIST/SNAIL/ZEB","#ff2d55"),("2·Invasion","MMP-2/9 ECM degradation","TIMP1/2 loss","#ff4465"),("3·Intravasation","EpCAM+ CTCs","VEGF-A, CXCR4","#ff6080"),("4·Circulation","Platelet coating + anoikis resist","CD47 don't-eat-me","#ff8c42"),("5·Extravasation","CXCR4→CXCL12 organ tropism","ITG profiling","#ffd60a"),("6·Pre-met niche","Tumour exosomes prime organ","LOX + fibronectin","#ffd60a"),("7·Colonisation","Dormancy→outgrowth","VCAM1/NF-κB","#22c55e")],
     },
     "Pharmaceuticals": {
-        "icon": "", "color": "#00d4ff", "color2": "#38bdf8",
+        "icon": "pill", "color": "#38bdf8", "color2": "#38bdf8",
         "tagline": "GPCR Targets · Druggability · HTS · Filamin Assay · Clinical Pipeline",
         "desc": "Full drug discovery pipeline. GPCR Filamin piggyback, OpenTargets tractability, ChEMBL scaffolds, ADMET, selectivity panel, patent landscape, clinical development timeline.",
         "proteins": ["ADRB2","ADRB1","AGTR1","DRD2","FLNA","GRK2","OPRM1","CHRM2","HTR2A","ADORA2A","CXCR4","GLP1R","GCGR","GHRL"],
@@ -7773,7 +7845,7 @@ RESEARCH_DOMAINS = {
         "databases": [("OpenTargets","https://platform.opentargets.org","Tractability"),("ChEMBL","https://www.ebi.ac.uk/chembl","Compounds"),("IUPHAR","https://www.guidetopharmacology.org","Drug targets"),("PDB","https://www.rcsb.org","Co-crystals")],
     },
     "Microbiome": {
-        "icon": "", "color": "#22c55e", "color2": "#4ade80",
+        "icon": "atom", "color": "#22c55e", "color2": "#4ade80",
         "tagline": "Annotation Engine · Taxonomy · Host-Microbe · BGC · Pathobionts · SCFA",
         "desc": "AI annotation engine converts vague annotations (biosynthesis, chemosynthesis) to specific EC-numbered pathways. Curated taxonomy KB with animated microbe visuals. BGC prediction, host-receptor mapping.",
         "proteins": [],
@@ -7791,7 +7863,7 @@ RESEARCH_DOMAINS = {
         "databases": [("KEGG","https://www.kegg.jp","Pathways+EC"),("antiSMASH","https://antismash.secondarymetabolites.org","BGC"),("MiBIG","https://mibig.secondarymetabolites.org","Known BGCs"),("CARD","https://card.mcmaster.ca","AMR genes")],
     },
     "Molecular Biology": {
-        "icon": "", "color": "#f97316", "color2": "#fb923c",
+        "icon": "dna", "color": "#f97316", "color2": "#fb923c",
         "tagline": "Phosphorylation · Kinase-substrate · AlphaFold · STRING · PTMs · Structural",
         "desc": "Deep mechanistic analysis. Phosphorylation cascades, kinase-substrate networks, structural domain function, PPI biology, and full PTM landscape. Integrated with PhosphoSitePlus and AlphaFold.",
         "proteins": ["FLNA","MAPK1","AKT1","SRC","CDK2","EGFR","JAK2","PIK3CA","MTOR","PRKACA","CAMK2A","GSK3B","CHEK1","ATM","AURKA","PLK1"],
@@ -7809,7 +7881,7 @@ RESEARCH_DOMAINS = {
         "databases": [("PhosphoSitePlus","https://www.phosphosite.org","PTM sites"),("STRING-DB","https://string-db.org","Interactions"),("KinBase","http://kinase.com/kinbase","Kinase families"),("BioGRID","https://thebiogrid.org","Physical interactions")],
     },
     "Rare Disease": {
-        "icon": "", "color": "#c084fc", "color2": "#d8b4fe",
+        "icon": "shield", "color": "#c084fc", "color2": "#d8b4fe",
         "tagline": "VUS Prioritisation · HPO → Gene · Inheritance · ClinGen · Functional Validation",
         "desc": "The niche Protellect masters. WES/WGS candidate gene triage for rare Mendelian disease labs. HPO phenotype → ranked candidate genes. VUS pathogenicity scoring from ClinVar+AlphaMissense+gnomAD. Inheritance pattern analysis. Functional validation roadmap.",
         "proteins": ["BRCA1","BRCA2","TP53","NF1","PTEN","TSC1","TSC2","PKD1","PKD2","HBB","CFTR","DMD","MECP2","FMR1","HTT","LDLR","PAH","HEXA","GBA","LRRK2"],
@@ -7931,13 +8003,13 @@ if not st.session_state.get("research_domain"):
 .dom-card{
   position:relative;border-radius:16px;padding:1.4rem 1.5rem;cursor:pointer;
   transition:all .25s cubic-bezier(.4,0,.2,1);overflow:hidden;
-  border:1px solid transparent;background:#010810;}
+  border:1px solid transparent;background:#020617;}
 .dom-card::before{
   content:'';position:absolute;inset:0;border-radius:16px;
   background:var(--card-grad);opacity:0;transition:opacity .25s;}
 .dom-card:hover::before{opacity:1;}
 .dom-card:hover{transform:translateY(-4px);box-shadow:var(--card-shadow);}
-.dom-card .icon{font-size:2rem;margin-bottom:.5rem;display:block;}
+.dom-card .icon{margin-bottom:.5rem;display:block;line-height:0;}
 .dom-card .name{font-size:1rem;font-weight:800;margin-bottom:.25rem;}
 .dom-card .tags{font-size:.7rem;line-height:1.6;opacity:.75;}
 .dom-card .enter-btn{
@@ -7950,7 +8022,7 @@ if not st.session_state.get("research_domain"):
 </style>
 <div class="dom-page">
 <div class="dom-hero">
-  <div class="dom-logo"></div>
+  <div class="dom-logo" style="display:flex;justify-content:center;margin-bottom:.5rem;"><svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="url(#g)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#38bdf8"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs><circle cx="12" cy="12" r="1"/><path d="M20.2 20.2c2.04-2.03.02-7.36-4.5-11.9-4.54-4.52-9.87-6.54-11.9-4.5-2.04 2.03-.02 7.36 4.5 11.9 4.54 4.52 9.87 6.54 11.9 4.5Z"/><path d="M15.7 15.7c4.52-4.54 6.54-9.87 4.5-11.9-2.03-2.04-7.36-.02-11.9 4.5-4.52 4.54-6.54 9.87-4.5 11.9 2.03 2.04 7.36.02 11.9-4.5Z"/></svg></div>
   <div class="dom-title">Protellect</div>
   <div class="dom-sub">Select your research domain — every analysis and workspace is tailored to your field</div>
 </div>
@@ -7959,39 +8031,46 @@ if not st.session_state.get("research_domain"):
 
     DOMAIN_STYLES = {
         "Neuroscience": {
-            "icon":"","color":"#6366f1","color2":"#818cf8",
+            "icon":"brain","color":"#6366f1","color2":"#818cf8",
             "grad":"linear-gradient(135deg,rgba(99,102,241,.12),rgba(99,102,241,.04))",
             "shadow":"0 8px 32px rgba(99,102,241,.25)",
             "border":"rgba(99,102,241,.5)",
             "tags":"Synaptic proteins · Neural circuits · BBB · Ion channels · Neurodegeneration"
         },
         "Oncology": {
-            "icon":"","color":"#f43f5e","color2":"#fb7185",
+            "icon":"activity","color":"#f43f5e","color2":"#fb7185",
             "grad":"linear-gradient(135deg,rgba(244,63,94,.12),rgba(244,63,94,.04))",
             "shadow":"0 8px 32px rgba(244,63,94,.25)",
             "border":"rgba(244,63,94,.5)",
             "tags":"Metastasis · Early detection · Patient-specific · Driver mutations"
         },
         "Pharmaceuticals": {
-            "icon":"","color":"#00d4ff","color2":"#38bdf8",
-            "grad":"linear-gradient(135deg,rgba(0,212,255,.12),rgba(0,212,255,.04))",
-            "shadow":"0 8px 32px rgba(0,212,255,.25)",
-            "border":"rgba(0,212,255,.5)",
+            "icon":"pill","color":"#38bdf8","color2":"#7dd3fc",
+            "grad":"linear-gradient(135deg,rgba(56,189,248,.14),rgba(56,189,248,.04))",
+            "shadow":"0 8px 32px rgba(56,189,248,.25)",
+            "border":"rgba(56,189,248,.5)",
             "tags":"GPCR targets · Druggability · HTS · Filamin assay · Clinical pipeline"
         },
         "Microbiome": {
-            "icon":"","color":"#22c55e","color2":"#4ade80",
+            "icon":"atom","color":"#22c55e","color2":"#4ade80",
             "grad":"linear-gradient(135deg,rgba(34,197,94,.12),rgba(34,197,94,.04))",
             "shadow":"0 8px 32px rgba(34,197,94,.25)",
             "border":"rgba(34,197,94,.5)",
             "tags":"Annotation engine · Taxonomy · Host-microbe · BGC · Pathobionts"
         },
         "Molecular Biology": {
-            "icon":"","color":"#f97316","color2":"#fb923c",
+            "icon":"dna","color":"#f97316","color2":"#fb923c",
             "grad":"linear-gradient(135deg,rgba(249,115,22,.12),rgba(249,115,22,.04))",
             "shadow":"0 8px 32px rgba(249,115,22,.25)",
             "border":"rgba(249,115,22,.5)",
             "tags":"Phosphorylation · Kinase-substrate · AlphaFold · PTMs · Structural"
+        },
+        "Rare Disease": {
+            "icon":"shield","color":"#a78bfa","color2":"#c4b5fd",
+            "grad":"linear-gradient(135deg,rgba(167,139,250,.12),rgba(167,139,250,.04))",
+            "shadow":"0 8px 32px rgba(167,139,250,.25)",
+            "border":"rgba(167,139,250,.5)",
+            "tags":"Mendelian variants · Pedigree analysis · ACMG criteria · Patient cohorts"
         },
     }
 
@@ -8007,7 +8086,7 @@ if not st.session_state.get("research_domain"):
                 f"--card-grad:{ds['grad']};--card-shadow:{ds['shadow']};"
                 f"border-color:{ds['border'].replace('.5','.25')};"
                 f"'>"
-                f"<span class='icon'>{ds['icon']}</span>"
+                f"<span class='icon'>{svg_icon(ds['icon'], size=36, color=ds['color2'])}</span>"
                 f"<div class='name' style='color:{ds["color2"]};'>{dk}</div>"
                 f"<div class='tags' style='color:{ds["color"]};'>{ds['tags']}</div>"
                 f"</div>",
@@ -8028,7 +8107,7 @@ if not st.session_state.get("research_domain"):
                 f"--card-grad:{ds['grad']};--card-shadow:{ds['shadow']};"
                 f"border-color:{ds['border'].replace('.5','.25')};"
                 f"'>"
-                f"<span class='icon'>{ds['icon']}</span>"
+                f"<span class='icon'>{svg_icon(ds['icon'], size=36, color=ds['color2'])}</span>"
                 f"<div class='name' style='color:{ds["color2"]};'>{dk}</div>"
                 f"<div class='tags' style='color:{ds["color"]};'>{ds['tags']}</div>"
                 f"</div>",
@@ -8049,7 +8128,7 @@ with st.sidebar:
     _rd_icon_sb = _rd_meta_sb.get("icon","")
     st.markdown(
         f"<div style='text-align:center;padding:.3rem 0 .5rem;'>"
-        f"<div style='font-size:1.4rem;'>{_rd_icon_sb}</div>"
+        f"<div style='display:flex;justify-content:center;margin-bottom:4px;'>{svg_icon(_rd_icon_sb, size=22, color=_rd_clr_sb) if _rd_icon_sb else ''}</div>"
         f"<div style='color:#38bdf8;font-size:1.05rem;font-weight:800;'>Protellect</div>"
         f"<div style='background:{_rd_clr_sb}15;border:1px solid {_rd_clr_sb}33;"
         f"color:{_rd_clr_sb};font-size:.72rem;font-weight:700;padding:2px 10px;"
@@ -8063,20 +8142,20 @@ with st.sidebar:
         st.rerun()
     st.markdown("<div style='margin-bottom:.3rem;'></div>", unsafe_allow_html=True)
 
-    st.markdown("<div class='sb-t'> Research Goal</div>", unsafe_allow_html=True)
+    st.markdown("<div class='sb-t'>Research Goal</div>", unsafe_allow_html=True)
     goal_label=st.selectbox("Goal",GOAL_OPTIONS,label_visibility="collapsed")
     goal_custom=""
     if "Custom" in goal_label:
         goal_custom=st.text_input("Describe your goal",placeholder="e.g. Find splice variants affecting exon 4…",label_visibility="collapsed")
     active_goal=goal_custom if "Custom" in goal_label else goal_label
 
-    st.markdown("<div class='sb-t'> Protein Search</div>", unsafe_allow_html=True)
+    st.markdown("<div class='sb-t'>Protein Search</div>", unsafe_allow_html=True)
     query=st.text_input("Gene / UniProt ID",placeholder="TP53 · BRCA1 · P04637 · FLNC · ACM2",label_visibility="collapsed",value=st.session_state.get("protein_query_val",""),key="protein_query_box")
-    search=st.button(" Analyse Protein",use_container_width=True)
+    search=st.button("Analyse Protein",use_container_width=True)
 
-    st.markdown("<div class='sb-t'> Disease → Proteins</div>", unsafe_allow_html=True)
+    st.markdown("<div class='sb-t'>Disease → Proteins</div>", unsafe_allow_html=True)
     disease_q=st.text_input("Search by disease name",placeholder="e.g. dilated cardiomyopathy · Glanzmann",label_visibility="collapsed",key="dis_q_inp")
-    dis_search=st.button(" Find Disease Proteins",use_container_width=True,key="dis_btn")
+    dis_search=st.button("Find Disease Proteins",use_container_width=True,key="dis_btn")
     if dis_search:
         if disease_q and disease_q.strip():
             with st.spinner(f"Searching ClinVar for proteins linked to '{disease_q}'..."):
@@ -8089,7 +8168,7 @@ with st.sidebar:
         else:
             st.warning("Enter a disease name first.")
 
-    st.markdown("<div class='sb-t'> Wet-Lab Data (CSV)</div>", unsafe_allow_html=True)
+    st.markdown("<div class='sb-t'>Wet-Lab Data (CSV)</div>", unsafe_allow_html=True)
     # Show CSV type guide in sidebar
     with st.expander(" What CSVs work best?", expanded=False):
         for ctype, cinfo in CSV_GUIDE.items():
@@ -8108,7 +8187,7 @@ with st.sidebar:
             st.session_state["csv_df"]=df; st.session_state["csv_type"]=csv_type
             # Assay summary in sidebar
             summary_text=summarise_assay(df,csv_type)
-            st.markdown(f"<div style='background:#040d18;border:1px solid #0c3050;border-radius:8px;padding:8px 10px;margin-top:4px;'><div style='color:#4adaff;font-size:.94rem;font-weight:700;margin-bottom:3px;'>{uploaded_csv.name}</div><div style='color:#1a4060;font-size:.80rem;'>{csv_type.replace('_',' ').title()} · {len(df):,} rows</div><div style='color:#0d2840;font-size:.96rem;margin-top:3px;line-height:1.4;'>{summary_text[:200]}</div></div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='background:#050d24;border:1px solid #0c3050;border-radius:8px;padding:8px 10px;margin-top:4px;'><div style='color:#4adaff;font-size:.94rem;font-weight:700;margin-bottom:3px;'>{uploaded_csv.name}</div><div style='color:#1a4060;font-size:.80rem;'>{csv_type.replace('_',' ').title()} · {len(df):,} rows</div><div style='color:#0d2840;font-size:.96rem;margin-top:3px;line-height:1.4;'>{summary_text[:200]}</div></div>", unsafe_allow_html=True)
         except Exception as e:
             st.error(f"CSV error: {e}")
 
@@ -8230,7 +8309,7 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
 
-    st.markdown("<div class='sb-t'> Compare Interaction Partner</div>", unsafe_allow_html=True)
+    st.markdown("<div class='sb-t'>Compare Interaction Partner</div>", unsafe_allow_html=True)
     partner_q=st.text_input("Partner gene / UniProt ID",placeholder="e.g. ITGAL · FLNC · ARRB2",label_visibility="collapsed",key="partner_inp")
     fetch_partner=st.button("Compare Partner",use_container_width=True,key="partner_btn")
     if fetch_partner and partner_q:
@@ -8244,7 +8323,7 @@ with st.sidebar:
                 st.session_state["partner_gi"]={"gi":gi2,"gene":g2,"uid":uid2}
             except Exception as e: st.error(f"Partner: {e}")
 
-    st.markdown("<div class='sb-t'> Data Depth</div>", unsafe_allow_html=True)
+    st.markdown("<div class='sb-t'>Data Depth</div>", unsafe_allow_html=True)
     depth=st.selectbox("Depth",["Standard (150 variants)","Deep (400 variants)"],label_visibility="collapsed")
     max_v=150 if "Standard" in depth else 400
 
@@ -8252,7 +8331,7 @@ with st.sidebar:
     if st.session_state["pdata"]:
         p3=st.session_state["pdata"]; gene3=st.session_state["gene"]; uid3=st.session_state["uid"]
         scored3=st.session_state["scored"]; cv3=st.session_state["cv"]
-        st.markdown(f"<div style='border-top:1px solid #0c2040;margin:.6rem 0 .3rem;'></div><div style='background:#040d18;border:1px solid #0c2040;border-radius:8px;padding:7px 9px;'><div style='color:#38bdf8;font-weight:700;font-size:.98rem;'>{gene3}</div><div style='color:#5a8090;font-size:.96rem;'>{uid3}</div></div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='border-top:1px solid #0c2040;margin:.6rem 0 .3rem;'></div><div style='background:#050d24;border:1px solid #0c2040;border-radius:8px;padding:7px 9px;'><div style='color:#38bdf8;font-weight:700;font-size:.98rem;'>{gene3}</div><div style='color:#5a8090;font-size:.96rem;'>{uid3}</div></div>", unsafe_allow_html=True)
         gi3=st.session_state.get("gi"); ds_scores={}
         for sv in scored3:
             for c2 in sv.get("condition","").split(";"):
@@ -8261,7 +8340,7 @@ with st.sidebar:
         diseases3=g_diseases(p3)
         all_names=list(dict.fromkeys([d["name"] for d in diseases3]+[c2 for sv in cv3.get("variants",[]) for c2 in sv.get("condition","").split(";") if c2.strip() and c2.strip()!="Not specified"]))
         if all_names:
-            st.markdown("<div class='sb-t'> Disease Affiliations</div>", unsafe_allow_html=True)
+            st.markdown("<div class='sb-t'>Disease Affiliations</div>", unsafe_allow_html=True)
             for name3 in all_names[:8]:
                 score3=ds_scores.get(name3,.4); rk3="CRITICAL" if score3>=.85 else "HIGH" if score3>=.65 else "MEDIUM" if score3>=.40 else "NEUTRAL"
                 if any(k in name3.lower() for k in ["cancer","carcinoma","leukemia","sarcoma"]) and rk3=="MEDIUM": rk3="HIGH"
@@ -8316,13 +8395,13 @@ with st.sidebar:
             st.markdown(f"<div style='color:#7ab0c4;font-size:.82rem;margin:2px 0;'>▸ {s3}</div>", unsafe_allow_html=True)
         if _goal3.get("sidebar_tip"):
             st.markdown(
-                f"<div style='background:#020d18;border:1px solid #38bdf822;border-radius:7px;padding:6px 9px;margin-top:5px;'>"
+                f"<div style='background:#050d24;border:1px solid #38bdf822;border-radius:7px;padding:6px 9px;margin-top:5px;'>"
                 f"<div style='color:#3a7090;font-size:.74rem;'><b style='color:#4a8090;'>Goal tip:</b> {_goal3['sidebar_tip']}</div></div>",
                 unsafe_allow_html=True,
             )
 
         # Excel download button
-        st.markdown("<div class='sb-t'> Export All Data</div>", unsafe_allow_html=True)
+        st.markdown("<div class='sb-t'>Export All Data</div>", unsafe_allow_html=True)
         if st.button(' Download Excel Report', use_container_width=True, key='xl_btn'):
             with st.spinner('Building Excel workbook (9 sheets)...'):
                 xl_bytes = generate_excel(
@@ -8383,9 +8462,31 @@ if st.session_state.get("show_tutorial", True):
 with st.container():
     _, btn_col = st.columns([10, 1])
     with btn_col:
-        if st.button(" Tutorial", key="tut_btn", help="Open the tutorial"):
+        if st.button("Tutorial", key="tut_btn", help="Open the tutorial"):
             st.session_state["show_tutorial"] = True
             st.rerun()
+
+# ── Empty-state hint when no protein is loaded ────────────────────────────────
+if not st.session_state.get("pdata") and not st.session_state.get("csv_triage_active"):
+    _ob_focus_pre = st.session_state.get("ob_focus","") or st.session_state.get("lab_focus","")
+    _ob_prots_pre = st.session_state.get("ob_proteins","") or ",".join(st.session_state.get("lab_proteins",[]))
+    _first_prot = _ob_prots_pre.split(",")[0].strip() if _ob_prots_pre else ""
+    _suggest = _first_prot or "TP53"
+    st.markdown(
+        f"<div style='background:linear-gradient(135deg,#050d24,#0a1530);"
+        f"border:1px solid #38bdf833;border-left:4px solid #38bdf8;"
+        f"border-radius:10px;padding:.95rem 1.2rem;margin:.4rem 0 1rem;display:flex;"
+        f"align-items:center;gap:14px;'>"
+        f"{svg_icon('search', size=28, color='#38bdf8')}"
+        f"<div style='flex:1;'>"
+        f"<div style='color:#e6edf7;font-weight:700;font-size:.95rem;margin-bottom:2px;'>"
+        f"Search a protein to populate every tab</div>"
+        f"<div style='color:#94a3b8;font-size:.8rem;line-height:1.5;'>"
+        f"Use the sidebar search — gene symbol (TP53, BRCA1, FLNC) or UniProt accession (P04637). "
+        f"{'Suggested from your lab: <b style=color:#38bdf8;>' + _first_prot + '</b>.' if _first_prot else 'Try: ' + _suggest + ' to explore.'}"
+        f"</div></div></div>",
+        unsafe_allow_html=True,
+    )
 
 
 tab0,tab1,tab2,tab3,tab4,tab5,tab6,tab7,tab8,tab9=st.tabs(["Summary","Triage","Case Study","Explorer","Experiments","AI Report","Workspace","Disease Link","Chemistry","Pharma"])
@@ -8528,7 +8629,7 @@ if search and query and query!=st.session_state["last"]:
             f"<div style='color:#ffd60a;font-weight:800;font-size:1rem;margin-bottom:.6rem;'>"
             f" &nbsp;'{query}' is a protein family name, not a gene symbol</div>"
             f"<div style='color:#c0a840;font-size:.85rem;line-height:1.75;margin-bottom:.7rem;'>{_e}</div>"
-            f"{'<div style=background:#040d18;border:1px solid #4a90d955;border-radius:9px;padding:8px 14px;><span style=color:#1e4060;font-size:.73rem;>Use one of these gene symbols: </span><br><span style=color:#38bdf8;font-size:.92rem;font-weight:700;>' + _s + '</span></div>' if _s else ''}"
+            f"{'<div style=background:#050d24;border:1px solid #4a90d955;border-radius:9px;padding:8px 14px;><span style=color:#1e4060;font-size:.73rem;>Use one of these gene symbols: </span><br><span style=color:#38bdf8;font-size:.92rem;font-weight:700;>' + _s + '</span></div>' if _s else ''}"
             f"</div>",
             unsafe_allow_html=True
         )
@@ -8728,7 +8829,7 @@ if st.session_state["csv_df"] is not None and not st.session_state["pdata"]:
                 gg,cc = zip(*top_g)
                 bar_clrs=['#ff2d55' if i2==0 else '#ff8c42' if i2<3 else '#ffd60a' if i2<6 else '#4a90d9' for i2 in range(len(gg))]
                 fig_gc=go.Figure(go.Bar(y=list(gg)[::-1],x=list(cc)[::-1],orientation='h',marker_color=list(bar_clrs)[::-1],text=list(cc)[::-1],textposition='outside',hovertemplate='%{y}: %{x} pathogenic variants<extra></extra>'))
-                fig_gc.update_layout(paper_bgcolor='#010306',plot_bgcolor='#010306',font_color='#5a8090',xaxis=dict(title='Confirmed pathogenic/LP variants',gridcolor='#040c18',color='#3a6080'),yaxis=dict(tickfont=dict(size=11,color='#8ab8cc')),height=80+len(top_g)*28,margin=dict(t=10,b=30,l=120,r=60))
+                fig_gc.update_layout(paper_bgcolor='#020617',plot_bgcolor='#020617',font_color='#5a8090',xaxis=dict(title='Confirmed pathogenic/LP variants',gridcolor='#050d24',color='#3a6080'),yaxis=dict(tickfont=dict(size=11,color='#8ab8cc')),height=80+len(top_g)*28,margin=dict(t=10,b=30,l=120,r=60))
                 st.plotly_chart(fig_gc,use_container_width=True,config={'displayModeBar':False})
         # Classification donut
         if sig_col_chart:
@@ -8740,7 +8841,7 @@ if st.session_state["csv_df"] is not None and not st.session_state["pdata"]:
                 return 'Other'
             cls_counts=df[sig_col_chart].apply(_cls).value_counts()
             fig_donut=go.Figure(go.Pie(labels=cls_counts.index.tolist(),values=cls_counts.values.tolist(),hole=.55,marker_colors=['#ff2d55','#ffd60a','#00c896','#3a6080'][:len(cls_counts)],textfont_size=10))
-            fig_donut.update_layout(paper_bgcolor='#010306',plot_bgcolor='#010306',font_color='#3a6080',showlegend=True,legend=dict(font_size=10,bgcolor='#010306'),margin=dict(t=10,b=0,l=0,r=0),height=240,annotations=[dict(text=f'<b>{len(df):,}</b>',x=.5,y=.5,font_size=14,font_color='#38bdf8',showarrow=False)])
+            fig_donut.update_layout(paper_bgcolor='#020617',plot_bgcolor='#020617',font_color='#3a6080',showlegend=True,legend=dict(font_size=10,bgcolor='#020617'),margin=dict(t=10,b=0,l=0,r=0),height=240,annotations=[dict(text=f'<b>{len(df):,}</b>',x=.5,y=.5,font_size=14,font_color='#38bdf8',showarrow=False)])
             st.plotly_chart(fig_donut,use_container_width=True,config={'displayModeBar':False})
         # Condition breakdown
         if cond_col_chart:
@@ -8756,8 +8857,8 @@ if st.session_state["csv_df"] is not None and not st.session_state["pdata"]:
                 for ci,(cname,ccnt) in enumerate(top_cond2):
                     bar_w=int(ccnt/max(top_cond2[0][1],1)*100)
                     row_clr='#ff2d55' if ci==0 else '#ff8c42' if ci<3 else '#ffd60a' if ci<6 else '#4a90d9'
-                    rows_c+=f"<div style='display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid #040c18;'><div style='flex:1;color:#8ab8cc;font-size:.84rem;'>{cname[:60]}</div><div style='width:120px;height:6px;background:#0a1828;border-radius:3px;'><div style='width:{bar_w}%;height:100%;background:{row_clr};border-radius:3px;'></div></div><div style='color:{row_clr};font-size:.82rem;font-weight:700;min-width:35px;text-align:right;'>{ccnt}</div></div>"
-                st.markdown(f"<div style='background:#020810;border:1px solid #0d2545;border-radius:10px;padding:.9rem 1.1rem;'>{rows_c}</div>",unsafe_allow_html=True)
+                    rows_c+=f"<div style='display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid #050d24;'><div style='flex:1;color:#8ab8cc;font-size:.84rem;'>{cname[:60]}</div><div style='width:120px;height:6px;background:#0a1828;border-radius:3px;'><div style='width:{bar_w}%;height:100%;background:{row_clr};border-radius:3px;'></div></div><div style='color:{row_clr};font-size:.82rem;font-weight:700;min-width:35px;text-align:right;'>{ccnt}</div></div>"
+                st.markdown(f"<div style='background:#020617;border:1px solid #0d2545;border-radius:10px;padding:.9rem 1.1rem;'>{rows_c}</div>",unsafe_allow_html=True)
 
     with st.expander(" Preview data"):
         st.dataframe(df.head(20),use_container_width=True)
@@ -8774,7 +8875,7 @@ if st.session_state["csv_df"] is not None and not st.session_state["pdata"]:
         fig_v.add_vline(x=1,line_color="rgba(255,45,85,0.33)",line_dash="dot")
         fig_v.add_vline(x=-1,line_color="rgba(58,90,122,0.33)",line_dash="dot")
         fig_v.add_hline(y=-np.log10(0.05),line_color="rgba(255,214,10,0.33)",line_dash="dot")
-        fig_v.update_layout(paper_bgcolor="#04080f",plot_bgcolor="#04080f",font_color="#1e4060",
+        fig_v.update_layout(paper_bgcolor="#020617",plot_bgcolor="#020617",font_color="#1e4060",
             xaxis=dict(title="Fold change (log₂) — how much expression increased/decreased",gridcolor="#060f1c"),
             yaxis=dict(title="-log₁₀(p-value) — confidence in the result",gridcolor="#060f1c"),
             height=350,margin=dict(t=10,b=40,l=60,r=10),
@@ -8802,9 +8903,9 @@ if st.session_state["csv_df"] is not None and not st.session_state["pdata"]:
             fig_prot.add_vline(x=1,line_color="rgba(255,45,85,0.27)",line_dash="dot")
             fig_prot.add_vline(x=-1,line_color="rgba(58,90,122,0.27)",line_dash="dot")
             fig_prot.add_hline(y=-_np_prot.log10(0.05),line_color="rgba(255,214,10,0.27)",line_dash="dot")
-            fig_prot.update_layout(paper_bgcolor="#010306",plot_bgcolor="#010306",font_color="#3a6080",
-                xaxis=dict(title="Log₂ protein abundance ratio",gridcolor="#040c18"),
-                yaxis=dict(title="-log₁₀(p-value)",gridcolor="#040c18"),
+            fig_prot.update_layout(paper_bgcolor="#020617",plot_bgcolor="#020617",font_color="#3a6080",
+                xaxis=dict(title="Log₂ protein abundance ratio",gridcolor="#050d24"),
+                yaxis=dict(title="-log₁₀(p-value)",gridcolor="#050d24"),
                 height=350,margin=dict(t=10,b=40,l=60,r=10),
                 title=dict(text="Proteomics volcano —  significantly upregulated ·  downregulated",font_color="#3a6080",font_size=11))
             st.plotly_chart(fig_prot,use_container_width=True,config={"displayModeBar":False})
@@ -8818,8 +8919,8 @@ if st.session_state["csv_df"] is not None and not st.session_state["pdata"]:
                     fig_box.add_trace(go.Box(y=_np_b.log10(vals_d+1),name=ic_d[:20],
                                              marker_color="#38bdf8",line_color="#0088aa",
                                              boxmean=True))
-            fig_box.update_layout(paper_bgcolor="#010306",plot_bgcolor="#010306",font_color="#3a6080",
-                yaxis=dict(title="log₁₀(intensity)",gridcolor="#040c18"),
+            fig_box.update_layout(paper_bgcolor="#020617",plot_bgcolor="#020617",font_color="#3a6080",
+                yaxis=dict(title="log₁₀(intensity)",gridcolor="#050d24"),
                 height=300,margin=dict(t=10,b=40,l=60,r=10),showlegend=False,
                 title=dict(text="Intensity distributions — should overlap after normalisation",font_color="#3a6080",font_size=11))
             st.plotly_chart(fig_box,use_container_width=True,config={"displayModeBar":False})
@@ -8841,9 +8942,9 @@ if st.session_state["csv_df"] is not None and not st.session_state["pdata"]:
             fig_m.add_hline(y=gwas_line,line_color="rgba(255,45,85,0.40)",line_dash="dash",
                            annotation_text="Genome-wide significance (5×10⁻⁸)",annotation_font_color="#ff2d55",annotation_font_size=9)
             fig_m.add_hline(y=nom_line,line_color="rgba(255,214,10,0.27)",line_dash="dot")
-            fig_m.update_layout(paper_bgcolor="#010306",plot_bgcolor="#010306",font_color="#3a6080",
-                xaxis=dict(title="Variant index",gridcolor="#040c18"),
-                yaxis=dict(title="-log₁₀(p-value)",gridcolor="#040c18"),
+            fig_m.update_layout(paper_bgcolor="#020617",plot_bgcolor="#020617",font_color="#3a6080",
+                xaxis=dict(title="Variant index",gridcolor="#050d24"),
+                yaxis=dict(title="-log₁₀(p-value)",gridcolor="#050d24"),
                 height=320,margin=dict(t=10,b=40,l=60,r=10),
                 title=dict(text="Manhattan-style plot —  genome-wide significant ·  nominally significant",font_color="#3a6080",font_size=11))
             st.plotly_chart(fig_m,use_container_width=True,config={"displayModeBar":False})
@@ -8966,10 +9067,10 @@ if st.session_state["csv_df"] is not None and not st.session_state["pdata"]:
                                f"in ≥2 cell lines. Null result calls the ClinVar classification into question." if prof["path"]>0 else
                                f"Insufficient pathogenic evidence — functional DMS scan recommended before CRISPR investment.")
                         st.markdown(
-                            f"<div style='background:#020810;border:1px solid {p_clr}33;border-radius:10px;padding:.9rem;'>"
+                            f"<div style='background:#020617;border:1px solid {p_clr}33;border-radius:10px;padding:.9rem;'>"
                             f"<div style='color:{p_clr};font-weight:800;font-size:.9rem;margin-bottom:5px;'>{priority} PRIORITY</div>"
                             f"<div style='color:#5a8090;font-size:.82rem;margin-bottom:.5rem;'><b style='color:#7ab0c0;'>Mechanism:</b> {mechanism}</div>"
-                            f"<div style='background:#010508;border-left:2px solid {p_clr}44;padding:6px 10px;border-radius:0 6px 6px 0;margin-bottom:.5rem;'>"
+                            f"<div style='background:#020617;border-left:2px solid {p_clr}44;padding:6px 10px;border-radius:0 6px 6px 0;margin-bottom:.5rem;'>"
                             f"<div style='color:#4a7090;font-size:.78rem;'><b style='color:#6a9ab0;'>Hypothesis:</b> {hyp}</div></div>"
                             f"<div style='color:#4a7090;font-size:.8rem;'><b style='color:#6a9ab0;'>Experiment plan:</b></div>"
                             f"<div style='color:#3a6080;font-size:.78rem;line-height:1.6;'>"
@@ -9021,7 +9122,7 @@ if st.session_state["csv_df"] is not None and not st.session_state["pdata"]:
     ]
     for step_cost, step_name, step_body, step_clr in exp_steps:
         st.markdown(
-            f"<div style='background:#020810;border:1px solid {step_clr}33;border-left:3px solid {step_clr};"
+            f"<div style='background:#020617;border:1px solid {step_clr}33;border-left:3px solid {step_clr};"
             f"border-radius:0 10px 10px 0;padding:.9rem 1.1rem;margin:.5rem 0;animation:fadeInUp .4s ease both;'>"
             f"<div style='display:flex;align-items:center;gap:10px;margin-bottom:5px;'>"
             f"<span style='background:{step_clr}22;color:{step_clr};border:1px solid {step_clr}44;"
@@ -9038,7 +9139,7 @@ if st.session_state["csv_df"] is not None and not st.session_state["pdata"]:
         top_gene_name = top_genes_xp[0][0] if (gene_prof and top_genes_xp) else ""
         if top_gene_name:
             st.markdown(
-                f"<div style='background:#020d18;border:1px solid #38bdf822;border-radius:10px;padding:.9rem 1.2rem;margin-top:.8rem;'>"
+                f"<div style='background:#050d24;border:1px solid #38bdf822;border-radius:10px;padding:.9rem 1.2rem;margin-top:.8rem;'>"
                 f"<div style='color:#38bdf8;font-weight:700;font-size:.9rem;margin-bottom:.4rem;'> Next step — search top gene in Protellect</div>"
                 f"<div style='color:#5a8090;font-size:.86rem;margin-bottom:.5rem;'>"
                 f"Type <b style='color:#38bdf8;'>{top_gene_name}</b> in the protein search box (sidebar) to get the full "
@@ -9385,7 +9486,7 @@ def render_domain_expansion_cards(pdata, cv_variants, scored, am_scores, researc
         ):
             # Header with domain colour
             st.markdown(
-                f"<div style='background:#020810;border-left:3px solid {dom_clr};padding:8px 12px;"
+                f"<div style='background:#020617;border-left:3px solid {dom_clr};padding:8px 12px;"
                 f"border-radius:0 8px 8px 0;margin-bottom:8px;'>"
                 f"<div style='display:flex;gap:8px;align-items:center;'>"
                 f"<span style='background:{dom_clr}22;color:{dom_clr};border:1px solid {dom_clr}44;"
@@ -9417,7 +9518,7 @@ def render_domain_expansion_cards(pdata, cv_variants, scored, am_scores, researc
                         vurl = dv.get("url", "")
                         sig_v = dv.get("sig", "")[:20]
                         st.markdown(
-                            f"<div style='font-size:.78rem;padding:3px 0;border-bottom:1px solid #040c18;'>"
+                            f"<div style='font-size:.78rem;padding:3px 0;border-bottom:1px solid #050d24;'>"
                             f"<span style='color:{vc};font-weight:700;'>{sig_v}</span> "
                             f"<span style='color:#4a7090;'>{vname}</span>"
                             + (f" <a href='{vurl}' target='_blank' style='color:#2a5060;font-size:.7rem;'>↗</a>" if vurl else "")
@@ -9438,7 +9539,7 @@ def render_domain_expansion_cards(pdata, cv_variants, scored, am_scores, researc
                     dom_seq = seq[start_pos-1:end_pos]
                     st.markdown(
                         f"<div style='font-family:JetBrains Mono,monospace;font-size:.65rem;"
-                        f"color:#1e4060;background:#010306;padding:5px 8px;border-radius:5px;"
+                        f"color:#1e4060;background:#020617;padding:5px 8px;border-radius:5px;"
                         f"word-break:break-all;margin-top:5px;'>"
                         f"{dom_seq[:80]}{'…' if len(dom_seq)>80 else ''}</div>",
                         unsafe_allow_html=True,
@@ -9460,7 +9561,7 @@ def render_domain_expansion_cards(pdata, cv_variants, scored, am_scores, researc
             
             if drug_potential:
                 st.markdown(
-                    f"<div style='background:#020810;border:1px solid #0d2545;border-radius:7px;"
+                    f"<div style='background:#020617;border:1px solid #0d2545;border-radius:7px;"
                     f"padding:6px 10px;margin-top:6px;font-size:.78rem;'>"
                     f" Drug Tractability: {drug_potential}</div>",
                     unsafe_allow_html=True,
@@ -9594,7 +9695,7 @@ def render_chemical_backbone(seq, cv_variants, phospho_sites, binding_sites, gen
 
     # Molecular formula panel
     st.markdown(f"""
-<div style='background:#010810;border:1px solid #071828;border-radius:10px;padding:11px 16px;
+<div style='background:#020617;border:1px solid #071828;border-radius:10px;padding:11px 16px;
   margin-bottom:10px;display:flex;gap:20px;flex-wrap:wrap;align-items:center;'>
   <div><div style='color:#3a6080;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;'>Molecular Formula</div>
     <div style='color:#38bdf8;font-size:.9rem;font-weight:700;font-family:JetBrains Mono,monospace;'>{mol_html}</div></div>
@@ -9610,14 +9711,14 @@ def render_chemical_backbone(seq, cv_variants, phospho_sites, binding_sites, gen
 
     components.html(f"""<!DOCTYPE html><html><head>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-<style>*{{margin:0;padding:0;box-sizing:border-box;}}body{{background:#000205;overflow:hidden;}}
+<style>*{{margin:0;padding:0;box-sizing:border-box;}}body{{background:#020617;overflow:hidden;}}
 canvas{{display:block;}}
 #info{{position:absolute;top:8px;left:8px;background:rgba(0,2,8,.97);border:1px solid #071828;
   border-radius:10px;padding:10px 14px;color:#b0d8f0;font-size:11px;
   font-family:'JetBrains Mono',monospace;display:none;z-index:20;pointer-events:none;
   min-width:240px;line-height:1.75;}}
 #ctrl{{position:absolute;top:8px;right:8px;display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;}}
-.btn{{background:#010810;border:1px solid #071828;color:#3a6080;border-radius:6px;
+.btn{{background:#020617;border:1px solid #071828;color:#3a6080;border-radius:6px;
   padding:4px 9px;font-size:10px;cursor:pointer;transition:all .12s;font-family:Inter,sans-serif;}}
 .btn:hover,.btn.on{{border-color:rgba(0,229,255,.35);color:#38bdf8;}}
 #nav{{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:5px;align-items:center;}}
@@ -9960,7 +10061,7 @@ def render_oncology_workspace():
 
     st.markdown("<div style='color:#f43f5e;font-size:.78rem;font-weight:700;margin-bottom:.5rem;text-transform:uppercase;letter-spacing:.08em;'> Treatment Recommendations</div>", unsafe_allow_html=True)
     for rname, rclr, rdesc in recs:
-        st.markdown(f"<div style='background:#010810;border-left:3px solid {rclr};border-radius:0 8px 8px 0;padding:9px 13px;margin:.35rem 0;'><div style='color:{rclr};font-weight:700;font-size:.82rem;'>{rname}</div><div style='color:#3a6080;font-size:.77rem;line-height:1.6;margin-top:2px;'>{rdesc}</div></div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='background:#020617;border-left:3px solid {rclr};border-radius:0 8px 8px 0;padding:9px 13px;margin:.35rem 0;'><div style='color:{rclr};font-weight:700;font-size:.82rem;'>{rname}</div><div style='color:#3a6080;font-size:.77rem;line-height:1.6;margin-top:2px;'>{rdesc}</div></div>", unsafe_allow_html=True)
 
     # ── Cancer type full profile ────────────────────────────────────────────
     st.markdown("<hr class='dv'>", unsafe_allow_html=True)
@@ -10017,7 +10118,7 @@ def render_oncology_workspace():
                 st.markdown(f"<div style='color:{clr};font-weight:700;font-size:.78rem;margin-bottom:4px;'>Molecular drivers</div><div style='color:#3a6080;font-size:.76rem;'>{molecular}</div>", unsafe_allow_html=True)
                 st.markdown(f"<div style='color:#ff8c42;font-weight:700;font-size:.75rem;margin:.5rem 0 3px;'>Regulators</div><div style='color:#3a6080;font-size:.75rem;'>{regulators}</div>", unsafe_allow_html=True)
             with cc2:
-                st.markdown(f"<div style='background:#010810;border:1px solid {clr}33;border-left:3px solid {clr};border-radius:0 8px 8px 0;padding:8px 11px;font-size:.73rem;color:#4a7090;line-height:1.6;'><b style='color:{clr};'>Clinical relevance:</b> {intervention}</div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='background:#020617;border:1px solid {clr}33;border-left:3px solid {clr};border-radius:0 8px 8px 0;padding:8px 11px;font-size:.73rem;color:#4a7090;line-height:1.6;'><b style='color:{clr};'>Clinical relevance:</b> {intervention}</div>", unsafe_allow_html=True)
 
 
 def render_neuroscience_workspace():
@@ -10128,7 +10229,7 @@ def render_neuroscience_workspace():
             pr_cols = st.columns(2)
             for pi, (prot, pdesc) in enumerate(circuit_data["proteins"].items()):
                 with pr_cols[pi % 2]:
-                    st.markdown(f"<div style='background:#010810;border:1px solid {clr}22;border-radius:8px;padding:7px 10px;margin:3px 0;'><div style='color:{clr};font-weight:700;font-size:.78rem;'>{prot}</div><div style='color:#3a5060;font-size:.7rem;line-height:1.55;margin-top:2px;'>{pdesc}</div></div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='background:#020617;border:1px solid {clr}22;border-radius:8px;padding:7px 10px;margin:3px 0;'><div style='color:{clr};font-weight:700;font-size:.78rem;'>{prot}</div><div style='color:#3a5060;font-size:.7rem;line-height:1.55;margin-top:2px;'>{pdesc}</div></div>", unsafe_allow_html=True)
                     if st.button(f"Analyse {prot}", key=f"neuro_btn_{circuit_name[:6]}_{prot}", use_container_width=True):
                         st.session_state["_trigger_search"] = prot
                         st.rerun()
@@ -10157,7 +10258,7 @@ def render_neuroscience_workspace():
 
 def render_pharma_workspace():
     """Pharmaceuticals: GPCR checker → Filamin protocol → ADMET gates."""
-    st.markdown("<div style='color:#00d4ff;font-size:1.1rem;font-weight:800;margin-bottom:.4rem;'> Drug Discovery Workspace</div>", unsafe_allow_html=True)
+    st.markdown("<div style='color:#38bdf8;font-size:1.1rem;font-weight:800;margin-bottom:.4rem;'> Drug Discovery Workspace</div>", unsafe_allow_html=True)
 
     ph_mode = st.radio("", ["★ GPCR Filamin Checker", " ADMET Gate Check", " Drug Timeline"], horizontal=True, key="ph_mode2")
 
@@ -10172,10 +10273,10 @@ def render_pharma_workspace():
                       "FLNA":"Filamin-A — this IS the assay readout protein. pSer2152 is the pharmacodynamic biomarker.",
                       "GRK2":"GRK2/BARK1. Phosphorylates GPCRs for desensitisation. Drug target for heart failure (GRK2 inhibitor paroxetine-like)."}
             if is_g:
-                st.markdown(f"<div style='background:#000a03;border:2px solid #22c55e;border-radius:10px;padding:12px 16px;margin:.4rem 0;'>"
+                st.markdown(f"<div style='background:#020617;border:2px solid #22c55e;border-radius:10px;padding:12px 16px;margin:.4rem 0;'>"
                     f"<div style='color:#22c55e;font-size:1rem;font-weight:800;'> {g} — Confirmed Class A GPCR with H8 motif</div>"
                     f"<div style='color:#3a6080;font-size:.78rem;margin:.4rem 0;'>Filamin Ser2152-P IP assay is the recommended PRIMARY readout. More receptor-proximal than cAMP, IP3, or β-arrestin.</div>"
-                    f"<div style='color:#00d4ff;font-size:.73rem;font-weight:700;margin-bottom:4px;'>Recommended assay sequence:</div>"
+                    f"<div style='color:#38bdf8;font-size:.73rem;font-weight:700;margin-bottom:4px;'>Recommended assay sequence:</div>"
                     f"<div style='color:#3a6080;font-size:.73rem;line-height:1.7;'>"
                     f"① Anti-FLNA-Ig21 IP + pSer2152 western — Day 4 (primary readout)<br>"
                     f"② cAMP HTRF (Gs) or IP-ONE (Gq) — Day 3 (coupling class)<br>"
@@ -10199,8 +10300,8 @@ def render_pharma_workspace():
         st.markdown("<hr class='dv'>", unsafe_allow_html=True)
         sh("", "Filamin IP Protocol")
         for day, detail in [("Day 1","Seed HEK293 (1M/well) + GPCR expression. Untransfected control + β2AR positive control."),("Day 2","Serum-starve 2h. Agonist dose-response 0.1nM–10μM, 15min, 37°C. H89 10μM (30min pre) as PKA control."),("Day 3","RIPA lysis + PhosSTOP + protease inhibitors. IP: anti-FLNA Ig21 (Millipore 3/F9, 1:200) overnight."),("Day 4","Elute → SDS-PAGE → WB: anti-pSer2152 (CST #4761). Strip → re-probe total FLNA. 4-PL EC50 curve."),("Read","H89 abolishes signal = PKA confirmed. pSer2152 EC50 < cAMP EC50 = receptor-proximal (expected).")]:
-            st.markdown(f"<div style='display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #050e18;'><span style='color:#00d4ff;font-size:.7rem;font-weight:700;min-width:45px;'>{day}</span><span style='color:#3a6080;font-size:.72rem;line-height:1.55;'>{detail}</span></div>", unsafe_allow_html=True)
-        st.markdown("<a href='https://pubmed.ncbi.nlm.nih.gov/26124276/' target='_blank' style='color:#00d4ff;font-size:.7rem;'> Bhatt et al. 2015 — PMID:26124276 ↗</a>", unsafe_allow_html=True)
+            st.markdown(f"<div style='display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #050e18;'><span style='color:#38bdf8;font-size:.7rem;font-weight:700;min-width:45px;'>{day}</span><span style='color:#3a6080;font-size:.72rem;line-height:1.55;'>{detail}</span></div>", unsafe_allow_html=True)
+        st.markdown("<a href='https://pubmed.ncbi.nlm.nih.gov/26124276/' target='_blank' style='color:#38bdf8;font-size:.7rem;'> Bhatt et al. 2015 — PMID:26124276 ↗</a>", unsafe_allow_html=True)
 
     elif ph_mode == " ADMET Gate Check":
         sh("", "ADMET Pass/Fail Gate Check")
@@ -10260,7 +10361,7 @@ def render_molbio_workspace():
         for sub, site, detail in kd2["subs"]:
             s1, s2 = st.columns([0.28, 0.72])
             with s1:
-                st.markdown(f"<div style='background:#010810;border:1px solid {clr5}33;border-radius:8px;padding:.5rem;text-align:center;'>"
+                st.markdown(f"<div style='background:#020617;border:1px solid {clr5}33;border-radius:8px;padding:.5rem;text-align:center;'>"
                     f"<div style='color:{clr5};font-weight:800;font-size:.8rem;'>{sub.split('(')[0].strip()}</div>"
                     f"<div style='color:#1e4060;font-size:.63rem;font-family:JetBrains Mono;'>{site}</div></div>", unsafe_allow_html=True)
                 gene_s = sub.split("(")[0].strip().split("/")[0].strip()
@@ -10291,7 +10392,7 @@ def render_molbio_workspace():
         st.markdown("<div style='color:#3a6080;font-size:.78rem;margin-bottom:.5rem;'>Answer 2–3 questions → get the right technique for your protein.</div>", unsafe_allow_html=True)
         have_protein = st.radio("Do you have purified protein?", ["Yes","No — bioinformatics only"], horizontal=True, key="sb_q1_2")
         if have_protein == "No — bioinformatics only":
-            st.markdown("<div style='background:#010810;border-left:3px solid #f97316;padding:9px 13px;border-radius:0 9px 9px 0;color:#3a6080;font-size:.75rem;line-height:1.7;'>"
+            st.markdown("<div style='background:#020617;border-left:3px solid #f97316;padding:9px 13px;border-radius:0 9px 9px 0;color:#3a6080;font-size:.75rem;line-height:1.7;'>"
                 "<b style='color:#f97316;'>AlphaFold + fpocket</b><br>"
                 "① Download PDB from alphafold.ebi.ac.uk (pLDDT>70 = reliable)<br>"
                 "② fpocket → druggability score >0.5 = ligandable pocket<br>"
@@ -10315,7 +10416,7 @@ def render_molbio_workspace():
                 ("Solution shape","50–200 kDa"):"SAXS + native MS (exact mass, stoichiometry). CORAL for AlphaFold+SAXS atomic fitting.",
                 ("Solution shape",">200 kDa (complex)"):"Native MS + cryo-EM 2D class averages. SAXS envelope for initial model validation.",
             }.get((goal_s, mw_s), "HDX-MS is the most flexible technique — no crystals, no MW limit, captures dynamics and binding sites.")
-            st.markdown(f"<div style='background:#010810;border-left:4px solid #f97316;padding:10px 14px;border-radius:0 10px 10px 0;color:#3a6080;font-size:.77rem;line-height:1.65;margin-top:.5rem;'>"
+            st.markdown(f"<div style='background:#020617;border-left:4px solid #f97316;padding:10px 14px;border-radius:0 10px 10px 0;color:#3a6080;font-size:.77rem;line-height:1.65;margin-top:.5rem;'>"
                 f"<b style='color:#f97316;'>Recommended: </b>{recs_s}</div>", unsafe_allow_html=True)
 
 
@@ -10571,7 +10672,7 @@ def render_lab_chatbot():
 
     # ── Chat panel (rendered in sidebar when open) ────────────────────────────
     st.sidebar.markdown(
-        "<div style='background:#040d18;border:1px solid #c084fc22;border-radius:12px;"
+        "<div style='background:#050d24;border:1px solid #c084fc22;border-radius:12px;"
         "padding:10px 12px;margin-top:4px;'>",
         unsafe_allow_html=True
     )
@@ -10725,6 +10826,54 @@ def render_lab_chatbot():
             st.session_state["anthropic_key"] = _ak_in
             st.rerun()
 
+    # ── Lab Library (papers pulled from lab focus) ──────────────────────────
+    _lab_papers = st.session_state.get("ob_papers", []) or []
+    _lab_focus_sb = (st.session_state.get("ob_focus","") or
+                     st.session_state.get("lab_focus","") or "")
+    _lab_prots_sb = (st.session_state.get("ob_proteins","") or
+                     ",".join(st.session_state.get("lab_proteins",[])) or "")
+    with st.sidebar.expander(f"Lab Library ({len(_lab_papers)} papers)", expanded=False):
+        if not _lab_papers and not _lab_focus_sb:
+            st.caption("Configure your lab in the onboarding wizard or sidebar chatbot to pull relevant papers from Semantic Scholar.")
+        else:
+            if _lab_focus_sb:
+                st.caption(f"Focus: {_lab_focus_sb[:80]}{'…' if len(_lab_focus_sb)>80 else ''}")
+            colA, colB = st.columns([3,1])
+            with colA:
+                if st.button("Refresh papers", key="lab_lib_refresh", use_container_width=True):
+                    _q = (_lab_focus_sb + " " + _lab_prots_sb.split(",")[0]).strip() if _lab_prots_sb else _lab_focus_sb
+                    if _q:
+                        with st.spinner("Searching Semantic Scholar..."):
+                            try:
+                                _new_papers = fetch_scholar_papers(_q, n=8)
+                                if _lab_prots_sb:
+                                    _g1 = _lab_prots_sb.split(",")[0].strip()
+                                    _extra = fetch_scholar_papers(f"{_g1} protein disease variants mechanism", n=4)
+                                    _seen = {p["title"] for p in _new_papers}
+                                    _new_papers += [p for p in _extra if p["title"] not in _seen]
+                                st.session_state["ob_papers"] = _new_papers[:12]
+                                st.rerun()
+                            except Exception as _ex:
+                                st.error(f"Could not fetch papers: {str(_ex)[:80]}")
+            with colB:
+                if st.button("Clear", key="lab_lib_clear", use_container_width=True):
+                    st.session_state["ob_papers"] = []
+                    st.rerun()
+            for _p in _lab_papers[:8]:
+                _cc = _p.get("citations", 0)
+                _url = _p.get("url") or "#"
+                _yr = _p.get("year","")
+                st.markdown(
+                    f"<div style='background:var(--surface);border:1px solid var(--border);"
+                    f"border-radius:6px;padding:6px 8px;margin:.25rem 0;'>"
+                    f"<a href='{_url}' target='_blank' style='color:var(--text);font-size:.74rem;"
+                    f"font-weight:600;text-decoration:none;line-height:1.35;display:block;'>"
+                    f"{_p.get('title','')[:80]}{'…' if len(_p.get('title',''))>80 else ''}</a>"
+                    f"<div style='color:var(--text3);font-size:.66rem;margin-top:2px;'>"
+                    f"{_p.get('authors','')[:50]} · {_yr} · {_cc:,} cit.</div></div>",
+                    unsafe_allow_html=True,
+                )
+
 # ── Research domain registry ─────────────────────────────────────────────────
 
 
@@ -10739,7 +10888,7 @@ _rd_icon = _rd_meta.get("icon", "")
 if st.session_state.get("csv_triage_active") and st.session_state.get("csv_df") is not None:
     df_t = st.session_state["csv_df"]; ct_t = st.session_state["csv_type"]
     st.markdown(
-        f"<div style='background:#020810;border:2px solid #38bdf833;border-radius:14px;"
+        f"<div style='background:#020617;border:2px solid #38bdf833;border-radius:14px;"
         f"padding:1.2rem 1.5rem;margin-bottom:1rem;'>"
         f"<div style='display:flex;align-items:center;gap:12px;margin-bottom:.8rem;'>"
         f"<img src='{_logo_src}' style='width:32px;height:32px;object-fit:contain;'>"
@@ -10769,9 +10918,9 @@ if st.session_state.get("csv_triage_active") and st.session_state.get("csv_df") 
         fig_vt.add_vline(x=1, line_color="rgba(255,45,85,0.27)", line_dash="dot")
         fig_vt.add_vline(x=-1, line_color="rgba(58,90,122,0.27)", line_dash="dot")
         fig_vt.add_hline(y=-np.log10(0.05), line_color="rgba(255,214,10,0.27)", line_dash="dot")
-        fig_vt.update_layout(paper_bgcolor="#010306", plot_bgcolor="#010306", font_color="#1e4060",
-            xaxis=dict(title="Fold change (log₂) — increased vs decreased expression", gridcolor="#040c18"),
-            yaxis=dict(title="-log₁₀(p-value) — confidence in result", gridcolor="#040c18"),
+        fig_vt.update_layout(paper_bgcolor="#020617", plot_bgcolor="#020617", font_color="#1e4060",
+            xaxis=dict(title="Fold change (log₂) — increased vs decreased expression", gridcolor="#050d24"),
+            yaxis=dict(title="-log₁₀(p-value) — confidence in result", gridcolor="#050d24"),
             height=380, margin=dict(t=10, b=40, l=60, r=10),
             title=dict(text="Volcano plot —  significantly up ·  significantly down", font_color="#2a5070", font_size=12))
         st.plotly_chart(fig_vt, use_container_width=True, config={"displayModeBar":False})
@@ -10780,7 +10929,7 @@ if st.session_state.get("csv_triage_active") and st.session_state.get("csv_df") 
     if st.button("✕ Close triage panel", key="close_triage"):
         st.session_state["csv_triage_active"] = False
         st.rerun()
-    st.markdown("<hr style='border-color:#040c18;margin:1rem 0;'>", unsafe_allow_html=True)
+    st.markdown("<hr style='border-color:#050d24;margin:1rem 0;'>", unsafe_allow_html=True)
 
 # ─── Disease proteins panel ─────────────────────────────────────────
 if st.session_state["disease_proteins"]:
@@ -10878,7 +11027,7 @@ with tab0:
     @keyframes fadeInUp {{from{{opacity:0;transform:translateY(20px)}}to{{opacity:1;transform:translateY(0)}}}}
     @keyframes pulse {{0%,100%{{opacity:1}}50%{{opacity:.7}}}}
     @keyframes barFill {{from{{width:0%}}to{{width:var(--w)}}}}
-    .sum-card{{animation:fadeInUp .6s ease forwards;background:#020810;border:1px solid #0d2545;border-radius:12px;padding:1rem 1.3rem;margin:.5rem 0;}}
+    .sum-card{{animation:fadeInUp .6s ease forwards;background:#020617;border:1px solid #0d2545;border-radius:12px;padding:1rem 1.3rem;margin:.5rem 0;}}
     .sum-card:nth-child(2){{animation-delay:.1s}}.sum-card:nth-child(3){{animation-delay:.2s}}
     .anim-bar{{animation:barFill 1.2s ease forwards;}}
     .pulse{{animation:pulse 2s infinite;}}
@@ -10889,7 +11038,7 @@ with tab0:
     v_clr_s = RANK_CLR.get(gi.get("pursue","neutral").upper(), "#3a6080") if gi.get("pursue","") in RANK_CLR else {"prioritise":"#ff2d55","proceed":"#ff8c42","selective":"#ffd60a","caution":"#ffd60a","deprioritise":"#3a5a7a","neutral":"#1e6080"}.get(gi.get("pursue","neutral"),"#3a6080")
     pursue_label_s = {"prioritise":" PURSUE","proceed":" PROCEED","selective":" BE SELECTIVE","caution":" CAUTION — POSSIBLE PIGGYBACK","deprioritise":" DEPRIORITISE","neutral":" INSUFFICIENT DATA"}.get(gi.get("pursue","neutral"),"")
     st.markdown(
-        "<div style='background:linear-gradient(135deg,#020810,#030d1a);border:2px solid " + v_clr_s + "55;"
+        "<div style='background:linear-gradient(135deg,#020617,#030d1a);border:2px solid " + v_clr_s + "55;"
         "border-radius:16px;padding:1.4rem 1.8rem;margin-bottom:1rem;'>"
         "<div style='display:flex;align-items:center;gap:14px;'>"
         f"<img src='{_logo_src}' style='width:54px;height:54px;object-fit:contain;filter:drop-shadow(0 0 16px #38bdf866);animation:pulseGlow 3s ease infinite,spinDNA 14s linear infinite;'>"
@@ -10992,7 +11141,7 @@ with tab0:
         g_pct = int(len(germline_s)/total_s*100)
         s_pct = 100 - g_pct
         st.markdown(
-            f"<div style='background:#020810;border:1px solid #0d2545;border-radius:10px;padding:.9rem;margin-bottom:.6rem;'>"
+            f"<div style='background:#020617;border:1px solid #0d2545;border-radius:10px;padding:.9rem;margin-bottom:.6rem;'>"
             f"<div style='display:flex;gap:4px;height:24px;border-radius:6px;overflow:hidden;margin-bottom:.6rem;'>"
             f"<div style='width:{g_pct}%;background:#00c896;display:flex;align-items:center;justify-content:center;color:#000;font-size:.72rem;font-weight:700;'>"
             f"{'Germline '+str(g_pct)+'%' if g_pct>15 else ''}</div>"
@@ -11016,8 +11165,8 @@ with tab0:
                 hole=.55, textfont_size=9,
                 marker_colors=["#ff2d55","#ff8c42","#ffd60a","#4a90d9","#00c896","#6478ff","#a855f7","#3a6080"][:len(sd2)],
             ))
-            fig_s.update_layout(paper_bgcolor="#010306",plot_bgcolor="#010306",font_color="#3a6080",
-                showlegend=True,legend=dict(font_size=9,bgcolor="#010306"),
+            fig_s.update_layout(paper_bgcolor="#020617",plot_bgcolor="#020617",font_color="#3a6080",
+                showlegend=True,legend=dict(font_size=9,bgcolor="#020617"),
                 margin=dict(t=0,b=0,l=0,r=0),height=180,
                 annotations=[dict(text=f"<b>{summary.get('total',0)}</b>",x=.5,y=.5,font_size=13,font_color="#38bdf8",showarrow=False)])
             st.plotly_chart(fig_s, use_container_width=True, config={"displayModeBar":False})
@@ -11198,7 +11347,7 @@ with tab0:
                 # Find hypothesis for this step from ROI data
                 hyp = next((r.get("rationale","") for r in roi_data if name[:20].lower() in r.get("name","").lower()), "")
                 st.markdown(
-                    f"<div style='background:#020810;border:1px solid {s_clr}22;border-radius:10px;"
+                    f"<div style='background:#020617;border:1px solid {s_clr}22;border-radius:10px;"
                     f"padding:.9rem 1.1rem;margin:.4rem 0;border-left:3px solid {s_clr};'>"
                     f"<div style='display:flex;align-items:flex-start;gap:12px;'>"
                     f"<span style='font-size:1.3rem;flex-shrink:0;padding-top:2px;'>{icon}</span>"
@@ -11210,7 +11359,7 @@ with tab0:
                     f"<span style='color:#3a6080;font-size:.76rem;'>⏱ {timeline}</span>"
                     f"</div>"
                     f"<div style='color:#6a9ab0;font-size:.86rem;line-height:1.6;margin-bottom:5px;'>{rationale}</div>"
-                    + (f"<div style='background:#020d18;border:1px solid #0d2545;border-radius:7px;padding:6px 10px;'>"
+                    + (f"<div style='background:#050d24;border:1px solid #0d2545;border-radius:7px;padding:6px 10px;'>"
                        f"<span style='color:#6a9880;font-size:.8rem;'><b style='color:#5a8870;'>Evidence basis:</b> {hyp[:200]}</span></div>" if hyp else "")
                     + "</div></div></div>",
                     unsafe_allow_html=True,
@@ -11364,7 +11513,7 @@ with tab1:
             if isinstance(aa_data, dict) and aa_data.get("class","") == "pathogenic"
         )
         st.markdown(
-            "<div style='background:#020810;border:1px solid #38bdf822;border-radius:10px;"
+            "<div style='background:#020617;border:1px solid #38bdf822;border-radius:10px;"
             "padding:.7rem 1.2rem;margin-bottom:.6rem;display:flex;gap:12px;align-items:center;'>"
             "<div style='font-size:1.3rem;'></div>"
             "<div>"
@@ -11393,7 +11542,7 @@ with tab1:
                 for ic,lb,c in tract_items
             )
             st.markdown(
-                "<div style='background:#020810;border:1px solid #0d2545;border-radius:10px;"
+                "<div style='background:#020617;border:1px solid #0d2545;border-radius:10px;"
                 "padding:.7rem 1.2rem;margin-bottom:.6rem;'>"
                 f"<span style='color:#5a8090;font-size:.82rem;margin-right:8px;'>OpenTargets tractability:</span>"
                 f"{items_html}"
@@ -11409,7 +11558,7 @@ with tab1:
         is_orphan = patient_data.get("orphan_eligible",False)
         pop_clr = "#a855f7" if is_orphan else "#4a90d9"
         st.markdown(
-            "<div style='background:#020810;border:1px solid " + pop_clr + "33;border-radius:10px;"
+            "<div style='background:#020617;border:1px solid " + pop_clr + "33;border-radius:10px;"
             "padding:.7rem 1.2rem;margin-bottom:.6rem;display:flex;gap:14px;align-items:center;'>"
             "<div>"
             f"<div style='color:{pop_clr};font-weight:800;font-size:.95rem;'> Market: ~{pop:,} patients globally</div>"
@@ -11433,7 +11582,7 @@ with tab1:
             components.html(viewer_html(pdb,scored,445),height=450,scrolling=False)
             st.markdown(f"<div style='color:#5a8090;font-size:.79rem;margin-top:3px;'>Confidence avg (pLDDT): <b style='color:#3a7090;'>{avg_pl}</b> · {pct_conf}% reliably modelled · <b style='color:#ff2d55;'>{n_sites}</b> variant sites shown</div>", unsafe_allow_html=True)
         else:
-            st.markdown("<div style='background:#040d18;border:1px dashed #0c2040;border-radius:12px;height:340px;display:flex;align-items:center;justify-content:center;'><div style='text-align:center;color:#0e2840;'><div style='font-size:2rem;'></div><div style='font-size:1rem;margin-top:5px;'>AlphaFold structure unavailable<br>Try a direct UniProt accession (e.g. P04637)</div></div></div>", unsafe_allow_html=True)
+            st.markdown("<div style='background:#050d24;border:1px dashed #0c2040;border-radius:12px;height:340px;display:flex;align-items:center;justify-content:center;'><div style='text-align:center;color:#0e2840;'><div style='font-size:2rem;'></div><div style='font-size:1rem;margin-top:5px;'>AlphaFold structure unavailable<br>Try a direct UniProt accession (e.g. P04637)</div></div></div>", unsafe_allow_html=True)
 
     with cd:
         sh("","Disease Triage")
@@ -11459,7 +11608,7 @@ with tab1:
         if summary.get("by_sig"):
             sd=summary["by_sig"]; clrs3=["#ff2d55","#ff8c42","#ffd60a","#4a90d9","#00c896","#6478ff","#a855f7","#1e4060"]
             fig2=go.Figure(go.Pie(labels=list(sd.keys()),values=list(sd.values()),hole=.58,marker_colors=clrs3[:len(sd)],textfont_size=9))
-            fig2.update_layout(paper_bgcolor="#04080f",plot_bgcolor="#04080f",font_color="#1e4060",showlegend=True,legend=dict(font_size=9,bgcolor="#04080f"),margin=dict(t=0,b=0,l=0,r=0),height=185,annotations=[dict(text=f"<b>{summary.get('total',0)}</b>",x=.5,y=.5,font_size=13,font_color="#38bdf8",showarrow=False)])
+            fig2.update_layout(paper_bgcolor="#020617",plot_bgcolor="#020617",font_color="#1e4060",showlegend=True,legend=dict(font_size=9,bgcolor="#020617"),margin=dict(t=0,b=0,l=0,r=0),height=185,annotations=[dict(text=f"<b>{summary.get('total',0)}</b>",x=.5,y=.5,font_size=13,font_color="#38bdf8",showarrow=False)])
             st.plotly_chart(fig2,use_container_width=True,config={"displayModeBar":False})
 
     st.markdown("<hr class='dv'>", unsafe_allow_html=True)
@@ -11534,7 +11683,7 @@ with tab1:
             _dc1, _dc2 = st.columns([3,2], gap='large')
             with _dc1:
                 st.markdown(
-                    f"<div style='background:#020810;border:1px solid {_vclr}33;border-radius:10px;padding:.9rem 1rem;'>"
+                    f"<div style='background:#020617;border:1px solid {_vclr}33;border-radius:10px;padding:.9rem 1rem;'>"
                     f"<div style='display:flex;gap:8px;flex-wrap:wrap;margin-bottom:.5rem;'>"
                     f"<span style='background:{_vclr}22;color:{_vclr};border:1px solid {_vclr}44;padding:2px 10px;border-radius:7px;font-size:.8rem;font-weight:700;'>{_vrk}</span>"
                     + (f"<span style='background:#00c89622;color:#00c896;border:1px solid #00c89644;padding:2px 8px;border-radius:6px;font-size:.76rem;'>AI+ClinVar concordant</span>" if _concordant else "")
@@ -11572,7 +11721,7 @@ with tab1:
                         ('IF phenotype confirmed', 'Submit PS3 functional evidence to ClinVar — upgrades VUS to Likely Pathogenic'),
                     ]
                 st.markdown(
-                    "<div style='background:#020d18;border:1px solid #38bdf822;border-radius:9px;padding:.8rem;'>"
+                    "<div style='background:#050d24;border:1px solid #38bdf822;border-radius:9px;padding:.8rem;'>"
                     "<div style='color:#38bdf8;font-weight:700;font-size:.84rem;margin-bottom:.4rem;'>If/Then Decision Tree</div>"
                     + "".join(
                         f"<div style='margin:.4rem 0;'>"
@@ -11633,7 +11782,7 @@ with tab2:
         if tsc:
             tsc=dict(sorted(tsc.items(),key=lambda x:-x[1])[:10])
             fig3=go.Figure(go.Bar(y=list(tsc.keys()),x=list(tsc.values()),orientation="h",marker=dict(color=list(tsc.values()),colorscale=[[0,"#0c2040"],[.5,"#0d4080"],[1,"#38bdf8"]],cmin=0,cmax=max(tsc.values()))))
-            fig3.update_layout(paper_bgcolor="#04080f",plot_bgcolor="#04080f",font_color="#1e4060",xaxis=dict(showgrid=False,zeroline=False,showticklabels=False),yaxis=dict(tickfont=dict(size=11,color="#3a6080")),margin=dict(l=0,r=0,t=5,b=0),height=160+len(tsc)*17)
+            fig3.update_layout(paper_bgcolor="#020617",plot_bgcolor="#020617",font_color="#1e4060",xaxis=dict(showgrid=False,zeroline=False,showticklabels=False),yaxis=dict(tickfont=dict(size=11,color="#3a6080")),margin=dict(l=0,r=0,t=5,b=0),height=160+len(tsc)*17)
             st.plotly_chart(fig3,use_container_width=True,config={"displayModeBar":False})
     with c_s:
         sh("","Where in the cell? (Subcellular location)")
@@ -11674,7 +11823,7 @@ with tab2:
                         fig_g.add_trace(go.Bar(x=[ex_size],y=[gene],orientation="h",
                                                marker_color="#38bdf8",base=ex_start,width=0.4,showlegend=False))
                 except: pass
-            fig_g.update_layout(paper_bgcolor="#04080f",plot_bgcolor="#04080f",font_color="#1e4060",
+            fig_g.update_layout(paper_bgcolor="#020617",plot_bgcolor="#020617",font_color="#1e4060",
                 barmode="overlay",height=120,margin=dict(t=10,b=20,l=60,r=10),
                 xaxis=dict(title="Chromosomal position (base pairs)",color="#0e2840",gridcolor="#060f1c"),
                 yaxis=dict(color="#3a6080"),showlegend=False,
@@ -11695,7 +11844,7 @@ with tab2:
     ga = gpcr_assessment
     ga_clr = ga["colour"]
     st.markdown(
-        "<div style='background:#020810;border:2px solid " + ga_clr + "44;border-radius:12px;"
+        "<div style='background:#020617;border:2px solid " + ga_clr + "44;border-radius:12px;"
         "padding:1.1rem 1.4rem;margin-bottom:.8rem;'>"
         "<div style='color:" + ga_clr + ";font-weight:800;font-size:1rem;margin-bottom:5px;'>"
         + ga["label"] + "</div>"
@@ -11750,13 +11899,13 @@ with tab2:
         )
         for cp in gpcr_info["coupling"]:
             cp_desc={"Gi/o (↓ cAMP)":"Switches OFF internal alarm signal (cAMP) — inhibitory pathway","Gs (↑ cAMP)":"Switches ON internal alarm signal (cAMP) — stimulatory pathway","Gq/11 (↑ Ca²⁺)":"Raises internal calcium — activates muscle/secretion","G12/13 (Rho signalling)":"Controls cell shape and movement (cytoskeletal reorganisation)"}.get(cp,"Signal relay switch")
-            st.markdown(f"<div style='background:#040d18;border:1px solid #38bdf822;border-radius:8px;padding:6px 10px;flex:1;min-width:140px;'><div style='color:#38bdf8;font-size:.96rem;font-weight:700;'>{cp}</div><div style='color:#1e4060;font-size:.80rem;margin-top:2px;'>{cp_desc}</div></div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='background:#050d24;border:1px solid #38bdf822;border-radius:8px;padding:6px 10px;flex:1;min-width:140px;'><div style='color:#38bdf8;font-size:.96rem;font-weight:700;'>{cp}</div><div style='color:#1e4060;font-size:.80rem;margin-top:2px;'>{cp_desc}</div></div>", unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
         # GPCR pathway flow
         gpcr_stages=[("1. Ligand binds","Signal molecule (drug/hormone) binds GPCR"),("2. G-protein activated","G-protein (signal relay switch) exchanges GDP→GTP"),("3. Second messenger","cAMP / Ca²⁺ levels change inside cell"),("4. Downstream effects","Kinases activated, gene expression changed"),("5. β-arrestin / desensitisation","Signal switched off (receptor internalised)")]
         st.markdown("<div style='display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-bottom:.6rem;'>", unsafe_allow_html=True)
         for i,(stage_t,stage_d) in enumerate(gpcr_stages):
-            st.markdown(f"<div style='flex:1;min-width:110px;background:#040d18;border:1px solid #0c2040;border-radius:8px;padding:6px 8px;'><div style='color:#38bdf8;font-size:.80rem;font-weight:700;margin-bottom:2px;'>{stage_t}</div><div style='color:#5a8090;font-size:.81rem;line-height:1.4;'>{stage_d}</div></div>{'<div style=\"color:#1e4060;\">→</div>' if i<4 else ''}", unsafe_allow_html=True)
+            st.markdown(f"<div style='flex:1;min-width:110px;background:#050d24;border:1px solid #0c2040;border-radius:8px;padding:6px 8px;'><div style='color:#38bdf8;font-size:.80rem;font-weight:700;margin-bottom:2px;'>{stage_t}</div><div style='color:#5a8090;font-size:.81rem;line-height:1.4;'>{stage_d}</div></div>{'<div style=\"color:#1e4060;\">→</div>' if i<4 else ''}", unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
         if fn_text: st.markdown(f"<div class='card'><h4>Function</h4><p>{fn_text[:400]}</p><div style='margin-top:4px;'>{src_link('UniProt Function',f'https://www.uniprot.org/uniprotkb/{uid}#function')}</div></div>", unsafe_allow_html=True)
         # GPCR-specific hypothesis
@@ -11780,7 +11929,7 @@ with tab2:
         st.markdown("</div>", unsafe_allow_html=True)
     else:
         fn_text=g_func(pdata)
-        st.markdown(f"<div style='background:#040d18;border:1px solid #0c2040;border-radius:9px;padding:.8rem 1rem;'><span style='color:#5a8090;font-size:1.02rem;'>Not classified as a GPCR in UniProt.</span> {src_link('UniProt',f'https://www.uniprot.org/uniprotkb/{uid}')}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='background:#050d24;border:1px solid #0c2040;border-radius:9px;padding:.8rem 1rem;'><span style='color:#5a8090;font-size:1.02rem;'>Not classified as a GPCR in UniProt.</span> {src_link('UniProt',f'https://www.uniprot.org/uniprotkb/{uid}')}</div>", unsafe_allow_html=True)
         if fn_text: st.markdown(f"<div class='card' style='margin-top:.5rem;'><h4>Function</h4><p>{fn_text[:400]}</p></div>", unsafe_allow_html=True)
 
     st.markdown("<hr class='dv'>", unsafe_allow_html=True)
@@ -11939,16 +12088,16 @@ with tab2:
                     )
                     if d_note:
                         st.markdown(
-                            "<div style='background:#020810;border:1px solid #1e4060;border-radius:8px;padding:8px 12px;margin-bottom:6px;'>"
+                            "<div style='background:#020617;border:1px solid #1e4060;border-radius:8px;padding:8px 12px;margin-bottom:6px;'>"
                             "<div style='color:#ffd60a;font-size:.8rem;font-weight:700;margin-bottom:2px;'>Mutation note from UniProt:</div>"
                             f"<div style='color:#8a9070;font-size:.84rem;'>{d_note}</div></div>",
                             unsafe_allow_html=True,
                         )
                     st.markdown(
                         f"<div style='display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px;'>"
-                        f"<div style='background:#020810;border:1px solid #1e4060;border-radius:7px;padding:4px 10px;'><div style='color:#4a7090;font-size:.7rem;'>Inheritance</div><div style='color:#8ab8cc;font-size:.84rem;font-weight:600;'>{inh_display}</div></div>"
-                        f"<div style='background:#020810;border:1px solid #1e4060;border-radius:7px;padding:4px 10px;'><div style='color:#4a7090;font-size:.7rem;'>Mutation type</div><div style='color:#8ab8cc;font-size:.84rem;font-weight:600;'>{mut_display}</div></div>"
-                        f"<div style='background:#020810;border:1px solid #1e4060;border-radius:7px;padding:4px 10px;'><div style='color:#4a7090;font-size:.7rem;'>ClinVar variants</div><div style='color:#ff8c42;font-size:.84rem;font-weight:700;'>{cv_count} linked</div></div>"
+                        f"<div style='background:#020617;border:1px solid #1e4060;border-radius:7px;padding:4px 10px;'><div style='color:#4a7090;font-size:.7rem;'>Inheritance</div><div style='color:#8ab8cc;font-size:.84rem;font-weight:600;'>{inh_display}</div></div>"
+                        f"<div style='background:#020617;border:1px solid #1e4060;border-radius:7px;padding:4px 10px;'><div style='color:#4a7090;font-size:.7rem;'>Mutation type</div><div style='color:#8ab8cc;font-size:.84rem;font-weight:600;'>{mut_display}</div></div>"
+                        f"<div style='background:#020617;border:1px solid #1e4060;border-radius:7px;padding:4px 10px;'><div style='color:#4a7090;font-size:.7rem;'>ClinVar variants</div><div style='color:#ff8c42;font-size:.84rem;font-weight:700;'>{cv_count} linked</div></div>"
                         f"</div>",
                         unsafe_allow_html=True,
                     )
@@ -11960,7 +12109,7 @@ with tab2:
                     )
                 with cr:
                     st.markdown(
-                        "<div style='background:#020810;border:1px solid #0d2545;border-radius:10px;padding:1rem;'>"
+                        "<div style='background:#020617;border:1px solid #0d2545;border-radius:10px;padding:1rem;'>"
                         "<div style='color:#5a8090;font-size:.76rem;margin-bottom:6px;font-weight:600;'>Disease severity estimate</div>"
                         "<div style='display:flex;align-items:center;gap:10px;margin-bottom:4px;'>"
                         f"<div style='flex:1;height:12px;background:#0a1828;border-radius:6px;overflow:hidden;'><div style='width:{sev_score}%;height:100%;background:linear-gradient(90deg,{sev_colour}66,{sev_colour});border-radius:6px;'></div></div>"
@@ -12040,14 +12189,14 @@ with tab3:
             if vd:
                 rk2=vd.get("ml_rank","NEUTRAL"); clr2=RANK_CLR[rk2]; css2=RANK_CSS[rk2]
                 url_vd=vd.get("url","")
-                st.markdown(f"<div class='card' style='border-color:{clr2}33;'><h4 style='color:{clr2};'> ClinVar Disease Variant Here</h4><p>{p('pathogenic') if vd.get('score',0)>=4 else vd.get('sig','—')}<br><small style='color:#5a8090;'>{vd.get('condition','')[:80]}</small></p>{'<a href=\"'+url_vd+'\" target=\"_blank\" style=\"color:#2a6a8a;font-size:1.02rem;\">View in ClinVar ↗</a>' if url_vd else ''}</div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='card' style='border-color:{clr2}33;'><h4 style='color:{clr2};'>ClinVar Disease Variant Here</h4><p>{p('pathogenic') if vd.get('score',0)>=4 else vd.get('sig','—')}<br><small style='color:#5a8090;'>{vd.get('condition','')[:80]}</small></p>{'<a href=\"'+url_vd+'\" target=\"_blank\" style=\"color:#2a6a8a;font-size:1.02rem;\">View in ClinVar ↗</a>' if url_vd else ''}</div>", unsafe_allow_html=True)
             else: st.success("No ClinVar disease variant at this position",icon="")
         with cm:
             tb1,tb2=st.tabs(["Building-block properties","What if it mutates? →"])
             with tb1:
                 SPECIAL={"C":"Disulfide bonds · metal binding","G":"Most flexible · helix-breaker","P":"Rigid ring · helix-breaker","H":"pH-sensitive (pKa≈6)","W":"Largest · UV-absorbing","Y":"Phosphorylation (chemical tagging) target","R":"DNA/RNA binding · +1 charge","K":"Ubiquitination target · +1","D":"Catalytic acid · −1","E":"Catalytic acid · −1"}
                 for lbl,val in [("Building block (amino acid)",f"{aa} — {AA_NAMES.get(aa,'?')}"),("Water affinity (hydropathy)",f"{AA_HYDRO.get(aa,0):+.1f} (positive=water-hating, negative=water-loving)"),("Electric charge",f"{AA_CHG.get(aa,0):+.1f}"),("Special role",SPECIAL.get(aa,"No special designation"))]:
-                    st.markdown(f"<div style='display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #040c18;'><span style='color:#5a8090;font-size:.79rem;'>{lbl}</span><span style='color:#5a8090;font-size:.79rem;font-weight:600;'>{val}</span></div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #050d24;'><span style='color:#5a8090;font-size:.79rem;'>{lbl}</span><span style='color:#5a8090;font-size:.79rem;font-weight:600;'>{val}</span></div>", unsafe_allow_html=True)
             with tb2:
                 alts=[a for a in AA_NAMES.keys() if a!=aa]
                 alt=st.selectbox("Replace with:",alts,key="alt_aa")
@@ -12062,7 +12211,7 @@ with tab3:
                     fig5.add_trace(go.Scatter(x=dp,y=mt2,mode="lines",name=f"Mutant {aa}{position}{alt}",line=dict(color="#ff2d55",width=2,dash="dash")))
                     fig5.add_trace(go.Scatter(x=dp+dp[::-1],y=mt2+wt2[::-1],fill="toself",fillcolor="rgba(255,45,85,.07)",line=dict(color="rgba(0,0,0,0)"),showlegend=False))
                     fig5.add_vline(x=position,line_color="#ffd60a",line_dash="dot",annotation_text=f"p.{aa}{position}{alt}",annotation_font_color="#ffd60a",annotation_font_size=10)
-                    fig5.update_layout(paper_bgcolor="#04080f",plot_bgcolor="#04080f",font_color="#1e4060",xaxis=dict(title="Position in protein",gridcolor="#060f1c"),yaxis=dict(title="Model confidence (pLDDT)",range=[0,100],gridcolor="#060f1c"),legend=dict(bgcolor="#04080f",font_size=10),margin=dict(t=8,b=28,l=28,r=8),height=220)
+                    fig5.update_layout(paper_bgcolor="#020617",plot_bgcolor="#020617",font_color="#1e4060",xaxis=dict(title="Position in protein",gridcolor="#060f1c"),yaxis=dict(title="Model confidence (pLDDT)",range=[0,100],gridcolor="#060f1c"),legend=dict(bgcolor="#020617",font_size=10),margin=dict(t=8,b=28,l=28,r=8),height=220)
                     st.plotly_chart(fig5,use_container_width=True,config={"displayModeBar":False})
                     st.caption("Shaded area = predicted confidence loss due to mutation. Larger = more structurally disruptive.")
                 hd=abs(AA_HYDRO.get(aa,0)-AA_HYDRO.get(alt,0)); cd=abs(AA_CHG.get(aa,0)-AA_CHG.get(alt,0))
@@ -12144,7 +12293,7 @@ with tab3:
                         f"A null result in both lines supports variant reclassification."
                     )
                     st.markdown(
-                        f"<div style='background:#020810;border:1px solid #0d2545;"
+                        f"<div style='background:#020617;border:1px solid #0d2545;"
                         f"border-radius:8px;padding:8px 12px;margin:.5rem 0;color:#6a9ab0;font-size:.84rem;'>"
                         f"{hyp_txt}</div>",
                         unsafe_allow_html=True,
@@ -12158,7 +12307,7 @@ with tab3:
         _has_am = bool(am_scores)
         if not _has_am:
             st.markdown(
-                "<div style='background:#020810;border:1px solid #ffd60a33;border-radius:10px;"
+                "<div style='background:#020617;border:1px solid #ffd60a33;border-radius:10px;"
                 "padding:.9rem 1.2rem;margin-bottom:.6rem;'>"
                 "<div style='color:#ffd60a;font-weight:700;font-size:.9rem;margin-bottom:3px;'>"
                 " AlphaMissense data not available for this protein</div>"
@@ -12197,9 +12346,9 @@ with tab3:
                 text=classes_list, textposition="auto", textfont_size=9,
             ))
             fig_am.update_layout(
-                paper_bgcolor="#010306", plot_bgcolor="#010306", font_color="#4a7090",
-                xaxis=dict(title="Alternate amino acid", color="#4a7090", gridcolor="#040c18"),
-                yaxis=dict(title="AlphaMissense pathogenicity score (0=benign, 1=pathogenic)", range=[0,1], gridcolor="#040c18"),
+                paper_bgcolor="#020617", plot_bgcolor="#020617", font_color="#4a7090",
+                xaxis=dict(title="Alternate amino acid", color="#4a7090", gridcolor="#050d24"),
+                yaxis=dict(title="AlphaMissense pathogenicity score (0=benign, 1=pathogenic)", range=[0,1], gridcolor="#050d24"),
                 height=280, margin=dict(t=10,b=40,l=60,r=10),
                 title=dict(text=f"AlphaMissense scores for position {am_pos_input} ({seq[int(am_pos_input)-1] if int(am_pos_input)<=len(seq) else '?'})",font_color="#5a8090",font_size=11),
                 shapes=[dict(type="line",y0=0.564,y1=0.564,x0=-0.5,x1=len(aa_list)-0.5,
@@ -12238,7 +12387,7 @@ with tab3:
             is_dis = iso.get("disease_relevant", False)
             iso_clr = "#ff8c42" if is_dis else "#3a6080"
             st.markdown(
-                f"<div style='background:#020810;border:1px solid {iso_clr}33;border-radius:8px;"
+                f"<div style='background:#020617;border:1px solid {iso_clr}33;border-radius:8px;"
                 f"padding:.7rem 1rem;margin:.3rem 0;'>"
                 f"<div style='display:flex;align-items:center;gap:8px;margin-bottom:3px;'>"
                 f"<span style='color:{iso_clr};font-weight:700;font-size:.86rem;'>{iso.get('name','?')}</span>"
@@ -12264,7 +12413,7 @@ with tab3:
             fold = hspot["fold_enrichment"]
             h_clr = "#ff2d55" if fold>8 else "#ff8c42" if fold>4 else "#ffd60a"
             st.markdown(
-                f"<div style='background:#020810;border:1px solid {h_clr}33;border-radius:10px;"
+                f"<div style='background:#020617;border:1px solid {h_clr}33;border-radius:10px;"
                 f"padding:.8rem 1.1rem;margin:.4rem 0;'>"
                 f"<div style='display:flex;align-items:center;gap:10px;margin-bottom:5px;'>"
                 f"<span style='background:{h_clr}22;color:{h_clr};border:1px solid {h_clr}44;"
@@ -12338,7 +12487,7 @@ with tab4:
         components.html(mutation_cascade_html(gene,is_gpcr,gi["pursue"],top_p_vars),height=480,scrolling=False)
 
         if is_gpcr:
-            st.markdown("<div class='card'><h4> GPCR-specific cascade</h4><p>For this GPCR (cell-surface signal receiver): mutation → receptor shape change → G-protein (signal relay switch) fails to activate → second messenger (internal relay: cAMP / Ca²⁺) levels altered → downstream kinase (protein tagger) activity changes → gene expression reprogrammed → cell death (apoptosis) or shape change → organ dysfunction.</p></div>", unsafe_allow_html=True)
+            st.markdown("<div class='card'><h4>GPCR-specific cascade</h4><p>For this GPCR (cell-surface signal receiver): mutation → receptor shape change → G-protein (signal relay switch) fails to activate → second messenger (internal relay: cAMP / Ca²⁺) levels altered → downstream kinase (protein tagger) activity changes → gene expression reprogrammed → cell death (apoptosis) or shape change → organ dysfunction.</p></div>", unsafe_allow_html=True)
 
         st.markdown("<hr class='dv'>", unsafe_allow_html=True)
 
@@ -12374,7 +12523,7 @@ with tab4:
         # ── Why each experiment is suggested ──
         # Each card includes: purpose · rationale (WHY) · hypothesis · protocol · focus · neglect · outcome
         st.markdown(
-            "<div style='background:#020810;border:1px solid #0d2545;border-radius:10px;"
+            "<div style='background:#020617;border:1px solid #0d2545;border-radius:10px;"
             "padding:.9rem 1.2rem;margin-bottom:1rem;'>"
             "<div style='color:#d0e8ff;font-weight:700;font-size:.95rem;margin-bottom:.4rem;'>"
             " Experiment Selection Rationale</div>"
@@ -12446,10 +12595,10 @@ with tab4:
         labels5=[r for r in RANK_CLR if counts5[r]>0]; vals5=[counts5[r] for r in labels5]; clrs5=[RANK_CLR[r] for r in labels5]
         if labels5:
             fig6=go.Figure(go.Funnel(y=labels5,x=vals5,textinfo="value+percent initial",marker=dict(color=clrs5),textfont=dict(color="white",size=12)))
-            fig6.update_layout(paper_bgcolor="#04080f",plot_bgcolor="#04080f",font_color="#1e4060",height=260,margin=dict(t=5,b=5,l=70,r=5))
+            fig6.update_layout(paper_bgcolor="#020617",plot_bgcolor="#020617",font_color="#1e4060",height=260,margin=dict(t=5,b=5,l=70,r=5))
             st.plotly_chart(fig6,use_container_width=True,config={"displayModeBar":False})
         for rank3,clr3,rec3 in [("CRITICAL","#ff2d55","Immediate wet-lab validation. CRISPR knock-in + biochemical assay now. In vivo only after in-vitro phenotype confirmed."),("HIGH","#ff8c42","Functional assay + in-silico stability (ΔΔG). Animal models only after clear in-vitro data."),("MEDIUM","#ffd60a","In-silico modelling + low-cost cell assay only. Do NOT spend on animal work yet."),("NEUTRAL","#3a5a7a","Deprioritise. Monitor ClinVar for reclassification. No wet-lab spend at this stage.")]:
-            st.markdown(f"<div style='display:flex;gap:9px;align-items:center;background:#04080f;border-left:3px solid {clr3};border-radius:0 8px 8px 0;padding:8px 12px;margin:4px 0;'><span class='badge {RANK_CSS[rank3]}'>{rank3}</span><span style='color:#4a7090;font-size:1.02rem;'>{rec3}</span></div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='display:flex;gap:9px;align-items:center;background:#020617;border-left:3px solid {clr3};border-radius:0 8px 8px 0;padding:8px 12px;margin:4px 0;'><span class='badge {RANK_CSS[rank3]}'>{rank3}</span><span style='color:#4a7090;font-size:1.02rem;'>{rec3}</span></div>", unsafe_allow_html=True)
 
         render_citations(papers,5)
 
@@ -12587,13 +12736,13 @@ with tab4:
                 for b_idx, branch in enumerate(hyp["branches"]):
                     b_clr = "#00c896" if "≥" in branch["result"] or "IF cell" in branch["result"] else "#ff8c42" if "< 1°C" in branch["result"] or "90%" in branch["result"] else "#ff2d55"
                     st.markdown(
-                        f"<div style='background:#020810;border:1px solid {b_clr}33;border-left:3px solid {b_clr};"
+                        f"<div style='background:#020617;border:1px solid {b_clr}33;border-left:3px solid {b_clr};"
                         f"border-radius:0 10px 10px 0;padding:.9rem 1.1rem;margin:.5rem 0;'>"
                         f"<div style='color:{b_clr};font-weight:700;font-size:.9rem;margin-bottom:4px;'>{branch['result']}</div>"
                         f"<div style='color:#6a9ab0;font-size:.84rem;margin-bottom:.5rem;'>{branch['interpretation']}</div>"
                         f"<div style='color:#4a7090;font-size:.8rem;margin-bottom:.4rem;font-weight:600;'>Then do:</div>"
                         + "".join(f"<div style='color:#5a8090;font-size:.82rem;margin:3px 0;padding-left:12px;'>→ {n}</div>" for n in branch["next"])
-                        + f"<div style='background:#010508;border:1px solid #0d2545;border-radius:7px;padding:7px 10px;margin-top:.5rem;'>"
+                        + f"<div style='background:#020617;border:1px solid #0d2545;border-radius:7px;padding:7px 10px;margin-top:.5rem;'>"
                         f"<div style='color:#3a7080;font-size:.78rem;'><b style='color:#5a9080;'>Hypothesis:</b> {branch['hypothesis']}</div>"
                         f"</div></div>",
                         unsafe_allow_html=True,
@@ -12621,7 +12770,7 @@ with tab4:
                 cost_str = f"${exp['cost_usd']//1000}K"
             time_str = f"{exp['time_weeks']}w" if exp["time_weeks"]>=1 else f"{int(exp['time_weeks']*7)}d"
             st.markdown(
-                f"<div style='background:#020810;border:1px solid #0d2545;border-radius:10px;"
+                f"<div style='background:#020617;border:1px solid #0d2545;border-radius:10px;"
                 f"padding:.8rem 1.1rem;margin:.4rem 0;display:flex;gap:12px;align-items:flex-start;'>"
                 f"<div style='min-width:28px;color:{roi_clr};font-weight:800;font-size:1.1rem;text-align:center;'>#{rank}</div>"
                 f"<div style='flex:1;'>"
@@ -12658,7 +12807,7 @@ with tab4:
             for path_name, path_info in reg_paths.items():
                 elig_clr = "#00c896" if path_info["eligible"] else "#3a6080"
                 st.markdown(
-                    f"<div style='background:#020810;border:1px solid {elig_clr}33;border-radius:10px;"
+                    f"<div style='background:#020617;border:1px solid {elig_clr}33;border-radius:10px;"
                     f"padding:.9rem 1.1rem;margin:.4rem 0;'>"
                     f"<div style='display:flex;align-items:center;gap:8px;margin-bottom:5px;'>"
                     f"<span style='background:{elig_clr}22;color:{elig_clr};border:1px solid {elig_clr}44;"
@@ -12687,7 +12836,7 @@ with tab4:
             for a in analogs[:6]:
                 score_pct = min(100, a.get("score",0)//10)
                 st.markdown(
-                    f"<div style='background:#020810;border:1px solid #0d2545;border-radius:9px;"
+                    f"<div style='background:#020617;border:1px solid #0d2545;border-radius:9px;"
                     f"padding:.8rem 1rem;margin:.3rem 0;display:flex;gap:12px;align-items:flex-start;'>"
                     f"<div style='flex:1;'>"
                     f"<div style='color:#8ab8cc;font-weight:700;font-size:.88rem;margin-bottom:3px;'>{a['protein']}</div>"
@@ -12726,7 +12875,7 @@ with tab5:
     variants     = cv.get("variants",[]) if cv else []
     sh("","AI Intelligence Report")
     st.markdown(
-        "<div style='background:#020810;border:1px solid #38bdf822;border-radius:10px;"
+        "<div style='background:#020617;border:1px solid #38bdf822;border-radius:10px;"
         "padding:.9rem 1.2rem;margin-bottom:1rem;'>"
         "<div style='color:#d0e8ff;font-weight:700;font-size:.95rem;margin-bottom:4px;'>About this report</div>"
         "<div style='color:#5a8090;font-size:.86rem;line-height:1.6;'>"
@@ -12800,7 +12949,7 @@ with tab5:
                 )
                 for p2 in plist[:3]:
                     st.markdown(
-                        f"<div style='background:#020810;border:1px solid #0d2545;border-radius:8px;"
+                        f"<div style='background:#020617;border:1px solid #0d2545;border-radius:8px;"
                         f"padding:8px 12px;margin:3px 0;'>"
                         f"<div style='color:#8ab8cc;font-size:.84rem;font-weight:600;'>{p2['title'][:100]}</div>"
                         f"<div style='color:#4a7090;font-size:.78rem;'>{p2['authors']} · {p2['journal']} · {p2['year']}</div>"
@@ -12873,7 +13022,7 @@ with tab5:
             for t2 in trials_data:
                 phase_clr = {"PHASE3":"#00c896","PHASE2":"#ffd60a","PHASE1":"#ff8c42"}.get(t2.get("phase",""),"#3a6080")
                 st.markdown(
-                    f"<div style='background:#020810;border:1px solid #0d2545;border-radius:8px;"
+                    f"<div style='background:#020617;border:1px solid #0d2545;border-radius:8px;"
                     f"padding:8px 12px;margin:4px 0;display:flex;gap:12px;align-items:flex-start;'>"
                     f"<span style='color:{phase_clr};font-weight:700;font-size:.78rem;min-width:60px;"
                     f"background:{phase_clr}22;padding:2px 6px;border-radius:4px;text-align:center;'>"
@@ -12912,7 +13061,7 @@ with tab5:
         # Organism note
         org_note = ai.get("organism_note","")
         if org_note:
-            st.markdown(f"<div class='card'><h4> Organism Classification</h4><p>{org_note}</p></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='card'><h4>Organism Classification</h4><p>{org_note}</p></div>", unsafe_allow_html=True)
         
         # Experiments done
         exps_done = ai.get("experiments_done",[])
@@ -12920,7 +13069,7 @@ with tab5:
             sh("","What Has Already Been Done on " + gene + "?")
             for e2 in exps_done:
                 st.markdown(
-                    f"<div style='background:#020810;border:1px solid #0d2545;border-left:3px solid #4a90d9;"
+                    f"<div style='background:#020617;border:1px solid #0d2545;border-left:3px solid #4a90d9;"
                     f"border-radius:0 10px 10px 0;padding:.8rem 1.1rem;margin:.4rem 0;'>"
                     f"<div style='color:#7ab8d0;font-weight:700;font-size:.88rem;margin-bottom:3px;'>{e2.get('type','?')}</div>"
                     f"<div style='color:#6a9ab0;font-size:.84rem;margin-bottom:3px;'><b style='color:#8ab8cc;'>Finding:</b> {e2.get('finding','')}</div>"
@@ -12946,7 +13095,7 @@ with tab5:
                         f"</div>"
                         f"<div style='color:#8ab8cc;font-size:.88rem;margin-bottom:5px;'>"
                         f"<b>Why (based on your data):</b> {e3.get('rationale','')}</div>"
-                        f"<div style='background:#020810;border:1px solid #0d2545;border-radius:8px;"
+                        f"<div style='background:#020617;border:1px solid #0d2545;border-radius:8px;"
                         f"padding:8px 12px;margin-bottom:5px;'>"
                         f"<div style='color:#6a9880;font-weight:700;font-size:.84rem;margin-bottom:2px;'> Testable Hypothesis:</div>"
                         f"<div style='color:#5a8870;font-size:.84rem;'>{e3.get('hypothesis','')}</div>"
@@ -12974,7 +13123,7 @@ with tab5:
             sh("","Key Unknowns — What Science Doesn't Yet Know About " + gene)
             for u in unknowns:
                 st.markdown(
-                    f"<div style='display:flex;gap:8px;background:#020810;border:1px solid #1e3050;"
+                    f"<div style='display:flex;gap:8px;background:#020617;border:1px solid #1e3050;"
                     f"border-radius:8px;padding:8px 12px;margin:3px 0;'>"
                     f"<span style='color:#3a6080;'>?</span>"
                     f"<span style='color:#6a9ab0;font-size:.86rem;'>{u}</span></div>",
@@ -13008,11 +13157,11 @@ with tab5:
                             f"<span style='color:#3a6080;font-size:.9rem;'>{icon_e}</span>"
                             f"<span style='color:#5a8090;font-size:.82rem;'><b style='color:#7ab0c0;'>{label_e}:</b> {val_e}</span></div>")
         if en_html:
-            st.markdown("<div class='card'><h4> Key Data Summary</h4>" + en_html + "</div>", unsafe_allow_html=True)
+            st.markdown("<div class='card'><h4>Key Data Summary</h4>" + en_html + "</div>", unsafe_allow_html=True)
         roi_top = ai.get("roi_top3",[])
         if roi_top:
             st.markdown(
-                "<div class='card'><h4> Top 3 Experiments by ROI</h4>"
+                "<div class='card'><h4>Top 3 Experiments by ROI</h4>"
                 + "".join(f"<p>{r}</p>" for r in roi_top)
                 + "</div>", unsafe_allow_html=True,
             )
@@ -13035,7 +13184,7 @@ with tab5:
                         f"<b style='color:#8ab8cc;'>Mechanism:</b> {c_hyp.get('mechanism','')}</div>"
                         f"<div style='color:#5a8090;font-size:.84rem;margin-bottom:.5rem;'>"
                         f"<b style='color:#6a9880;'>Key experiment:</b> {c_hyp.get('key_experiment','')}</div>"
-                        f"<div style='background:#020d18;border:1px solid #00c89633;border-radius:8px;padding:.7rem;margin-bottom:.4rem;'>"
+                        f"<div style='background:#050d24;border:1px solid #00c89633;border-radius:8px;padding:.7rem;margin-bottom:.4rem;'>"
                         f"<div style='color:#5a9880;font-size:.82rem;'><b style='color:#6aaa90;'>Prediction:</b> {c_hyp.get('prediction','')}</div>"
                         f"</div>"
                         f"<div style='color:#3a6080;font-size:.78rem;'><b style='color:#4a8090;'>Citation basis:</b> {c_hyp.get('citation_basis','')}</div>",
@@ -13185,7 +13334,7 @@ with tab6:
 
     # ── HEADER ────────────────────────────────────────────────────────────────
     st.markdown("""
-    <div style='background:linear-gradient(135deg,#040d18,#08142a);border:1px solid #38bdf818;
+    <div style='background:linear-gradient(135deg,#050d24,#08142a);border:1px solid #38bdf818;
     border-radius:14px;padding:1rem 1.4rem;margin-bottom:1rem;display:flex;align-items:center;gap:14px;'>
       <span style='font-size:1.6rem;'></span>
       <div>
@@ -13355,23 +13504,23 @@ with tab6:
 
             st.markdown(f"""
             <div style='display:flex;gap:1rem;margin:.8rem 0;flex-wrap:wrap;'>
-              <div style='background:#040d18;border:1px solid #22c55e22;border-radius:8px;padding:6px 14px;'>
+              <div style='background:#050d24;border:1px solid #22c55e22;border-radius:8px;padding:6px 14px;'>
                 <span style='color:#22c55e;font-weight:700;font-size:.9rem;'>{sum(1 for r in _filtered if r.get("ml_tier")==1)}</span>
-                <span style='color:#1e4060;font-size:.72rem;'> Tier 1 — Pursue</span>
+                <span style='color:#1e4060;font-size:.72rem;'>Tier 1 — Pursue</span>
               </div>
-              <div style='background:#040d18;border:1px solid #ffd60a22;border-radius:8px;padding:6px 14px;'>
+              <div style='background:#050d24;border:1px solid #ffd60a22;border-radius:8px;padding:6px 14px;'>
                 <span style='color:#ffd60a;font-weight:700;font-size:.9rem;'>{sum(1 for r in _filtered if r.get("ml_tier")==2)}</span>
-                <span style='color:#1e4060;font-size:.72rem;'> Tier 2 — Investigate</span>
+                <span style='color:#1e4060;font-size:.72rem;'>Tier 2 — Investigate</span>
               </div>
-              <div style='background:#040d18;border:1px solid #ff8c4222;border-radius:8px;padding:6px 14px;'>
+              <div style='background:#050d24;border:1px solid #ff8c4222;border-radius:8px;padding:6px 14px;'>
                 <span style='color:#ff8c42;font-weight:700;font-size:.9rem;'>{sum(1 for r in _filtered if r.get("ml_tier")==3)}</span>
-                <span style='color:#1e4060;font-size:.72rem;'> Tier 3 — Low priority</span>
+                <span style='color:#1e4060;font-size:.72rem;'>Tier 3 — Low priority</span>
               </div>
-              <div style='background:#040d18;border:1px solid #ff2d5522;border-radius:8px;padding:6px 14px;'>
+              <div style='background:#050d24;border:1px solid #ff2d5522;border-radius:8px;padding:6px 14px;'>
                 <span style='color:#ff2d55;font-weight:700;font-size:.9rem;'>{sum(1 for r in _filtered if r.get("ml_tier")==4)}</span>
-                <span style='color:#1e4060;font-size:.72rem;'> Tier 4 — Deprioritise</span>
+                <span style='color:#1e4060;font-size:.72rem;'>Tier 4 — Deprioritise</span>
               </div>
-              <div style='background:#040d18;border:1px solid #3a608022;border-radius:8px;padding:6px 14px;'>
+              <div style='background:#050d24;border:1px solid #3a608022;border-radius:8px;padding:6px 14px;'>
                 <span style='color:#3a6080;font-weight:700;font-size:.9rem;'>{len(_filtered)}</span>
                 <span style='color:#1e4060;font-size:.72rem;'> passed filters / {len(_results)} total</span>
               </div>
@@ -13415,7 +13564,7 @@ with tab6:
 
         elif not st.session_state.get("screener_running"):
             st.markdown(
-                "<div style='background:#040d18;border:1px solid #0d2545;border-radius:10px;"
+                "<div style='background:#050d24;border:1px solid #0d2545;border-radius:10px;"
                 "padding:2.5rem;text-align:center;color:#3a6080;margin-top:1rem;'>"
                 "<div style='font-size:1.3rem;margin-bottom:.5rem;'></div>"
                 "<div style='font-size:.9rem;font-weight:600;color:#b0d8f0;margin-bottom:.4rem;'>Ready to screen</div>"
@@ -13473,7 +13622,7 @@ with tab6:
 
         # ── Chat interface (full-page version) ───────────────────────────────
         st.markdown(
-            "<div style='background:#040d18;border:1px solid #c084fc22;border-radius:12px;padding:14px 16px;'>",
+            "<div style='background:#050d24;border:1px solid #c084fc22;border-radius:12px;padding:14px 16px;'>",
             unsafe_allow_html=True
         )
         st.markdown(
@@ -13653,7 +13802,7 @@ with tab7:
 
     if not ws:
         st.markdown(
-            "<div style='background:#020810;border:1px solid #0d2545;border-radius:10px;"
+            "<div style='background:#020617;border:1px solid #0d2545;border-radius:10px;"
             "padding:2rem;text-align:center;color:#3a6080;'>"
             "<div style='font-size:1.2rem;margin-bottom:.5rem;'>No analyses saved yet</div>"
             "<div style='font-size:.86rem;'>Search a protein in the sidebar to begin. "
@@ -13742,7 +13891,7 @@ with tab7:
 
 # ─── Footer ────────────────────────────────────────────────────────
 st.markdown(
-    f"<hr style='border-color:#040c18;margin:.8rem 0;'>"
+    f"<hr style='border-color:#050d24;margin:.8rem 0;'>"
     f"<div style='text-align:center;margin-bottom:6px;'>"
     f"<img src='data:image/svg+xml;base64,{LOGO_B64}' style='width:22px;height:22px;object-fit:contain;opacity:.4;vertical-align:middle;margin-right:6px;'>"
     f"<span style='color:#0a1e30;font-size:.8rem;font-weight:600;'>Protellect</span></div>"
@@ -13794,7 +13943,7 @@ with tab8:
 
     if seq_c:
         st.markdown(
-            f"<div style='background:#040d18;border:1px solid #38bdf815;border-radius:10px;"
+            f"<div style='background:#050d24;border:1px solid #38bdf815;border-radius:10px;"
             f"padding:8px 14px;margin-bottom:.8rem;'>"
             f"<b style='color:#38bdf8;font-size:.88rem;'>{gene}</b>"
             f"<span style='color:#3a6080;font-size:.78rem;'> · {len(seq_c):,} aa · "
@@ -13862,7 +14011,7 @@ with tab8:
             for col, (lbl, val, clr) in zip(all_cols, props):
                 with col:
                     st.markdown(
-                        f"<div style='background:#040d18;border:1px solid {clr}22;border-left:3px solid {clr};"
+                        f"<div style='background:#050d24;border:1px solid {clr}22;border-left:3px solid {clr};"
                         f"border-radius:9px;padding:10px 12px;margin-bottom:8px;'>"
                         f"<div style='color:{clr};font-size:1.15rem;font-weight:700;'>{val}</div>"
                         f"<div style='color:#3a6080;font-size:.68rem;margin-top:2px;'>{lbl}</div>"
@@ -13927,7 +14076,7 @@ with tab8:
                     name=group, marker_color=clr, opacity=0.85,
                     hovertemplate="%{x}: %{y:.1f}%<extra></extra>",
                 ))
-            fig_aa.update_layout(barmode="group", plot_bgcolor="#010810", paper_bgcolor="#010810", font_color="#b0d8f0", font_size=10, xaxis=dict(gridcolor="#0a1828", title="Amino acid"), yaxis=dict(gridcolor="#0a1828", title="% of sequence"), legend=dict(orientation="h",y=-0.25), height=320, margin=dict(t=20,b=70,l=40,r=10))
+            fig_aa.update_layout(barmode="group", plot_bgcolor="#020617", paper_bgcolor="#020617", font_color="#b0d8f0", font_size=10, xaxis=dict(gridcolor="#0a1828", title="Amino acid"), yaxis=dict(gridcolor="#0a1828", title="% of sequence"), legend=dict(orientation="h",y=-0.25), height=320, margin=dict(t=20,b=70,l=40,r=10))
             st.plotly_chart(fig_aa, use_container_width=True, config={"displayModeBar":False})
             rows_html = "".join(f"<tr><td style='color:#b0d8f0;font-family:monospace;padding:2px 8px;'>{aa}</td><td style='color:#3a6080;padding:2px 8px;'>{aa_counts[aa]}</td><td style='color:#38bdf8;padding:2px 8px;'>{round(aa_counts[aa]/len(seq_c)*100,1)}%</td></tr>" for aa in sorted(aa_counts, key=lambda a: aa_counts[a], reverse=True))
             st.markdown(f"<table style='font-size:.75rem;border-collapse:collapse;'><thead><tr><th style='color:#1e4060;padding:2px 8px;'>AA</th><th style='color:#1e4060;padding:2px 8px;'>Count</th><th style='color:#1e4060;padding:2px 8px;'>%</th></tr></thead><tbody>{rows_html}</tbody></table>", unsafe_allow_html=True)
@@ -13945,7 +14094,7 @@ with tab8:
             fig_h.add_trace(go.Scatter(x=hp_x, y=hp_y, mode="lines", line=dict(color="#38bdf8",width=1.2), name="KD score"))
             fig_h.add_hline(y=1.8, line=dict(color="#ff2d55",dash="dot",width=1), annotation_text="TM threshold 1.8", annotation_position="top right")
             fig_h.add_hline(y=0, line=dict(color="#1e4060",width=0.5))
-            fig_h.update_layout(plot_bgcolor="#010810", paper_bgcolor="#010810", font_color="#b0d8f0", font_size=10, xaxis=dict(gridcolor="#0a1828", title=f"Position (1–{len(seq_c)})"), yaxis=dict(gridcolor="#0a1828", title="KD score"), height=340, margin=dict(t=20,b=40,l=40,r=10))
+            fig_h.update_layout(plot_bgcolor="#020617", paper_bgcolor="#020617", font_color="#b0d8f0", font_size=10, xaxis=dict(gridcolor="#0a1828", title=f"Position (1–{len(seq_c)})"), yaxis=dict(gridcolor="#0a1828", title="KD score"), height=340, margin=dict(t=20,b=40,l=40,r=10))
             st.plotly_chart(fig_h, use_container_width=True, config={"displayModeBar":False})
             tm_regions = []
             in_tm = False; tm_start = 0
@@ -13977,10 +14126,10 @@ with tab8:
                 for feat in phospho_feats:
                     loc = feat.get("location",{}); pos = int(loc.get("start",{}).get("value",0) or 0)
                     if pos: fig_p.add_vline(x=pos, line=dict(color="#22c55e",width=1,dash="dot"))
-                fig_p.update_layout(plot_bgcolor="#010810", paper_bgcolor="#010810", font_color="#b0d8f0", font_size=10, xaxis=dict(gridcolor="#0a1828", title=f"Position (1–{len(seq_c)})"), yaxis=dict(gridcolor="#0a1828"), height=260, margin=dict(t=10,b=40,l=40,r=10), legend=dict(orientation="h",y=-0.3))
+                fig_p.update_layout(plot_bgcolor="#020617", paper_bgcolor="#020617", font_color="#b0d8f0", font_size=10, xaxis=dict(gridcolor="#0a1828", title=f"Position (1–{len(seq_c)})"), yaxis=dict(gridcolor="#0a1828"), height=260, margin=dict(t=10,b=40,l=40,r=10), legend=dict(orientation="h",y=-0.3))
                 st.plotly_chart(fig_p, use_container_width=True, config={"displayModeBar":False})
             with col_ph2:
-                st.markdown(f"<div style='background:#040d18;border:1px solid #f9731622;border-radius:10px;padding:12px;'><div style='color:#f97316;font-weight:700;font-size:.8rem;margin-bottom:.5rem;'>Summary</div><div style='color:#3a6080;font-size:.75rem;line-height:1.8;'>Ser: <b style='color:#38bdf8;'>{len(ser_p)}</b><br>Thr: <b style='color:#ffd60a;'>{len(thr_p)}</b><br>Tyr: <b style='color:#f97316;'>{len(tyr_p)}</b><br>Total: <b style='color:#b0d8f0;'>{len(all_sty)}</b><br>UniProt annotated: <b style='color:#22c55e;'>{len(phospho_feats)}</b></div></div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='background:#050d24;border:1px solid #f9731622;border-radius:10px;padding:12px;'><div style='color:#f97316;font-weight:700;font-size:.8rem;margin-bottom:.5rem;'>Summary</div><div style='color:#3a6080;font-size:.75rem;line-height:1.8;'>Ser: <b style='color:#38bdf8;'>{len(ser_p)}</b><br>Thr: <b style='color:#ffd60a;'>{len(thr_p)}</b><br>Tyr: <b style='color:#f97316;'>{len(tyr_p)}</b><br>Total: <b style='color:#b0d8f0;'>{len(all_sty)}</b><br>UniProt annotated: <b style='color:#22c55e;'>{len(phospho_feats)}</b></div></div>", unsafe_allow_html=True)
                 if phospho_feats:
                     st.markdown("<div style='color:#22c55e;font-size:.72rem;font-weight:700;margin-top:.5rem;'>Annotated sites:</div>", unsafe_allow_html=True)
                     for feat in phospho_feats[:10]:
@@ -14071,7 +14220,7 @@ with tab9:
         d_col = "#22c55e" if _total_drug >= 7 else "#ffd60a" if _total_drug >= 4 else "#ff2d55"
 
         st.markdown(f"""
-        <div style='background:linear-gradient(135deg,#000308,#010810);border:2px solid {d_col}44;
+        <div style='background:linear-gradient(135deg,#000308,#020617);border:2px solid {d_col}44;
           border-radius:14px;padding:1.1rem 1.4rem;margin-bottom:.8rem;'>
           <div style='display:flex;align-items:center;gap:16px;'>
             <div style='text-align:center;min-width:90px;'>
@@ -14199,7 +14348,7 @@ dr();
             with st.expander(f"[{inh9 or 'Unknown'}]  {dn9[:55]}"):
                 st.markdown(f"<div style='color:#3a6080;font-size:.78rem;margin-bottom:6px;line-height:1.6;'>{dd9 or 'No description available.'}</div>", unsafe_allow_html=True)
                 st.markdown(
-                    f"<div style='background:#010810;border-left:3px solid {_clr_dis9};padding:8px 12px;border-radius:0 8px 8px 0;'>"
+                    f"<div style='background:#020617;border-left:3px solid {_clr_dis9};padding:8px 12px;border-radius:0 8px 8px 0;'>"
                     f"<div style='color:{_clr_dis9};font-size:.72rem;font-weight:700;margin-bottom:4px;'> PREVENTION STRATEGY</div>"
                     f"<div style='color:#7ab0cc;font-size:.78rem;line-height:1.65;'>{prevention}</div>"
                     f"</div>",
@@ -14219,7 +14368,7 @@ dr();
                 with drug_cols9[di2 % 4]:
                     _dtype9 = next((d.get("interaction_types",["?"])[0] if d.get("interaction_types") else "?" for d in _dgidb9 if d.get("drug")==drg), "?")
                     st.markdown(
-                        f"<div style='background:#010810;border:1px solid #071828;border-radius:8px;padding:7px 9px;margin:3px 0;text-align:center;'>"
+                        f"<div style='background:#020617;border:1px solid #071828;border-radius:8px;padding:7px 9px;margin:3px 0;text-align:center;'>"
                         f"<div style='color:#38bdf8;font-size:.78rem;font-weight:700;'> {drg}</div>"
                         f"<div style='color:#1e4060;font-size:.64rem;'>{_dtype9[:20] if _dtype9!='?' else 'interaction'}</div>"
                         f"</div>",
@@ -14241,7 +14390,7 @@ dr();
         prog_html = "<div style='display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:.5rem 0;'>"
         for ph9, yr9, clr9, desc9 in phases9:
             prog_html += (
-                f"<div style='background:#010810;border:1px solid {clr9}33;border-radius:8px;padding:8px 10px;'>"
+                f"<div style='background:#020617;border:1px solid {clr9}33;border-radius:8px;padding:8px 10px;'>"
                 f"<div style='color:{clr9};font-size:.72rem;font-weight:700;'>{ph9}</div>"
                 f"<div style='color:#3a6080;font-size:.64rem;margin:2px 0;'>{yr9}</div>"
                 f"<div style='color:#1e4060;font-size:.65rem;line-height:1.5;'>{desc9}</div>"
