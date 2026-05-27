@@ -8505,13 +8505,15 @@ if not st.session_state.get("pdata") and not st.session_state.get("csv_triage_ac
 # ── Tab visibility (driven by onboarding selection) ──────────────────────────
 ALL_TAB_NAMES = ["Summary","Triage","Case Study","Explorer","Experiments","AI Report","Workspace","Disease Link","Chemistry","Pharma"]
 _ob_selected_tabs = st.session_state.get("ob_tabs_selected") or ALL_TAB_NAMES
+# Ensure at least one tab is visible — if the user unchecked everything, fall back to all
+_visible_tab_names = [n for n in ALL_TAB_NAMES if n in _ob_selected_tabs] or ALL_TAB_NAMES
+
 def _tab_visible(name: str) -> bool:
-    """True if this tab was selected during onboarding (or no selection made — show all)."""
-    if not _ob_selected_tabs: return True
-    return name in _ob_selected_tabs
+    """True if this tab was selected during onboarding."""
+    return name in _visible_tab_names
 
 def _tab_disabled_banner(name: str):
-    """Render at the top of a hidden tab to explain why it's empty."""
+    """Render at the top of a hidden tab to explain why it's empty (used by _SinkTab fallback)."""
     st.markdown(
         f"<div style='background:rgba(255,255,255,.02);border:1px dashed rgba(255,255,255,.1);"
         f"border-radius:10px;padding:1.2rem 1.4rem;margin:1.5rem 0;text-align:center;'>"
@@ -8522,7 +8524,41 @@ def _tab_disabled_banner(name: str):
     )
 
 
-tab0,tab1,tab2,tab3,tab4,tab5,tab6,tab7,tab8,tab9=st.tabs(["Summary","Triage","Case Study","Explorer","Experiments","AI Report","Workspace","Disease Link","Chemistry","Pharma"])
+class _SinkTab:
+    """Context manager that absorbs all Streamlit rendering inside it (used for unchecked tabs).
+    The tab does NOT appear in the strip; if any `with tabN:` block tries to render content for it,
+    that content goes into a placeholder which is immediately cleared on exit. No UI noise."""
+    def __enter__(self):
+        self._slot = st.empty()
+        self._cm = self._slot.container()
+        return self._cm.__enter__()
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        try:
+            self._cm.__exit__(exc_type, exc_val, exc_tb)
+        finally:
+            try:
+                self._slot.empty()
+            except Exception:
+                pass
+        return False  # don't suppress exceptions
+
+
+# Create only the visible tabs in the strip
+_visible_tab_objs = st.tabs(_visible_tab_names)
+_tab_by_name = {n: _visible_tab_objs[i] for i, n in enumerate(_visible_tab_names)}
+
+# Assign canonical tab0..tab9 — real tab if visible, sink if not.
+# This keeps every `with tabN:` block working without indentation changes; hidden tabs just absorb their content.
+tab0 = _tab_by_name.get("Summary",      _SinkTab())
+tab1 = _tab_by_name.get("Triage",       _SinkTab())
+tab2 = _tab_by_name.get("Case Study",   _SinkTab())
+tab3 = _tab_by_name.get("Explorer",     _SinkTab())
+tab4 = _tab_by_name.get("Experiments",  _SinkTab())
+tab5 = _tab_by_name.get("AI Report",    _SinkTab())
+tab6 = _tab_by_name.get("Workspace",    _SinkTab())
+tab7 = _tab_by_name.get("Disease Link", _SinkTab())
+tab8 = _tab_by_name.get("Chemistry",    _SinkTab())
+tab9 = _tab_by_name.get("Pharma",       _SinkTab())
 
 _rd_final = st.session_state.get("research_domain","")
 _pdata_f = st.session_state.get("pdata",{})
@@ -11726,7 +11762,7 @@ with tab1:
 
     # Patient population estimate
     if patient_data.get("estimated_global_patients",0) > 0:
-        pop = patient_data["estimated_global_patients"]
+        pop = patient_data.get("estimated_global_patients", 0) if patient_data else 0
         gen = patient_data.get("genetically_targetable",0)
         is_orphan = patient_data.get("orphan_eligible",False)
         pop_clr = "#a855f7" if is_orphan else "#4a90d9"
@@ -12025,25 +12061,28 @@ with tab2:
     sh("","GPCR Association & Piggyback Analysis")
     st.markdown("<div style='color:#5a8090;font-size:.82rem;margin-bottom:.5rem;'>Critical distinction: Is this protein a DIRECT disease driver (its mutations independently cause disease), or a <b style='color:#ff8c42;'>PIGGYBACK</b> protein (co-purifies with GPCRs but mutations don't cause disease on their own)? This distinction determines whether drug discovery targeting this protein is justified.</div>", unsafe_allow_html=True)
     
-    # Show piggyback assessment prominently
-    ga = gpcr_assessment
-    ga_clr = ga["colour"]
-    st.markdown(
-        "<div style='background:#020617;border:2px solid " + ga_clr + "44;border-radius:12px;"
-        "padding:1.1rem 1.4rem;margin-bottom:.8rem;'>"
-        "<div style='color:" + ga_clr + ";font-weight:800;font-size:1rem;margin-bottom:5px;'>"
-        + ga["label"] + "</div>"
-        "<div style='color:#6a9ab0;font-size:.87rem;line-height:1.6;margin-bottom:6px;'>"
-        + ga["reasoning"] + "</div>"
-        "<div style='color:" + ga_clr + ";font-weight:700;font-size:.85rem;margin-bottom:5px;'>"
-        "Investment verdict: " + ga["investment"] + "</div>"
-        "<div style='color:#3a6080;font-size:.78rem;'>"
-        "Confidence: " + ga["confidence"] + " | Type: " + ga["type"] + "</div>"
-        "</div>",
-        unsafe_allow_html=True,
-    )
+    # Show piggyback assessment prominently — use .get() with defaults for safety
+    ga = gpcr_assessment or {}
+    ga_clr = ga.get("colour", "#3a5a7a")
+    if ga:
+        st.markdown(
+            "<div style='background:#020617;border:2px solid " + ga_clr + "44;border-radius:12px;"
+            "padding:1.1rem 1.4rem;margin-bottom:.8rem;'>"
+            "<div style='color:" + ga_clr + ";font-weight:800;font-size:1rem;margin-bottom:5px;'>"
+            + ga.get("label","Unclassified") + "</div>"
+            "<div style='color:#6a9ab0;font-size:.87rem;line-height:1.6;margin-bottom:6px;'>"
+            + ga.get("reasoning","No protein loaded — search one in the sidebar to populate this section.") + "</div>"
+            "<div style='color:" + ga_clr + ";font-weight:700;font-size:.85rem;margin-bottom:5px;'>"
+            "Investment verdict: " + ga.get("investment","—") + "</div>"
+            "<div style='color:#3a6080;font-size:.78rem;'>"
+            "Confidence: " + ga.get("confidence","—") + " | Type: " + ga.get("type","UNCLASSIFIED") + "</div>"
+            "</div>",
+            unsafe_allow_html=True,
+        )
+    else:
+        st.info("Search a protein in the sidebar to populate the GPCR piggyback assessment.")
     
-    if ga["type"] == "PIGGYBACK":
+    if ga.get("type") == "PIGGYBACK":
         st.markdown(
             "<div style='background:#0a0500;border:1px solid #ff8c4244;border-radius:10px;"
             "padding:.9rem 1.1rem;margin-bottom:.8rem;'>"
@@ -12692,7 +12731,7 @@ with tab4:
         st.caption("Drag the slider to see how a mutation cascades from protein → cell → disease. Plain language descriptions at each stage.")
         top_p_vars=gi.get("pathogenic_list",[]) or scored[:3]
         if not top_p_vars: top_p_vars=scored[:3]
-        components.html(mutation_cascade_html(gene,is_gpcr,gi["pursue"],top_p_vars),height=480,scrolling=False)
+        components.html(mutation_cascade_html(gene,is_gpcr,gi.get("pursue","neutral"),top_p_vars),height=480,scrolling=False)
 
         if is_gpcr:
             st.markdown("<div class='card'><h4>GPCR-specific cascade</h4><p>For this GPCR (cell-surface signal receiver): mutation → receptor shape change → G-protein (signal relay switch) fails to activate → second messenger (internal relay: cAMP / Ca²⁺) levels altered → downstream kinase (protein tagger) activity changes → gene expression reprogrammed → cell death (apoptosis) or shape change → organ dysfunction.</p></div>", unsafe_allow_html=True)
@@ -12701,7 +12740,7 @@ with tab4:
 
         # Genomic verdict
         sh("","Genomic Verdict — Should you invest in this protein?")
-        gi_clr4=gi["color"]
+        gi_clr4=gi.get("color","#3a6080")
         pursue_recs={"prioritise":" INVEST — genetics confirms this is a real, important target. Proceed to CRISPR knock-in + biochemical validation immediately.",
                      "proceed":" PROCEED — meaningful evidence. Focus only on confirmed disease-causing variants.",
                      "selective":" BE SELECTIVE — work only on confirmed P/LP variants. Do not extrapolate.",
