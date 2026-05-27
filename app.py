@@ -11164,6 +11164,9 @@ with tab0:
     reg_paths    = st.session_state.get("reg_paths") or {}
     analogs      = st.session_state.get("analogs") or []
     roi_data     = st.session_state.get("roi_data") or []
+    ptype      = g_ptype(pdata) if pdata else "general"
+    hotspots      = st.session_state.get("hotspots") or []
+    is_gpcr      = g_gpcr(pdata) if pdata else False
     # Visibility guard — banner shown if user excluded this tab in onboarding
     if not _tab_visible("Summary"):
         _tab_disabled_banner("Summary")
@@ -12663,6 +12666,8 @@ with tab4:
     reg_paths    = st.session_state.get("reg_paths") or {}
     analogs      = st.session_state.get("analogs") or []
     roi_data     = st.session_state.get("roi_data") or []
+    ptype      = g_ptype(pdata) if pdata else "general"
+    hotspots      = st.session_state.get("hotspots") or []
     # Visibility guard — banner shown if user excluded this tab in onboarding
     if not _tab_visible("Experiments"):
         _tab_disabled_banner("Experiments")
