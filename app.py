@@ -2905,6 +2905,19 @@ def g_ptype(p):
     if any(x in kw for x in ["receptor"]): return "receptor"
     return "general"
 
+ASSAY_BY_PTYPE = {
+    "kinase": "ADP-Glo kinase assay",
+    "gpcr": "cAMP / β-arrestin recruitment assay",
+    "transcription_factor": "ChIP-qPCR with luciferase reporter",
+    "receptor": "ligand binding assay (radioligand or HTRF)",
+    "ion_channel": "patch-clamp electrophysiology",
+    "enzyme": "substrate cleavage kinetics",
+    "general": "functional rescue assay",
+}
+def _first_assay_for(pt: str) -> str:
+    return ASSAY_BY_PTYPE.get((pt or "general").lower(), "functional rescue assay")
+
+
 def classify_entity(p):
     """Classify protein entity type and derive drug class, first assay, and tailored description."""
     ptype = g_ptype(p)
@@ -8036,7 +8049,7 @@ if not st.session_state.get("research_domain"):
 </style>
 <div class="dom-page">
 <div class="dom-hero">
-  <div class="dom-logo" style="display:flex;justify-content:center;margin-bottom:.5rem;"><svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="url(#g)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#38bdf8"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs><circle cx="12" cy="12" r="1"/><path d="M20.2 20.2c2.04-2.03.02-7.36-4.5-11.9-4.54-4.52-9.87-6.54-11.9-4.5-2.04 2.03-.02 7.36 4.5 11.9 4.54 4.52 9.87 6.54 11.9 4.5Z"/><path d="M15.7 15.7c4.52-4.54 6.54-9.87 4.5-11.9-2.03-2.04-7.36-.02-11.9 4.5-4.52 4.54-6.54 9.87-4.5 11.9 2.03 2.04 7.36.02 11.9-4.5Z"/></svg></div>
+  <div class="dom-logo" style="display:flex;justify-content:center;margin-bottom:.5rem;"><img src="{_logo_src}" style="width:88px;height:88px;object-fit:contain;filter:drop-shadow(0 0 20px rgba(56,189,248,.45));"></div>
   <div class="dom-title">Protellect</div>
   <div class="dom-sub">Select your research domain — every analysis and workspace is tailored to your field</div>
 </div>
@@ -8162,6 +8175,22 @@ with st.sidebar:
     if "Custom" in goal_label:
         goal_custom=st.text_input("Describe your goal",placeholder="e.g. Find splice variants affecting exon 4…",label_visibility="collapsed")
     active_goal=goal_custom if "Custom" in goal_label else goal_label
+    st.session_state["active_goal"] = active_goal
+
+    # ── Practitioner Mode toggle ─────────────────────────────────────
+    st.markdown("<div class='sb-t'>Practitioner Mode</div>", unsafe_allow_html=True)
+    practitioner = st.toggle("Tailor to patient context", value=st.session_state.get("practitioner_mode", False), key="practitioner_toggle")
+    st.session_state["practitioner_mode"] = practitioner
+    if practitioner:
+        with st.expander("Patient microenvironment", expanded=False):
+            st.session_state["pt_age"] = st.text_input("Age (years)", value=st.session_state.get("pt_age",""), key="pt_age_inp")
+            st.session_state["pt_sex"] = st.selectbox("Sex", ["—","Female","Male","Other"], index=["—","Female","Male","Other"].index(st.session_state.get("pt_sex","—")), key="pt_sex_sel")
+            st.session_state["pt_ethnicity"] = st.text_input("Ancestry / ethnicity", value=st.session_state.get("pt_ethnicity",""), placeholder="e.g. Ashkenazi Jewish, Finnish, African American", key="pt_eth_inp")
+            st.session_state["pt_comorbid"] = st.text_area("Comorbidities (one per line)", value=st.session_state.get("pt_comorbid",""), placeholder="hypertension\ntype 2 diabetes\nCKD stage 2", height=80, key="pt_co_inp")
+            st.session_state["pt_meds"]     = st.text_area("Current medications", value=st.session_state.get("pt_meds",""), placeholder="metformin 1000mg BID\nlisinopril 20mg QD", height=80, key="pt_med_inp")
+            st.session_state["pt_family"]   = st.text_input("Family history (1–2 line summary)", value=st.session_state.get("pt_family",""), placeholder="Father had MI at 52; sister has T1D", key="pt_fam_inp")
+            st.session_state["pt_envir"]    = st.text_input("Environmental exposures", value=st.session_state.get("pt_envir",""), placeholder="smoker (15py), occupational solvent exposure", key="pt_env_inp")
+            st.caption("These fields modulate the AI Report and Practitioner section to contextualize findings for this specific patient.")
 
     st.markdown("<div class='sb-t'>Protein Search</div>", unsafe_allow_html=True)
     query=st.text_input("Gene / UniProt ID",placeholder="TP53 · BRCA1 · P04637 · FLNC · ACM2",label_visibility="collapsed",value=st.session_state.get("protein_query_val",""),key="protein_query_box")
@@ -8852,6 +8881,29 @@ if search and query and query!=st.session_state["last"]:
                 except Exception:
                     _roi_data = []
                 st.session_state["roi_data"] = _roi_data
+                # ── Analysis trace: record what ran so users can audit ──
+                from datetime import datetime as _dt
+                trace = []
+                trace.append(("UniProt API",   f"Fetched {gene} ({pdata.get('primaryAccession','?')}) · {pdata.get('sequence',{}).get('length','?')} aa · {len(g_diseases(pdata) or [])} associated diseases"))
+                trace.append(("ClinVar NCBI",  f"Retrieved {len((cv or {}).get('variants',[]))} variants · {gi.get('n_pathogenic',0)} P/LP"))
+                trace.append(("gnomAD v4",     f"pLI={gnomad_data.get('pLI','—')} · oe_lof_upper={gnomad_data.get('oe_lof_upper','—')} · mis_z={gnomad_data.get('mis_z','—')}"))
+                trace.append(("AlphaMissense", f"Scored {len(am_scores or {})} residues (mean={sum(am_scores.values())/len(am_scores):.3f})" if am_scores else "No AlphaMissense data available"))
+                trace.append(("STRING-DB",     f"{len(string_data or [])} interaction partners"))
+                trace.append(("OpenTargets",   f"Tractability: {ot_data.get('tractability',{}).get('small_molecule','—') if ot_data else '—'} · {len((ot_data or {}).get('drugs',[]))} known drugs"))
+                trace.append(("DGIdb / drug",  f"{len(drugs_data or [])} drug-gene interactions retrieved"))
+                trace.append(("PubMed",        f"{len(abstracts or [])} recent abstracts ({sum(1 for a in (abstracts or []) if a.get('year',0) >= 2020)} from 2020+)"))
+                trace.append(("ClinGen",       f"Gene-disease validity: {(clingen_data or {}).get('classification','—')}"))
+                trace.append(("ML model",      f"LightGBM scored {len(scored or [])} variants · {sum(1 for s in (scored or []) if s.get('ml_rank') in ('CRITICAL','HIGH'))} high-priority"))
+                trace.append(("Domain analysis", f"{len(domain_ctx.get('domains',[]))} Pfam-like domains analysed · gi_score={domain_ctx.get('gi_score','—')}"))
+                trace.append(("ACMG auto",     f"{len((acmg_auto or {}).get('criteria_triggered',[]))} ACMG criteria triggered · {len(conflicts or [])} conflicts"))
+                trace.append(("Regulatory",    f"{len(_reg_paths or {})} FDA pathways · {len(_analogs or [])} drugged analogs found"))
+                trace.append(("ROI ranker",    f"{len(_roi_data or [])} experiments ranked by evidence-to-cost"))
+                st.session_state["analysis_trace"] = {
+                    "ran_at": _dt.now().isoformat(timespec="seconds"),
+                    "gene": gene,
+                    "uniprot": pdata.get('primaryAccession',''),
+                    "steps": trace,
+                }
                 # Update GI score from domain analysis
                 # gi_score is already a percentage (×100); density is a fraction (0–1).
                 # Divide by 100 so display × 100 yields the correct percentage.
@@ -10697,8 +10749,13 @@ def _build_workspace_context() -> str:
     lab_focus = st.session_state.get("ob_focus","") or st.session_state.get("lab_focus","")
     lab_prots = st.session_state.get("ob_proteins","") or ",".join(st.session_state.get("lab_proteins",[]))
     research_domain = st.session_state.get("research_domain","")
+    active_goal = st.session_state.get("active_goal","")
     papers = st.session_state.get("ob_papers", []) or []
+    trace = st.session_state.get("analysis_trace") or {}
+    practitioner = st.session_state.get("practitioner_mode", False)
 
+    if active_goal:
+        ctx.append(f"User's active research goal: {active_goal}")
     if research_domain:
         ctx.append(f"Active research domain: {research_domain}")
     if lab_focus:
@@ -10712,9 +10769,9 @@ def _build_workspace_context() -> str:
         if seq_len:
             ctx.append(f"  Length: {seq_len} aa")
         summary = cv.get("summary",{}) if cv else {}
-        if summary:
-            n_p = summary.get("pathogenic_lp", 0) or gi.get("n_pathogenic", 0)
-            n_t = summary.get("total", 0) or gi.get("n_total", 0)
+        n_p = (summary or {}).get("pathogenic_lp", 0) or gi.get("n_pathogenic", 0)
+        n_t = (summary or {}).get("total", 0) or gi.get("n_total", 0)
+        if n_t:
             ctx.append(f"  ClinVar: {n_p} pathogenic/likely-pathogenic of {n_t} total variants")
         if gnomad.get("pLI") is not None:
             ctx.append(f"  gnomAD pLI: {gnomad.get('pLI'):.3f} (LoF intolerance, 1=highly intolerant)")
@@ -10724,12 +10781,25 @@ def _build_workspace_context() -> str:
             top_drugs = ", ".join(d.get("drug","") for d in drugs[:3] if d.get("drug"))
             if top_drugs:
                 ctx.append(f"  Known drugs (DGIdb): {top_drugs}")
+    if practitioner:
+        pt_lines = []
+        for k, label in [("pt_age","Age"),("pt_sex","Sex"),("pt_ethnicity","Ancestry"),
+                         ("pt_comorbid","Comorbidities"),("pt_meds","Medications"),
+                         ("pt_family","Family history"),("pt_envir","Environmental")]:
+            v = st.session_state.get(k,"") or ""
+            if v.strip() and v != "—":
+                pt_lines.append(f"  {label}: {v.strip()[:140]}")
+        if pt_lines:
+            ctx.append("Patient context (Practitioner Mode):")
+            ctx.extend(pt_lines)
     if papers:
         ctx.append(f"Lab library papers available for citation ({len(papers)} total). First 5:")
         for i, p in enumerate(papers[:5], 1):
             t = p.get("title","")[:90]
             yr = p.get("year","")
             ctx.append(f"  [{i}] {t} ({yr})")
+    if trace and trace.get("steps"):
+        ctx.append(f"Last analysis trace ({trace.get('gene','')}): {len(trace['steps'])} APIs queried — UniProt, ClinVar, gnomAD, AlphaMissense, STRING, OpenTargets, DGIdb, PubMed, ClinGen, ML scorer.")
     return "\n".join(ctx) if ctx else ""
 
 
@@ -11029,6 +11099,20 @@ def render_lab_chatbot():
         if _ak_in != st.session_state.get("anthropic_key", ""):
             st.session_state["anthropic_key"] = _ak_in
             st.rerun()
+
+    # ── Analysis Trace (what scanned during last search) ─────────────────────
+    _trace = st.session_state.get("analysis_trace")
+    if _trace:
+        with st.sidebar.expander(f"Analysis Trace · {_trace.get('gene','')} ({len(_trace.get('steps',[]))} steps)", expanded=False):
+            st.caption(f"Last analysis: {_trace.get('ran_at','')} · UniProt {_trace.get('uniprot','')}")
+            for src, detail in _trace.get("steps", []):
+                st.markdown(
+                    f"<div style='background:var(--surface);border:1px solid var(--border);"
+                    f"border-left:3px solid var(--cyan);border-radius:5px;padding:5px 8px;margin:.2rem 0;'>"
+                    f"<div style='color:var(--text);font-size:.72rem;font-weight:700;'>{src}</div>"
+                    f"<div style='color:var(--text3);font-size:.68rem;line-height:1.4;'>{detail}</div></div>",
+                    unsafe_allow_html=True,
+                )
 
     # ── Lab Library (papers pulled from lab focus) ──────────────────────────
     _lab_papers = st.session_state.get("ob_papers", []) or []
@@ -12781,10 +12865,10 @@ with tab4:
                 st.markdown(f"<div class='card'><h4>{t3}</h4><p>{b3}</p></div>", unsafe_allow_html=True)
 
         st.markdown("<hr class='dv'>", unsafe_allow_html=True)
-        COST_MAP={"Free":("#00c896","rgba(0,200,150,.08)"),"$":("#4a90d9","rgba(74,144,217,.08)"),"$$":("#ffd60a","rgba(255,214,10,.08)"),"$$$":("#ff8c42","rgba(255,140,66,.08)"),"$$$$":("#ff2d55","rgba(255,45,85,.08)")}
+        COST_MAP={"Free":("#00c896","rgba(0,200,150,.08)","No cost"),"$":("#4a90d9","rgba(74,144,217,.08)","< $5K"),"$$":("#ffd60a","rgba(255,214,10,.08)","$5K–25K"),"$$$":("#ff8c42","rgba(255,140,66,.08)","$25K–100K"),"$$$$":("#ff2d55","rgba(255,45,85,.08)","> $100K")}
         cc=st.columns(5)
-        for (sym,(clr,bg)),col in zip(COST_MAP.items(),cc):
-            col.markdown(f"<div style='background:{bg};border:1px solid {clr}33;border-radius:8px;padding:5px;text-align:center;'><div style='color:{clr};font-weight:800;'>{sym}</div><div style='color:{clr}88;font-size:.81rem;'>{COST_MAP[sym]}</div></div>", unsafe_allow_html=True)
+        for (sym,(clr,bg,desc)),col in zip(COST_MAP.items(),cc):
+            col.markdown(f"<div style='background:{bg};border:1px solid {clr}33;border-radius:8px;padding:6px 4px;text-align:center;'><div style='color:{clr};font-weight:800;font-size:1rem;'>{sym}</div><div style='color:{clr}aa;font-size:.74rem;margin-top:2px;'>{desc}</div></div>", unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
         # ── Why each experiment is suggested ──
         # Each card includes: purpose · rationale (WHY) · hypothesis · protocol · focus · neglect · outcome
@@ -12795,7 +12879,7 @@ with tab4:
             " Experiment Selection Rationale</div>"
             f"<div style='color:#6a9ab0;font-size:.86rem;line-height:1.6;'>"
             f"Experiments below are suggested based on: (1) the protein type ({g_ptype(pdata).replace('_',' ').title()}), "
-            f"(2) the Genomic Integrity verdict ({gi['verdict']}), "
+            f"(2) the Genomic Integrity verdict ({gi.get('verdict','—')}), "
             f"(3) the number of CRITICAL/HIGH variants ({n_crit2}/{n_high2}), "
             f"(4) estimated druggability ({drugg:.0%}). "
             f"Each card states WHY this experiment is appropriate and presents a testable hypothesis. "
@@ -12891,7 +12975,7 @@ with tab4:
         sh("","Experiment Result Hypotheses — If/Then Conditional Decision Tree")
         st.markdown(
             "<div style='color:#5a8090;font-size:.86rem;margin-bottom:.8rem;'>"
-            f"Conditional logic for {gene} experiments based on its protein class ({entity['ptype'].replace('_',' ').title()}), "
+            f"Conditional logic for {gene} experiments based on its protein class ({ptype.replace('_',' ').title()}), "
             f"variant profile ({gi.get('n_pathogenic',0)} pathogenic), and pLI ({gnomad_data.get('pLI','?') if gnomad_data else '?'}). "
             "Each experiment gives you a branch point — follow the branch that matches your result.</div>",
             unsafe_allow_html=True,
@@ -12922,11 +13006,11 @@ with tab4:
                         "result": f"IF ΔTm < 1°C — no thermal shift",
                         "interpretation": "Variant is NOT structurally destabilising. Mechanism is functional — interaction surface, catalytic site, or allosteric.",
                         "next": [
-                            f"Test {'kinase activity directly (ADP-Glo) — ' if entity['ptype']=='kinase' else 'protein-protein interaction by Co-IP — '}variant may disable function without misfolding",
+                            f"Test {'kinase activity directly (ADP-Glo) — ' if ptype=='kinase' else 'protein-protein interaction by Co-IP — '}variant may disable function without misfolding",
                             "Run AlphaMissense cross-reference: if AM score still high despite neutral TSA, variant likely disrupts binding interface",
                             "Pull-down assay with known binding partners — compare WT vs mutant interaction panel",
                         ],
-                        "hypothesis": f"The {crit_vname} variant likely disrupts a critical protein-protein interaction or catalytic residue without global structural disruption. Expect full protein abundance by western blot but loss of {'kinase activity' if entity['ptype']=='kinase' else 'binding partner' if string_data else 'downstream function'}.",
+                        "hypothesis": f"The {crit_vname} variant likely disrupts a critical protein-protein interaction or catalytic residue without global structural disruption. Expect full protein abundance by western blot but loss of {'kinase activity' if ptype=='kinase' else 'binding partner' if string_data else 'downstream function'}.",
                     },
                 ],
             },
@@ -12948,7 +13032,7 @@ with tab4:
                         "result": "IF viability is normal (> 90% of WT)",
                         "interpretation": "No overt cell death — variant causes a subtle functional defect, not gross toxicity.",
                         "next": [
-                            f"Switch to {entity['first_assay']} — protein-class-specific functional readout more sensitive than viability",
+                            f"Switch to {_first_assay_for(ptype)} — protein-class-specific functional readout more sensitive than viability",
                             f"Stress the cells: apply {'cardiac pacing stress (HL-1 cardiomyocytes)' if 'cardio' in dis0_hyp.lower() else 'relevant disease stimulus'} — phenotype may only emerge under physiological challenge",
                             "Proteomics on mutant vs WT cells — look for downstream protein abundance changes even without viability phenotype",
                         ],
@@ -13152,6 +13236,74 @@ with tab5:
     if not _tab_visible("AI Report"):
         _tab_disabled_banner("AI Report")
     sh("","AI Intelligence Report")
+
+    # ── Research Goal alignment banner ─────────────────────────────────────
+    _ag = st.session_state.get("active_goal","")
+    if _ag and pdata:
+        st.markdown(
+            f"<div style='background:rgba(56,189,248,.06);border:1px solid rgba(56,189,248,.22);"
+            f"border-left:4px solid #38bdf8;border-radius:8px;padding:.65rem 1rem;margin-bottom:.9rem;'>"
+            f"<div style='color:#94a3b8;font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;'>"
+            f"Report tailored to your research goal</div>"
+            f"<div style='color:#e6edf7;font-size:.85rem;font-weight:600;'>{_ag}</div></div>",
+            unsafe_allow_html=True,
+        )
+
+    # ── Practitioner section (only when toggle is on) ─────────────────────
+    if st.session_state.get("practitioner_mode") and pdata:
+        with st.expander("Practitioner View — Patient-tailored interpretation", expanded=True):
+            st.caption("Patient context provided in the sidebar is integrated here. Interpretations below are decision-support only — not a clinical diagnosis.")
+            pt_age   = st.session_state.get("pt_age","").strip()
+            pt_sex   = st.session_state.get("pt_sex","—")
+            pt_eth   = st.session_state.get("pt_ethnicity","").strip()
+            pt_co    = st.session_state.get("pt_comorbid","").strip()
+            pt_meds  = st.session_state.get("pt_meds","").strip()
+            pt_fam   = st.session_state.get("pt_family","").strip()
+            pt_env   = st.session_state.get("pt_envir","").strip()
+            ccols = st.columns(3)
+            ccols[0].markdown(
+                f"<div style='background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px;'>"
+                f"<div style='color:var(--text3);font-size:.66rem;text-transform:uppercase;letter-spacing:.5px;'>Demographics</div>"
+                f"<div style='color:var(--text);font-size:.82rem;line-height:1.55;margin-top:3px;'>"
+                f"{pt_age + ' yrs' if pt_age else '—'} · {pt_sex if pt_sex != '—' else '—'}<br>"
+                f"<span style='color:var(--text2);font-size:.74rem;'>{pt_eth or 'ancestry not specified'}</span></div></div>",
+                unsafe_allow_html=True)
+            ccols[1].markdown(
+                f"<div style='background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px;'>"
+                f"<div style='color:var(--text3);font-size:.66rem;text-transform:uppercase;letter-spacing:.5px;'>Comorbidities</div>"
+                f"<div style='color:var(--text);font-size:.78rem;line-height:1.55;margin-top:3px;white-space:pre-wrap;'>"
+                f"{pt_co[:200] if pt_co else '—'}</div></div>",
+                unsafe_allow_html=True)
+            ccols[2].markdown(
+                f"<div style='background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px;'>"
+                f"<div style='color:var(--text3);font-size:.66rem;text-transform:uppercase;letter-spacing:.5px;'>Medications</div>"
+                f"<div style='color:var(--text);font-size:.78rem;line-height:1.55;margin-top:3px;white-space:pre-wrap;'>"
+                f"{pt_meds[:200] if pt_meds else '—'}</div></div>",
+                unsafe_allow_html=True)
+            # Ancestry-aware variant note
+            if pt_eth and gi.get("n_pathogenic",0) > 0:
+                st.markdown(
+                    f"<div style='background:#0a1530;border:1px solid #38bdf833;border-radius:8px;padding:8px 14px;margin-top:.6rem;'>"
+                    f"<div style='color:#94a3b8;font-size:.75rem;line-height:1.6;'>"
+                    f"<b style='color:#38bdf8;'>Ancestry consideration:</b> {pt_eth} ancestry — when interpreting variant frequency, consult gnomAD's ancestry-stratified allele frequencies "
+                    f"(this app's pLI is across all populations). Some pathogenic variants in {gene} are enriched in specific ancestries.</div></div>",
+                    unsafe_allow_html=True)
+            if pt_meds:
+                st.markdown(
+                    f"<div style='background:#0a1530;border:1px solid #fbbf2433;border-radius:8px;padding:8px 14px;margin-top:.5rem;'>"
+                    f"<div style='color:#94a3b8;font-size:.75rem;line-height:1.6;'>"
+                    f"<b style='color:#fbbf24;'>Drug interaction check:</b> the medications listed should be cross-referenced against {gene}'s known drug interactions "
+                    f"({len(drugs_data or [])} DGIdb hits). Use the AI assistant in the sidebar to evaluate specific combinations.</div></div>",
+                    unsafe_allow_html=True)
+            if pt_fam:
+                st.markdown(
+                    f"<div style='background:#0a1530;border:1px solid #a78bfa33;border-radius:8px;padding:8px 14px;margin-top:.5rem;'>"
+                    f"<div style='color:#94a3b8;font-size:.75rem;line-height:1.6;'>"
+                    f"<b style='color:#a78bfa;'>Family history:</b> {pt_fam} — consider pedigree-based variant filtering. If multiple affected family members share the same variant in {gene}, prior probability of causality is substantially elevated.</div></div>",
+                    unsafe_allow_html=True)
+        st.markdown("<hr class='dv'>", unsafe_allow_html=True)
+
+
     st.markdown(
         "<div style='background:#020617;border:1px solid #38bdf822;border-radius:10px;"
         "padding:.9rem 1.2rem;margin-bottom:1rem;'>"
