@@ -8543,6 +8543,25 @@ class _SinkTab:
         return False  # don't suppress exceptions
 
 
+# Logo strip directly above the tabs — keeps the brand visible at the workspace anchor
+_rd_for_strip = st.session_state.get("research_domain","")
+st.markdown(
+    f"<div style='display:flex;align-items:center;gap:12px;margin:.6rem 0 .3rem;padding:.5rem .9rem;"
+    f"background:linear-gradient(90deg,rgba(56,189,248,.06),rgba(56,189,248,0) 60%);"
+    f"border-bottom:1px solid rgba(56,189,248,.18);border-radius:8px 8px 0 0;'>"
+    f"<img src='{_logo_src}' style='width:36px;height:36px;object-fit:contain;flex-shrink:0;"
+    f"filter:drop-shadow(0 0 6px rgba(56,189,248,.4));'>"
+    f"<div style='flex:1;'>"
+    f"<div style='color:#e6edf7;font-weight:800;font-size:1rem;letter-spacing:-.2px;'>Protellect</div>"
+    f"<div style='color:#94a3b8;font-size:.72rem;'>"
+    f"{('Workspace · ' + _rd_for_strip) if _rd_for_strip else 'Biomedical protein triage'}</div>"
+    f"</div>"
+    f"<div style='color:#5b6b80;font-size:.7rem;text-transform:uppercase;letter-spacing:.6px;'>"
+    f"{len(_visible_tab_names)} of {len(ALL_TAB_NAMES)} tabs active</div>"
+    f"</div>",
+    unsafe_allow_html=True,
+)
+
 # Create only the visible tabs in the strip
 _visible_tab_objs = st.tabs(_visible_tab_names)
 _tab_by_name = {n: _visible_tab_objs[i] for i, n in enumerate(_visible_tab_names)}
@@ -12426,7 +12445,7 @@ with tab3:
                 rk2=vd.get("ml_rank","NEUTRAL"); clr2=RANK_CLR[rk2]; css2=RANK_CSS[rk2]
                 url_vd=vd.get("url","")
                 st.markdown(f"<div class='card' style='border-color:{clr2}33;'><h4 style='color:{clr2};'>ClinVar Disease Variant Here</h4><p>{p('pathogenic') if vd.get('score',0)>=4 else vd.get('sig','—')}<br><small style='color:#5a8090;'>{vd.get('condition','')[:80]}</small></p>{'<a href=\"'+url_vd+'\" target=\"_blank\" style=\"color:#2a6a8a;font-size:1.02rem;\">View in ClinVar ↗</a>' if url_vd else ''}</div>", unsafe_allow_html=True)
-            else: st.success("No ClinVar disease variant at this position",icon="")
+            else: st.success("No ClinVar disease variant at this position")
         with cm:
             tb1,tb2=st.tabs(["Building-block properties","What if it mutates? →"])
             with tb1:
