@@ -7405,21 +7405,21 @@ def render_onboarding():
             "<div style='color:var(--text);font-size:.95rem;font-weight:600;margin-bottom:.25rem;'>"
             "Configure your workspace</div>"
             "<div style='color:var(--text3);font-size:.8rem;margin-bottom:1rem;'>"
-            "Choose which tabs to show. You can change this anytime from the Workspace tab.</div>",
+            "Only the tabs you select will appear in your workspace. You can change this anytime.</div>",
             unsafe_allow_html=True
         )
 
         ALL_TABS = [
-            ("Summary",      "Verdict, metrics, disease table, top experiments"),
-            ("Triage",       "Variant landscape, ClinVar pathogenicity, ML scoring"),
-            ("Case Study",   "Mutation cascade animation, clinical interpretation"),
-            ("Explorer",     "3D structure, domains, AlphaMissense landscape"),
-            ("Experiments",  "ROI-ranked protocols specific to your protein"),
-            ("AI Report",    "Claude synthesis with live web search"),
-            ("Workspace",    "History, screener, lab configurator, export"),
-            ("Disease Link", "Disease–protein causal linkage analysis"),
-            ("Chemistry",    "Hydrophobicity, PTM map, backbone renderer"),
-            ("Pharma",       "Druggability atlas, GPCR analysis, drug scores"),
+            ("Summary",      "At-a-glance verdict for the protein: pursue / proceed / deprioritise, key metrics (disease count, P/LP variant burden, gnomAD pLI), associated diseases table, and germline-vs-somatic breakdown. The fastest read on whether the target is worth pursuing."),
+            ("Triage",       "Variant-level analysis. ClinVar pathogenicity scoring, ML re-scoring (LightGBM), AlphaMissense overlay, hotspot detection, and ACMG criteria auto-suggestions. The deepest view of which variants matter."),
+            ("Case Study",   "Mutation cascade animation showing how a DNA change propagates to disease. Tissue-of-action inference, plain-language clinical interpretation. Built for grant figures and clinician briefings."),
+            ("Explorer",     "Interactive AlphaFold 3D structure with disease variants overlaid as red spheres. Click any residue for properties, ClinVar links, and pLDDT confidence. Includes per-residue mutation analysis and side-by-side what-if comparison."),
+            ("Experiments",  "ROI-ranked experimental roadmap. Suggests the cheapest, fastest follow-ups given the variant landscape, integrates CSV results if uploaded, and maps regulatory pathways (FDA designations) for therapeutic targets."),
+            ("AI Report",    "Claude-generated synthesis across all fetched data (UniProt, ClinVar, gnomAD, OpenTargets, PubMed, lab papers). Requires an Anthropic API key in Streamlit Secrets. Includes inline citations to your Lab Library."),
+            ("Workspace",    "Saved-protein history, multi-protein screener (rank a list by GI score / pLI / druggability), Lab Configurator chatbot, and report export (.md + .xlsx)."),
+            ("Disease Link", "Causal-linkage analysis: how strongly does the genetics support a given disease? Uses ClinGen validity classifications + ClinVar density + literature signal."),
+            ("Chemistry",    "Per-residue biophysical properties (hydropathy, charge, secondary structure propensity), PTM landscape (kinase / phosphorylation / ubiquitination sites), backbone renderer, and binding-site / druggability annotations."),
+            ("Pharma",       "Druggability atlas: GPCR classification (rhodopsin / secretin / adhesion / glutamate / frizzled), known drugs (DGIdb), clinical trials, ADMET scoring, and closest drugged-analog finder."),
         ]
 
         DOMAIN_DEFAULTS = {
@@ -7437,25 +7437,39 @@ def render_onboarding():
 
         if dom and dom in DOMAIN_DEFAULTS:
             st.markdown(
-                f"<div style='background:rgba(0,212,232,.05);border:1px solid rgba(0,212,232,.18);"
-                f"border-radius:6px;padding:6px 12px;margin-bottom:.8rem;font-size:.78rem;color:var(--text2);'>"
-                f"Suggested tabs for <b style='color:var(--cyan);'>{dom}</b> pre-selected below.</div>",
+                f"<div style='background:rgba(56,189,248,.06);border:1px solid rgba(56,189,248,.2);"
+                f"border-radius:8px;padding:8px 14px;margin-bottom:1rem;font-size:.78rem;color:var(--text2);'>"
+                f"Suggested tabs for <b style='color:var(--cyan);'>{dom}</b> are pre-selected. Uncheck any you don't need.</div>",
                 unsafe_allow_html=True
             )
 
         sel = []
-        c1, c2 = st.columns(2)
+        c1, c2 = st.columns(2, gap="medium")
         for i, (name, desc) in enumerate(ALL_TABS):
             checked = name in st.session_state["ob_tabs_selected"]
             with (c1 if i % 2 == 0 else c2):
-                if st.checkbox(f"**{name}** — {desc}", value=checked, key=f"ob_ck_{name}"):
+                # Card-style description block
+                _border = "rgba(56,189,248,.35)" if checked else "rgba(255,255,255,.06)"
+                _bg     = "rgba(56,189,248,.04)" if checked else "transparent"
+                st.markdown(
+                    f"<div style='background:{_bg};border:1px solid {_border};"
+                    f"border-radius:9px;padding:10px 12px;margin-bottom:8px;'>"
+                    f"<div style='color:var(--text);font-weight:700;font-size:.84rem;margin-bottom:3px;'>{name}</div>"
+                    f"<div style='color:var(--text3);font-size:.72rem;line-height:1.45;'>{desc}</div>"
+                    f"</div>",
+                    unsafe_allow_html=True
+                )
+                if st.checkbox(f"Show {name} tab", value=checked, key=f"ob_ck_{name}", label_visibility="collapsed"):
                     sel.append(name)
         st.session_state["ob_tabs_selected"] = sel
 
-        st.markdown("<div style='margin:.7rem 0 .25rem;color:var(--text);font-size:.82rem;font-weight:600;'>Sensitivity threshold</div>", unsafe_allow_html=True)
-        st.markdown("<div style='color:var(--text3);font-size:.75rem;margin-bottom:.3rem;'>Controls strictness of the genomic integrity filter.</div>", unsafe_allow_html=True)
-        sens = st.slider("", 10, 90, 50, 5, key="ob_sens_sl", label_visibility="collapsed")
-        s_lbl = "Strict — only high-confidence targets" if sens >= 65 else "Balanced" if sens >= 35 else "Exploratory — broad screening"
+        if not sel:
+            st.warning("Pick at least one tab to continue.")
+
+        st.markdown("<div style='margin:.9rem 0 .25rem;color:var(--text);font-size:.82rem;font-weight:600;'>Sensitivity threshold</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:var(--text3);font-size:.75rem;margin-bottom:.3rem;'>Controls strictness of the genomic integrity filter — lower means more candidates surface, higher means clinical-grade strictness only.</div>", unsafe_allow_html=True)
+        sens = st.slider("sensitivity", 10, 90, 50, 5, key="ob_sens_sl", label_visibility="collapsed")
+        s_lbl = "Strict — only high-confidence targets" if sens >= 65 else "Balanced — recommended default" if sens >= 35 else "Exploratory — broad screening"
         st.markdown(f"<div style='color:var(--text3);font-size:.73rem;margin-top:1px;'>{s_lbl}</div>", unsafe_allow_html=True)
 
         st.markdown("<div style='height:.4rem'></div>", unsafe_allow_html=True)
@@ -8488,6 +8502,25 @@ if not st.session_state.get("pdata") and not st.session_state.get("csv_triage_ac
         unsafe_allow_html=True,
     )
 
+# ── Tab visibility (driven by onboarding selection) ──────────────────────────
+ALL_TAB_NAMES = ["Summary","Triage","Case Study","Explorer","Experiments","AI Report","Workspace","Disease Link","Chemistry","Pharma"]
+_ob_selected_tabs = st.session_state.get("ob_tabs_selected") or ALL_TAB_NAMES
+def _tab_visible(name: str) -> bool:
+    """True if this tab was selected during onboarding (or no selection made — show all)."""
+    if not _ob_selected_tabs: return True
+    return name in _ob_selected_tabs
+
+def _tab_disabled_banner(name: str):
+    """Render at the top of a hidden tab to explain why it's empty."""
+    st.markdown(
+        f"<div style='background:rgba(255,255,255,.02);border:1px dashed rgba(255,255,255,.1);"
+        f"border-radius:10px;padding:1.2rem 1.4rem;margin:1.5rem 0;text-align:center;'>"
+        f"<div style='color:var(--text2);font-weight:700;font-size:.95rem;margin-bottom:4px;'>{name} is hidden in your workspace</div>"
+        f"<div style='color:var(--text3);font-size:.78rem;line-height:1.5;'>"
+        f"You can enable it from the Workspace tab settings, or re-run onboarding from the sidebar to reconfigure.</div></div>",
+        unsafe_allow_html=True,
+    )
+
 
 tab0,tab1,tab2,tab3,tab4,tab5,tab6,tab7,tab8,tab9=st.tabs(["Summary","Triage","Case Study","Explorer","Experiments","AI Report","Workspace","Disease Link","Chemistry","Pharma"])
 
@@ -8750,9 +8783,19 @@ if search and query and query!=st.session_state["last"]:
                 st.session_state["acmg_auto"]   = acmg_auto
                 st.session_state["conflicts"]   = conflicts
                 st.session_state["ml_result"]   = ml_result
+                # ── NEW: compute regulatory pathways + drugged analogs ──
+                try:
+                    _reg_paths = regulatory_pathway_map(g_diseases(pdata), patient_d, gi)
+                    _analogs   = find_drugged_analogs(pdata, string_data, ot_data)
+                except Exception:
+                    _reg_paths, _analogs = {}, []
+                st.session_state["reg_paths"] = _reg_paths
+                st.session_state["analogs"]   = _analogs
                 # Update GI score from domain analysis
+                # gi_score is already a percentage (×100); density is a fraction (0–1).
+                # Divide by 100 so display × 100 yields the correct percentage.
                 if domain_ctx.get("gi_score") is not None and gi:
-                    gi["density"] = domain_ctx["gi_score"]
+                    gi["density"] = min(1.0, domain_ctx["gi_score"] / 100.0)
                     gi["gi_class"] = domain_ctx.get("gi_class","")
                     st.session_state["gi"] = gi
             st.rerun()
@@ -9918,7 +9961,7 @@ cv.addEventListener('mousemove',e=>{{
 cv.addEventListener('mousedown',e=>{{drag=true;dsx=e.clientX-px;dsy=e.clientY-py;}});
 cv.addEventListener('mouseup',()=>drag=false);
 cv.addEventListener('mouseleave',()=>{{drag=false;document.getElementById('info').style.display='none';}});
-cv.addEventListener('wheel',e=>{{zm=Math.max(.25,Math.min(4,zm*(e.deltaY<0?1.15:.87)));e.preventDefault();}},{{passive:false}});
+cv.addEventListener('wheel',e=>{{zm=Math.max(.4,Math.min(2.5,zm*(e.deltaY<0?1.035:.97)));e.preventDefault();}},{{passive:false}});
 document.addEventListener('keydown',e=>{{
   if(e.key==='ArrowRight'||e.key==='.')scroll(10);
   if(e.key==='ArrowLeft'||e.key===',')scroll(-10);
@@ -10581,21 +10624,121 @@ def _get_anthropic_key() -> str:
     return st.session_state.get("anthropic_key", "") or ""
 
 
-def call_claude_api(messages: list) -> str:
-    """Call Claude API for chatbot responses. Requires an ANTHROPIC_API_KEY in
-    st.secrets (preferred), env var, or session_state['anthropic_key']."""
+def _build_workspace_context() -> str:
+    """Build a structured context string from current session state for the assistant."""
+    ctx = []
+    gene = st.session_state.get("gene","")
+    pdata = st.session_state.get("pdata") or {}
+    cv = st.session_state.get("cv") or {}
+    gi = st.session_state.get("gi") or {}
+    gnomad = st.session_state.get("gnomad") or {}
+    drugs = st.session_state.get("drugs") or []
+    lab_focus = st.session_state.get("ob_focus","") or st.session_state.get("lab_focus","")
+    lab_prots = st.session_state.get("ob_proteins","") or ",".join(st.session_state.get("lab_proteins",[]))
+    research_domain = st.session_state.get("research_domain","")
+    papers = st.session_state.get("ob_papers", []) or []
+
+    if research_domain:
+        ctx.append(f"Active research domain: {research_domain}")
+    if lab_focus:
+        ctx.append(f"Lab focus: {lab_focus[:160]}")
+    if lab_prots:
+        ctx.append(f"Lab proteins of interest: {lab_prots[:120]}")
+    if gene and pdata:
+        prot_name = (pdata.get("proteinDescription",{}) or {}).get("recommendedName",{}).get("fullName",{}).get("value","")
+        ctx.append(f"Currently analysing: {gene} ({prot_name[:60]}, UniProt {pdata.get('primaryAccession','')})")
+        seq_len = pdata.get("sequence",{}).get("length",0)
+        if seq_len:
+            ctx.append(f"  Length: {seq_len} aa")
+        summary = cv.get("summary",{}) if cv else {}
+        if summary:
+            n_p = summary.get("pathogenic_lp", 0) or gi.get("n_pathogenic", 0)
+            n_t = summary.get("total", 0) or gi.get("n_total", 0)
+            ctx.append(f"  ClinVar: {n_p} pathogenic/likely-pathogenic of {n_t} total variants")
+        if gnomad.get("pLI") is not None:
+            ctx.append(f"  gnomAD pLI: {gnomad.get('pLI'):.3f} (LoF intolerance, 1=highly intolerant)")
+        if gi.get("pursue"):
+            ctx.append(f"  Genomic Integrity verdict: {gi.get('verdict','')} ({gi.get('pursue','')})")
+        if drugs:
+            top_drugs = ", ".join(d.get("drug","") for d in drugs[:3] if d.get("drug"))
+            if top_drugs:
+                ctx.append(f"  Known drugs (DGIdb): {top_drugs}")
+    if papers:
+        ctx.append(f"Lab library papers available for citation ({len(papers)} total). First 5:")
+        for i, p in enumerate(papers[:5], 1):
+            t = p.get("title","")[:90]
+            yr = p.get("year","")
+            ctx.append(f"  [{i}] {t} ({yr})")
+    return "\n".join(ctx) if ctx else ""
+
+
+def _get_system_prompt() -> str:
+    """Return either the onboarding prompt or the workspace assistant prompt."""
+    if not st.session_state.get("ob_complete"):
+        return SYSTEM_PROMPT
+    # Post-onboarding assistant
+    ctx = _build_workspace_context()
+    base = ("You are the Protellect Workspace Assistant — a biomedical research copilot. "
+            "Answer the researcher's questions about their protein, variants, drugs, or experimental design. "
+            "Use the workspace context below to ground your answers in the user's actual data. "
+            "When you reference an idea that aligns with one of the lab library papers listed, cite it inline as [n] where n is the paper number. "
+            "Be concise (3-6 sentences). Use technical biomedical terminology. "
+            "If asked about something not in the workspace, say so and suggest searching the relevant protein in the sidebar.")
+    if ctx:
+        return base + "\n\n=== CURRENT WORKSPACE CONTEXT ===\n" + ctx
+    return base + "\n\n(No protein is currently loaded. Encourage the user to search one in the sidebar.)"
+
+
+def _offline_chat_fallback(user_msg: str) -> str:
+    """Rule-based answers when no API key is configured. Covers common workspace questions."""
+    m = (user_msg or "").lower()
+    gene = st.session_state.get("gene","")
+    gi = st.session_state.get("gi") or {}
+    papers = st.session_state.get("ob_papers", []) or []
+    parts = []
+    if any(k in m for k in ["clinvar", "variant", "pathogenic"]):
+        if gi.get("n_pathogenic") is not None:
+            parts.append(f"For {gene or 'this protein'}, ClinVar reports {gi.get('n_pathogenic',0)} pathogenic/likely-pathogenic variants out of {gi.get('n_total',0)} total. Genomic Integrity verdict: {gi.get('label','—')}.")
+        else:
+            parts.append("No protein loaded yet — search one in the sidebar (e.g. TP53) to get ClinVar variant counts.")
+    if any(k in m for k in ["drug", "compound", "inhibitor", "pharma"]):
+        drugs = st.session_state.get("drugs") or []
+        if drugs:
+            top = ", ".join(d.get("drug","") for d in drugs[:5] if d.get("drug"))
+            parts.append(f"Known compounds (DGIdb): {top}.")
+        else:
+            parts.append("No drug data loaded. Search a protein in the sidebar to populate DGIdb hits.")
+    if any(k in m for k in ["paper", "publication", "cite", "literature", "reference"]):
+        if papers:
+            parts.append(f"Your Lab Library has {len(papers)} papers. Top citation: [1] {papers[0].get('title','')[:100]}.")
+        else:
+            parts.append("No papers in Lab Library yet. Complete the onboarding wizard to pull recent papers via Semantic Scholar.")
+    if any(k in m for k in ["experiment", "assay", "validate", "next step"]):
+        parts.append("For experimental priorities, see the Experiments tab — it ranks suggested experiments by ROI based on the protein's variant burden and druggability.")
+    if not parts:
+        parts.append("I'm running in offline mode — no Anthropic API key is configured in Streamlit Cloud secrets. "
+                     "Set ANTHROPIC_API_KEY in Settings → Secrets to enable full AI conversation. "
+                     "For now I can answer questions about ClinVar variants, drugs, papers, and experiments — try asking 'what are the pathogenic variants?' or 'show me the papers'.")
+    return " ".join(parts)
+
+
+def call_claude_api(messages: list, system_prompt: str | None = None) -> str:
+    """Call Claude API for chatbot responses. Falls back to a rule-based answer
+    when no API key is set so the chatbot is never completely dead."""
     api_key = _get_anthropic_key()
+    sys_prompt = system_prompt if system_prompt is not None else _get_system_prompt()
     if not api_key:
-        return (
-            "AI assistant unavailable — no Anthropic API key configured. "
-            "Set ANTHROPIC_API_KEY in your Streamlit Cloud secrets (Settings → Secrets) "
-            "or paste a key in the sidebar."
-        )
+        # Try offline fallback for the last user message
+        last_user = next((m for m in reversed(messages) if m.get("role") == "user"), None)
+        if last_user:
+            return _offline_chat_fallback(last_user.get("content",""))
+        return ("AI assistant unavailable — no Anthropic API key configured. "
+                "Set ANTHROPIC_API_KEY in Streamlit Cloud Settings → Secrets to enable full conversation.")
     try:
         payload = {
             "model": "claude-sonnet-4-20250514",
-            "max_tokens": 500,
-            "system": SYSTEM_PROMPT,
+            "max_tokens": 600,
+            "system": sys_prompt,
             "messages": messages,
         }
         r = requests.post(
@@ -11009,6 +11152,14 @@ with tab0:
     protein_length = pdata.get("sequence",{}).get("length",0) if pdata else 0
     summary      = cv.get("summary",{}) if cv else {}
     variants     = cv.get("variants",[]) if cv else []
+    gpcr_assessment = g_gpcr_full(pdata, gene) if pdata else {}
+    gpcr_class   = g_gpcr_class(pdata) if pdata else ""
+    isoforms     = st.session_state.get("isoforms") or []
+    reg_paths    = st.session_state.get("reg_paths") or {}
+    analogs      = st.session_state.get("analogs") or []
+    # Visibility guard — banner shown if user excluded this tab in onboarding
+    if not _tab_visible("Summary"):
+        _tab_disabled_banner("Summary")
     # ── Pull all data from session state ─────────────────────────────────────
     gnomad_data  = st.session_state.get("gnomad") or {}
     drugs_data   = st.session_state.get("drugs") or []
@@ -11480,6 +11631,17 @@ with tab1:
     protein_length = pdata.get("sequence",{}).get("length",0) if pdata else 0
     summary      = cv.get("summary",{}) if cv else {}
     variants     = cv.get("variants",[]) if cv else []
+    is_gpcr      = g_gpcr(pdata) if pdata else False
+    gpcr_assessment = g_gpcr_full(pdata, gene) if pdata else {}
+    gpcr_class   = g_gpcr_class(pdata) if pdata else ""
+    ptype        = g_ptype(pdata) if pdata else "general"
+    hotspots     = st.session_state.get("hotspots") or []
+    isoforms     = st.session_state.get("isoforms") or []
+    reg_paths    = st.session_state.get("reg_paths") or {}
+    analogs      = st.session_state.get("analogs") or []
+    # Visibility guard — banner shown if user excluded this tab in onboarding
+    if not _tab_visible("Triage"):
+        _tab_disabled_banner("Triage")
     # Metrics
     n_crit=sum(1 for v in scored if v.get("ml_rank")=="CRITICAL")
     c1,c2,c3,c4=st.columns(4)
@@ -11771,6 +11933,17 @@ with tab2:
     protein_length = pdata.get("sequence",{}).get("length",0) if pdata else 0
     summary      = cv.get("summary",{}) if cv else {}
     variants     = cv.get("variants",[]) if cv else []
+    is_gpcr      = g_gpcr(pdata) if pdata else False
+    gpcr_assessment = g_gpcr_full(pdata, gene) if pdata else {}
+    gpcr_class   = g_gpcr_class(pdata) if pdata else ""
+    ptype        = g_ptype(pdata) if pdata else "general"
+    hotspots     = st.session_state.get("hotspots") or []
+    isoforms     = st.session_state.get("isoforms") or []
+    reg_paths    = st.session_state.get("reg_paths") or {}
+    analogs      = st.session_state.get("analogs") or []
+    # Visibility guard — banner shown if user excluded this tab in onboarding
+    if not _tab_visible("Case Study"):
+        _tab_disabled_banner("Case Study")
     TKWS={"Brain":["brain","neuron","cerebral","cortex"],"Liver":["liver","hepatic"],"Heart":["heart","cardiac","myocardium"],"Kidney":["kidney","renal"],"Lung":["lung","pulmonary"],"Blood":["blood","erythrocyte","platelet"],"Breast":["breast","mammary"],"Colon":["colon","colorectal","intestine"],"Prostate":["prostate"],"Skin":["skin","keratinocyte"],"Muscle":["muscle","skeletal"],"Pancreas":["pancreas","islet"]}
     c_t,c_s=st.columns([1,1],gap="large")
     with c_t:
@@ -12161,6 +12334,17 @@ with tab3:
     protein_length = pdata.get("sequence",{}).get("length",0) if pdata else 0
     summary      = cv.get("summary",{}) if cv else {}
     variants     = cv.get("variants",[]) if cv else []
+    is_gpcr      = g_gpcr(pdata) if pdata else False
+    gpcr_assessment = g_gpcr_full(pdata, gene) if pdata else {}
+    gpcr_class   = g_gpcr_class(pdata) if pdata else ""
+    ptype        = g_ptype(pdata) if pdata else "general"
+    hotspots     = st.session_state.get("hotspots") or []
+    isoforms     = st.session_state.get("isoforms") or []
+    reg_paths    = st.session_state.get("reg_paths") or {}
+    analogs      = st.session_state.get("analogs") or []
+    # Visibility guard — banner shown if user excluded this tab in onboarding
+    if not _tab_visible("Explorer"):
+        _tab_disabled_banner("Explorer")
     sh("","Protein Explorer — click any residue to inspect")
     st.markdown(f"<div style='color:#5a8090;font-size:.82rem;margin-bottom:.3rem;'>Full interactive 3D structure from AlphaFold. Red spheres = confirmed disease-causing sites. Click any residue to inspect its properties and ClinVar data. Use toolbar to switch view modes. {src_link('AlphaFold DB',f'https://alphafold.ebi.ac.uk/entry/{uid}')}</div>", unsafe_allow_html=True)
     if pdb: components.html(viewer_html(pdb,scored,570),height=575,scrolling=False)
@@ -12463,6 +12647,14 @@ with tab4:
     protein_length = pdata.get("sequence",{}).get("length",0) if pdata else 0
     summary      = cv.get("summary",{}) if cv else {}
     variants     = cv.get("variants",[]) if cv else []
+    gpcr_assessment = g_gpcr_full(pdata, gene) if pdata else {}
+    gpcr_class   = g_gpcr_class(pdata) if pdata else ""
+    isoforms     = st.session_state.get("isoforms") or []
+    reg_paths    = st.session_state.get("reg_paths") or {}
+    analogs      = st.session_state.get("analogs") or []
+    # Visibility guard — banner shown if user excluded this tab in onboarding
+    if not _tab_visible("Experiments"):
+        _tab_disabled_banner("Experiments")
     is_gpcr      = g_gpcr(pdata) if pdata else False
     if not (pdata and gene and gene not in ("","?")):
         st.info(" Search a protein in the sidebar to see its ROI-ranked experiment roadmap — generated fresh from ClinVar, gnomAD, and AlphaMissense for every protein.")
@@ -12873,6 +13065,16 @@ with tab5:
     protein_length = pdata.get("sequence",{}).get("length",0) if pdata else 0
     summary      = cv.get("summary",{}) if cv else {}
     variants     = cv.get("variants",[]) if cv else []
+    is_gpcr      = g_gpcr(pdata) if pdata else False
+    gpcr_class   = g_gpcr_class(pdata) if pdata else ""
+    ptype        = g_ptype(pdata) if pdata else "general"
+    hotspots     = st.session_state.get("hotspots") or []
+    isoforms     = st.session_state.get("isoforms") or []
+    reg_paths    = st.session_state.get("reg_paths") or {}
+    analogs      = st.session_state.get("analogs") or []
+    # Visibility guard — banner shown if user excluded this tab in onboarding
+    if not _tab_visible("AI Report"):
+        _tab_disabled_banner("AI Report")
     sh("","AI Intelligence Report")
     st.markdown(
         "<div style='background:#020617;border:1px solid #38bdf822;border-radius:10px;"
@@ -13327,6 +13529,17 @@ with tab6:
     protein_length = pdata.get("sequence",{}).get("length",0) if pdata else 0
     summary      = cv.get("summary",{}) if cv else {}
     variants     = cv.get("variants",[]) if cv else []
+    is_gpcr      = g_gpcr(pdata) if pdata else False
+    gpcr_assessment = g_gpcr_full(pdata, gene) if pdata else {}
+    gpcr_class   = g_gpcr_class(pdata) if pdata else ""
+    ptype        = g_ptype(pdata) if pdata else "general"
+    hotspots     = st.session_state.get("hotspots") or []
+    isoforms     = st.session_state.get("isoforms") or []
+    reg_paths    = st.session_state.get("reg_paths") or {}
+    analogs      = st.session_state.get("analogs") or []
+    # Visibility guard — banner shown if user excluded this tab in onboarding
+    if not _tab_visible("Workspace"):
+        _tab_disabled_banner("Workspace")
     _rd6 = st.session_state.get("research_domain","")
     _lab_done = st.session_state.get("lab_setup_complete", False)
     _lab_prots = st.session_state.get("lab_proteins", [])
@@ -13788,6 +14001,17 @@ with tab7:
     protein_length = pdata.get("sequence",{}).get("length",0) if pdata else 0
     summary      = cv.get("summary",{}) if cv else {}
     variants     = cv.get("variants",[]) if cv else []
+    is_gpcr      = g_gpcr(pdata) if pdata else False
+    gpcr_assessment = g_gpcr_full(pdata, gene) if pdata else {}
+    gpcr_class   = g_gpcr_class(pdata) if pdata else ""
+    ptype        = g_ptype(pdata) if pdata else "general"
+    hotspots     = st.session_state.get("hotspots") or []
+    isoforms     = st.session_state.get("isoforms") or []
+    reg_paths    = st.session_state.get("reg_paths") or {}
+    analogs      = st.session_state.get("analogs") or []
+    # Visibility guard — banner shown if user excluded this tab in onboarding
+    if not _tab_visible("Disease Link"):
+        _tab_disabled_banner("Disease Link")
     sh("","Disease ↔ Protein Causal Link Analysis")
     st.markdown(
         "<div style='color:#5a8090;font-size:.86rem;margin-bottom:.8rem;'>"
@@ -13926,6 +14150,17 @@ with tab8:
     protein_length = pdata.get("sequence",{}).get("length",0) if pdata else 0
     summary      = cv.get("summary",{}) if cv else {}
     variants     = cv.get("variants",[]) if cv else []
+    is_gpcr      = g_gpcr(pdata) if pdata else False
+    gpcr_assessment = g_gpcr_full(pdata, gene) if pdata else {}
+    gpcr_class   = g_gpcr_class(pdata) if pdata else ""
+    ptype        = g_ptype(pdata) if pdata else "general"
+    hotspots     = st.session_state.get("hotspots") or []
+    isoforms     = st.session_state.get("isoforms") or []
+    reg_paths    = st.session_state.get("reg_paths") or {}
+    analogs      = st.session_state.get("analogs") or []
+    # Visibility guard — banner shown if user excluded this tab in onboarding
+    if not _tab_visible("Chemistry"):
+        _tab_disabled_banner("Chemistry")
     seq_c = g_seq(pdata)
     is_gpcr_c = g_gpcr(pdata)
     is_kin_c = any(
@@ -14182,6 +14417,17 @@ with tab9:
     protein_length = pdata.get("sequence",{}).get("length",0) if pdata else 0
     summary      = cv.get("summary",{}) if cv else {}
     variants     = cv.get("variants",[]) if cv else []
+    is_gpcr      = g_gpcr(pdata) if pdata else False
+    gpcr_assessment = g_gpcr_full(pdata, gene) if pdata else {}
+    gpcr_class   = g_gpcr_class(pdata) if pdata else ""
+    ptype        = g_ptype(pdata) if pdata else "general"
+    hotspots     = st.session_state.get("hotspots") or []
+    isoforms     = st.session_state.get("isoforms") or []
+    reg_paths    = st.session_state.get("reg_paths") or {}
+    analogs      = st.session_state.get("analogs") or []
+    # Visibility guard — banner shown if user excluded this tab in onboarding
+    if not _tab_visible("Pharma"):
+        _tab_disabled_banner("Pharma")
     _gene9 = st.session_state.get("gene","")
     _pdata9 = st.session_state.get("pdata",{})
     _cv9 = st.session_state.get("cv",{})
