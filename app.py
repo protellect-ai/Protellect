@@ -7551,7 +7551,7 @@ with st.sidebar:
     depth=st.selectbox("Depth",["Standard (150 variants)","Deep (400 variants)"],label_visibility="collapsed")
     max_v=150 if "Standard" in depth else 400
     # Build version — bump on each deploy so you can confirm the live app is current
-    st.markdown("<div style='color:#1e3050;font-size:.62rem;text-align:right;margin-top:.3rem;'>build 2026.05.28-f</div>", unsafe_allow_html=True)
+    st.markdown("<div style='color:#1e3050;font-size:.62rem;text-align:right;margin-top:.3rem;'>build 2026.05.28-g</div>", unsafe_allow_html=True)
 
     # Sidebar protein summary
     if st.session_state["pdata"]:
@@ -10952,7 +10952,19 @@ if st.session_state.get("csv_triage_active") and st.session_state.get("csv_df") 
     with c_m2: st.markdown(mc(len(df_t.columns), "Columns", "#4a90d9"), unsafe_allow_html=True)
     with c_m3: st.markdown(mc(ct_t.replace("_"," ").title(), "Type detected", "#00c896"), unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
-    for t_t, b_t in analyse_csv_standalone(df_t, ct_t, active_goal, gene=gene, scored=scored, variants=variants, am_scores=am_scores, protein_length=protein_length):
+    # Pull protein context from session if available; CSV-only triage may run before
+    # any protein search, in which case we pass empty values and let the analyser
+    # produce CSV-only insights without protein cross-referencing.
+    _csv_gene     = st.session_state.get("gene", "") or ""
+    _csv_scored   = st.session_state.get("scored") or []
+    _csv_variants = (st.session_state.get("cv") or {}).get("variants", []) or []
+    _csv_am       = st.session_state.get("am") or {}
+    _csv_pdata    = st.session_state.get("pdata") or {}
+    _csv_plen     = (_csv_pdata.get("sequence") or {}).get("length", 1) or 1
+    for t_t, b_t in analyse_csv_standalone(df_t, ct_t, active_goal,
+                                           gene=_csv_gene, scored=_csv_scored,
+                                           variants=_csv_variants, am_scores=_csv_am,
+                                           protein_length=_csv_plen):
         st.markdown(f"<div class='card'><h4>{t_t}</h4><p>{b_t}</p></div>", unsafe_allow_html=True)
     # Volcano plot
     import numpy as np
