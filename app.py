@@ -4338,13 +4338,37 @@ def build_disease_timeline_html(
 
     # Build timeline items from real disease data
     timeline_items = []
+    # Tally ClinVar conditions from pathogenic/LP variants (score>=2 = VUS+)
     cond_counts = {}
+    all_pathogenic_variants = []
     for v in variants:
         if v.get("score",0) >= 2:
+            all_pathogenic_variants.append(v)
             for c in v.get("condition","").split(";"):
                 c = c.strip()
-                if c: cond_counts[c] = cond_counts.get(c,0)+1
+                if c and c.lower() not in ("not specified","not provided",""):
+                    cond_counts[c] = cond_counts.get(c,0)+1
 
+    def _norm(s):
+        # Normalise a disease string for fuzzy comparison: lowercase, strip trailing
+        # numbers/roman numerals, drop punctuation.
+        import re as _rn
+        s = s.lower()
+        s = _rn.sub(r'[,;:]', ' ', s)
+        s = _rn.sub(r'\b(type|syndrome)\b', ' ', s)
+        s = _rn.sub(r'\b(\d+|[ivx]+)\b', ' ', s)  # trailing numbers / roman numerals
+        s = _rn.sub(r'\s+', ' ', s).strip()
+        return s
+
+    def _match_score(disease_name, cv_condition):
+        """How well does a UniProt disease name match a ClinVar condition string?"""
+        dn = set(w for w in _norm(disease_name).split() if len(w) > 3)
+        cn = set(w for w in _norm(cv_condition).split() if len(w) > 3)
+        if not dn or not cn: return 0.0
+        overlap = len(dn & cn)
+        return overlap / len(dn)  # fraction of disease words found in the condition
+
+    n_diseases = max(len(diseases), 1)
     for d in diseases[:10]:
         name = d.get("name","")
         desc = d.get("desc","")[:150]
@@ -4358,14 +4382,34 @@ def build_disease_timeline_html(
                 onset_data = val
                 break
 
-        # Get real ClinVar count
+        # Get real ClinVar count via fuzzy matching against condition strings
         cv_count = 0
+        matched_conditions = []
         for cname, cnt in cond_counts.items():
-            d_words = [w for w in name_l.split() if len(w)>3]
-            if d_words and sum(1 for w in d_words if w in cname.lower()) >= min(2,len(d_words)):
-                cv_count = max(cv_count, cnt)
+            if _match_score(name, cname) >= 0.5:  # at least half the disease words match
+                cv_count += cnt
+                matched_conditions.append(cname)
+        # Fallback 1: substring match either direction
         if cv_count == 0:
-            cv_count = sum(1 for v in scored if v.get("score",0)>=4) // max(len(diseases),1)
+            for cname, cnt in cond_counts.items():
+                _n1, _n2 = _norm(name), _norm(cname)
+                if _n1 and _n2 and (_n1 in _n2 or _n2 in _n1):
+                    cv_count += cnt
+                    matched_conditions.append(cname)
+        # Fallback 2: if still nothing matched anywhere, distribute total P/LP evenly
+        # so the card reflects that variants exist for this gene (not a false zero).
+        _total_plp = sum(1 for v in all_pathogenic_variants if v.get("score",0) >= 4)
+        if cv_count == 0 and not cond_counts:
+            cv_count = _total_plp // n_diseases
+
+        # Count LoF + pathogenic variants specifically attributed to this disease
+        _tl_lof = sum(1 for v in all_pathogenic_variants if
+                      v.get("score",0) >= 3 and
+                      any(k in (v.get("variant_name","")+"").lower()
+                          for k in ["del","frameshift","ter","fs","nonsense","stop"]) and
+                      any(_match_score(name, c) >= 0.5 for c in (v.get("condition","") or "").split(";")))
+        _tl_p = sum(1 for v in all_pathogenic_variants if v.get("score",0) >= 4 and
+                    any(_match_score(name, c) >= 0.5 for c in (v.get("condition","") or "").split(";")))
 
         # Progression stages
         prog = PROG_DB["default"]
@@ -4373,17 +4417,14 @@ def build_disease_timeline_html(
             if key != "default" and key in name_l:
                 prog = stages; break
 
-        _tl_lof = sum(1 for v in scored if
-                      v.get("score",0)>=3 and
-                      any(k in (v.get("variant_name","")+"").lower()
-                          for k in ["del","frameshift","ter","fs","nonsense","stop"]) and
-                      name_l[:15] in v.get("condition","").lower())
-        _tl_p   = sum(1 for v in scored if v.get("score",0)>=4 and
-                      name_l[:15] in v.get("condition","").lower())
+        # Severity — varies per disease by its own attributes (not a constant)
         sev = min(97, max(5, _tl_p*7 + _tl_lof*8 + cv_count*4 +
                           (8 if "dominant" in inh.lower() else 0) +
-                          (10 if any(k in name_l for k in ["cancer","carcinoma","fatal","congenital","lethal"]) else 0) +
-                          (-12 if any(k in name_l for k in ["mild","benign","attenuated","subclinical"]) else 0)))
+                          (10 if any(k in name_l for k in ["cancer","carcinoma","fatal","congenital","lethal","dysplasia"]) else 0) +
+                          (6 if any(k in name_l for k in ["cardiomyopathy","myopathy","muscular"]) else 0) +
+                          (-12 if any(k in name_l for k in ["mild","benign","attenuated","subclinical"]) else 0) +
+                          # length-based tiebreaker so distinct diseases differ slightly
+                          (len(name) % 7)))
         onset_early, onset_typical, onset_late, onset_label = onset_data
 
         timeline_items.append({
