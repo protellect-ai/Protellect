@@ -111,7 +111,7 @@ def _is_ambiguous_search(query: str, result_gene: str, result_name: str) -> str 
 
     for term, (likely_hit, explanation) in AMBIGUOUS_TERMS.items():
         if term in q and g not in q:
-            return (f" **Search disambiguation:** '{query}' matched **{result_gene}** "
+            return (f" <b>Search disambiguation:</b> '{query}' matched <b>{result_gene}</b> "
                     f"because its protein name contains this term. "
                     f"Top result: {likely_hit}. {explanation}")
 
@@ -119,7 +119,7 @@ def _is_ambiguous_search(query: str, result_gene: str, result_name: str) -> str 
     gene_words = g.split()
     protein_first_word = n.split()[0] if n else ""
     if q not in gene_words and q != protein_first_word and len(q) > 4:
-        return (f" **Search note:** '{query}' is not the gene symbol for **{result_gene}** — "
+        return (f" <b>Search note:</b> '{query}' is not the gene symbol for <b>{result_gene}</b> — "
                 f"it matched the protein description. If this is not the protein you intended, "
                 f"search by gene symbol (e.g. {result_gene.upper()}) or UniProt accession for a precise match.")
 
@@ -210,8 +210,8 @@ def fetch_uniprot(query):
         gene_n = entry.get("genes",[{}])[0].get("geneName",{}).get("value","this protein") if entry.get("genes") else "this protein"
         acc_n  = entry.get("primaryAccession","?")
         raise ValueError(
-            f" Non-human protein detected: '{query}' resolved to **{gene_n}** ({acc_n}) from "
-            f"**{common}** ({sci}). "
+            f" Non-human protein detected: '{query}' resolved to <b>{gene_n}</b> ({acc_n}) from "
+            f"<b>{common}</b> ({sci}). "
             f"Protellect is human-only. This protein does not exist in the human genome. "
             f"If a human orthologue exists, search by the human gene symbol (e.g. KRT — human keratin). "
             f"Human proteins to try: TP53 · FLNC · BRCA1 · ACM2 · EGFR · P04637"
@@ -351,8 +351,8 @@ def fetch_uniprot(query):
     if _q_resolved in _PROTEIN_NAME_TO_GENE:
         _resolved_gene = _PROTEIN_NAME_TO_GENE[_q_resolved]
         st.session_state["_search_disambiguation"] = (
-            f" Resolved '{query}' → gene symbol **{_resolved_gene}** automatically. "
-            f"Tip: searching by gene symbol directly (e.g. **{_resolved_gene}**) is always most precise."
+            f" Resolved '{query}' → gene symbol <b>{_resolved_gene}</b> automatically. "
+            f"Tip: searching by gene symbol directly (e.g. <b>{_resolved_gene}</b>) is always most precise."
         )
         query = _resolved_gene  # Replace query with canonical gene symbol
 
@@ -923,11 +923,15 @@ def fetch_gnomad(gene: str) -> dict:
         """ % gene
         r = requests.post("https://gnomad.broadinstitute.org/api",
                          json={"query": query}, timeout=25,
-                         headers={"Content-Type":"application/json"})
+                         headers={"Content-Type":"application/json",
+                                  "User-Agent":"Mozilla/5.0 (Protellect research tool; +https://protellect.streamlit.app)",
+                                  "Accept":"application/json"})
         r.raise_for_status()
         data = r.json().get("data",{}).get("gene",{}) or {}
         constraint = data.get("gnomad_constraint",{}) or {}
         variants_raw = data.get("variants",[]) or []
+        # Distinguish "gene has no constraint data in gnomAD" from "pLI is genuinely 0"
+        _has_constraint = constraint.get("pLI") is not None
 
         # Build population-stratified variant map
         pop_labels = {"afr":"African","amr":"Latino","asj":"Ashkenazi Jewish",
@@ -959,9 +963,10 @@ def fetch_gnomad(gene: str) -> dict:
                     "predictors": predictors,
                 }
 
-        pli = round(constraint.get("pLI",0) or 0, 3)
+        pli = round(constraint.get("pLI",0) or 0, 3) if _has_constraint else None
         return {
             "pLI":             pli,
+            "pLI_available":   _has_constraint,
             "oe_lof":          round(constraint.get("oe_lof",1) or 1, 3),
             "oe_lof_upper":    round(constraint.get("oe_lof_upper",1) or 1, 3),
             "oe_lof_lower":    round(constraint.get("oe_lof_lower",0) or 0, 3),
@@ -971,7 +976,7 @@ def fetch_gnomad(gene: str) -> dict:
             "syn_z":           round(constraint.get("syn_z",0) or 0, 2),
             "pRec":            round(constraint.get("pRec",0) or 0, 3),
             "url":             f"https://gnomad.broadinstitute.org/gene/{gene}?dataset=gnomad_r4",
-            "intolerant":      pli > 0.9,
+            "intolerant":      (pli is not None and pli > 0.9),
             "mis_intolerant":  (constraint.get("oe_mis",1) or 1) < 0.6,
             "constraint_flag": constraint.get("constraint_flag",""),
             "variants":        var_detail,

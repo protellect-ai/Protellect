@@ -1219,7 +1219,7 @@ def _is_ambiguous_search(query: str, result_gene: str, result_name: str) -> str 
 
     for term, (likely_hit, explanation) in AMBIGUOUS_TERMS.items():
         if term in q and g not in q:
-            return (f" **Search disambiguation:** '{query}' matched **{result_gene}** "
+            return (f" <b>Search disambiguation:</b> '{query}' matched <b>{result_gene}</b> "
                     f"because its protein name contains this term. "
                     f"Top result: {likely_hit}. {explanation}")
 
@@ -1227,7 +1227,7 @@ def _is_ambiguous_search(query: str, result_gene: str, result_name: str) -> str 
     gene_words = g.split()
     protein_first_word = n.split()[0] if n else ""
     if q not in gene_words and q != protein_first_word and len(q) > 4:
-        return (f" **Search note:** '{query}' is not the gene symbol for **{result_gene}** — "
+        return (f" <b>Search note:</b> '{query}' is not the gene symbol for <b>{result_gene}</b> — "
                 f"it matched the protein description. If this is not the protein you intended, "
                 f"search by gene symbol (e.g. {result_gene.upper()}) or UniProt accession for a precise match.")
 
@@ -3411,7 +3411,7 @@ def compute_experiment_roi(scored: list, gi: dict, ptype: str, gnomad: dict, ot_
     Returns ranked list with justification.
     """
     n_path = gi.get("n_pathogenic", 0)
-    pli = gnomad.get("pLI", 0.5) if gnomad else 0.5
+    pli = (gnomad.get("pLI") if gnomad else None);  pli = 0.5 if pli is None else pli
     n_drugs_known = len(ot_data.get("known_drugs",[])) if ot_data else 0
     tractability = ot_data.get("tractability",{}) if ot_data else {}
     is_small_mol_tractable = bool(tractability.get("Small molecule"))
@@ -4542,7 +4542,7 @@ def build_druggability_map_html(
 
     tract = ot_data.get("tractability",{}) if ot_data else {}
     known_drugs = ot_data.get("known_drugs",[]) if ot_data else []
-    pli  = gnomad.get("pLI",0) if gnomad else 0
+    pli  = (gnomad.get("pLI") or 0) if gnomad else 0
     n_drugs = len(drugs_data)
 
     # Drug targeting strategies from real data
@@ -6737,7 +6737,7 @@ def generate_export_report(pdata, cv, gi, gnomad_data, diseases,
         if v.get("ml_rank") in ("CRITICAL","HIGH")
     ) or "—"
     dis0 = diseases[0]["name"][:40] if diseases else "associated condition"
-    pli_v = gnomad_data.get("pLI", 0) if gnomad_data else 0
+    pli_v = (gnomad_data.get("pLI") or 0) if gnomad_data else 0
 
     L += [
         "## Recommended Experiment Roadmap",
@@ -7467,7 +7467,7 @@ with st.sidebar:
         _gi3  = st.session_state.get("gi",{})
         _n_crit3 = sum(1 for v in scored3 if v.get("ml_rank")=="CRITICAL")
         _n_lof3  = sum(1 for v in scored3 if any(k in v.get("variant_name","").lower() for k in ["del","ter","fs","stop","nonsense"]) and v.get("score",0)>=3)
-        _pli3    = st.session_state.get("gnomad",{}).get("pLI",0)
+        _pli3    = st.session_state.get("gnomad",{}).get("pLI",0) or 0
         _goal3   = get_goal_config(active_goal)
         # Generate protein-specific experiments from actual data
         _exps3 = []
@@ -11044,7 +11044,7 @@ with tab0:
     if not _disambig and _loaded_gene in _KNOWN_INDIRECT:
         _term, _explain = _KNOWN_INDIRECT[_loaded_gene]
         if _loaded_query.lower().strip() == _term or _term in _loaded_query.lower():
-            _disambig = f" **Search note:** '{_loaded_query}' matched **{_loaded_gene}** — {_explain}"
+            _disambig = f" <b>Search note:</b> '{_loaded_query}' matched <b>{_loaded_gene}</b> — {_explain}"
     if _disambig:
         st.markdown(
             f"<div style='background:#0a0a00;border:1px solid #ffd60a55;border-left:4px solid #ffd60a;"
@@ -11058,7 +11058,12 @@ with tab0:
     n_crit_s = sum(1 for v in scored if v.get("ml_rank")=="CRITICAL")
     n_high_s = sum(1 for v in scored if v.get("ml_rank")=="HIGH")
     _pli_display = gnomad_data.get("pLI") if gnomad_data else None
-    _pli_str = f"{_pli_display:.3f}" if isinstance(_pli_display, (int,float)) else ("N/A — not scored" if _pli_display is None else str(_pli_display))
+    if isinstance(_pli_display, (int, float)):
+        _pli_str = f"{_pli_display:.3f}"
+    elif not gnomad_data:
+        _pli_str = "gnomAD unavailable"
+    else:
+        _pli_str = "Not in gnomAD"
     _pli_clr = "#22c55e" if (isinstance(_pli_display,(int,float)) and _pli_display>=0.9) else "#ffd60a" if (isinstance(_pli_display,(int,float)) and _pli_display>=0.5) else "#a855f7"
     _n_path = gi.get("n_pathogenic",0)
     with sm1: st.markdown(mc(len(diseases),"Associated diseases","#38bdf8"),unsafe_allow_html=True)
@@ -11174,7 +11179,7 @@ with tab0:
     has_struct = bool(uid)  # AlphaFold structure available for any protein with UniProt ID
     is_tractable_sm = bool(ot_data.get("tractability",{}).get("Small molecule")) if ot_data else False
     is_tractable_ab = bool(ot_data.get("tractability",{}).get("Antibody")) if ot_data else False
-    pli_val    = gnomad_data.get("pLI",0) if gnomad_data else 0
+    pli_val    = (gnomad_data.get("pLI") if gnomad_data else 0) or 0
     n_str_interactors = len(string_data)
     top_drug   = drugs_data[0]["drug"] if drugs_data else None
     dis0_name  = diseases[0]["name"][:40] if diseases else "associated condition"
