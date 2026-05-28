@@ -680,36 +680,39 @@ details { border:1px solid var(--border) !important; border-radius:8px !importan
   color: var(--text) !important;
 }
 
-/* ── Scroll fix — ensure the main app area always scrolls normally ───────── */
-section[data-testid="stMain"],
-.main,
+/* ── Scroll: let the app scroll vertically, never trap it ───────────────── */
+/* Do NOT force height:auto on stMain — that fights Streamlit's scroll container.
+   Only ensure vertical scrolling is allowed and horizontal overflow is clipped. */
+html, body {
+  overflow-x: hidden;          /* clip sideways bleed */
+  overflow-y: auto;            /* but always allow vertical scroll */
+  max-width: 100%;
+}
 [data-testid="stAppViewContainer"] {
-  overflow-y: auto !important;
-  height: auto !important;
+  overflow-x: hidden;
+  max-width: 100vw;
 }
-/* Component iframes must never capture page scroll when they don't need to */
-iframe[height="0"] { display: none !important; }
-/* Keep the block container from locking height */
-.block-container { overflow: visible !important; }
-
-/* ── Horizontal overflow fix — nothing should bleed past the viewport ───── */
-html, body, [data-testid="stAppViewContainer"], section[data-testid="stMain"] {
-  overflow-x: hidden !important;
-  max-width: 100vw !important;
+section[data-testid="stMain"] {
+  overflow-y: auto !important; /* the main column scrolls */
 }
+/* Zero-height helper iframes must not reserve space or grab the wheel */
+iframe[height="0"], iframe[height="0px"] { display: none !important; }
 .block-container {
   max-width: 100% !important;
   padding-left: clamp(1rem, 3vw, 3rem) !important;
   padding-right: clamp(1rem, 3vw, 3rem) !important;
+  overflow: visible !important;
 }
-/* Long unbreakable strings (DNA sequences, formulas) must wrap, not overflow */
+/* Long unbreakable strings (DNA sequences, formulas) wrap instead of widening page */
 [data-testid="stMarkdownContainer"] div,
 [data-testid="stMarkdownContainer"] p {
   overflow-wrap: anywhere;
   word-break: break-word;
 }
-/* Tables and wide content get their own scroll, never push the page wide */
+/* Wide tables get their own scroll, never push the page wide */
 [data-testid="stMarkdownContainer"] table { display: block; overflow-x: auto; max-width: 100%; }
+/* Component iframes (3D viewers, cascade) shouldn't capture page wheel events */
+iframe { max-width: 100% !important; }
 
 
 </style>
@@ -12500,12 +12503,54 @@ with tab4:
         # Scorecard
         ptype=g_ptype(pdata) if pdata else "general"; drugg={"kinase":.9,"gpcr":.95,"transcription_factor":.35,"receptor":.8,"general":.5}.get(ptype,.5) if pdata else 0
         n_crit2=sum(1 for v2 in (scored or []) if v2.get("ml_rank")=="CRITICAL"); n_high2=sum(1 for v2 in (scored or []) if v2.get("ml_rank")=="HIGH")
-        priority=min(100,n_crit2*15+n_high2*8+len(scored)*.5+drugg*20)
+        n_path2 = (gi or {}).get("n_pathogenic", 0)
+        # ── Priority score (severity-driven, not variant-count-driven) ──────────
+        # Rationale: a protein's priority should reflect how SEVERE its variants are
+        # and how druggable it is — NOT merely how many variants happen to be catalogued
+        # (ClinVar coverage is uneven and count-heavy genes would otherwise dominate).
+        #   • Genetic severity (max 55): critical/high variants dominate; pathogenic
+        #     burden contributes modestly and saturates fast (count != causality).
+        #   • Druggability (max 25): protein-class tractability
+        #   • Evidence depth (max 8): small capped contribution from total catalogued variants
+        sev_component  = min(55, n_crit2*18 + n_high2*9 + min(12, n_path2*1.5))
+        drug_component = drugg * 25
+        depth_component = min(8, len(scored or []) * 0.2)
+        priority = min(100, sev_component + drug_component + depth_component)
+        # Consistency guard #1: with zero CRITICAL variants, this is not a high-confidence
+        # target on genetics alone — cap below "prioritise" so druggability can't inflate it.
+        if n_crit2 == 0:
+            priority = min(priority, 64)
+        # Consistency guard #2: zero critical AND zero high → weak evidence, hard cap.
+        if n_crit2 == 0 and n_high2 == 0:
+            priority = min(priority, 40)
+        # Verdict label derived from the SAME score so the two never contradict
+        if   priority >= 70: _prio_label, _prio_clr = "PRIORITISE", "#ff2d55"
+        elif priority >= 45: _prio_label, _prio_clr = "INVESTIGATE", "#ff8c42"
+        elif priority >= 25: _prio_label, _prio_clr = "LOW PRIORITY", "#ffd60a"
+        else:                _prio_label, _prio_clr = "DEPRIORITISE", "#3a6080"
         c1e,c2e,c3e,c4e=st.columns(4)
         with c1e: st.markdown(mc(n_crit2,"CRITICAL (ML)","#ff2d55","linear-gradient(90deg,#ff2d55,#ff8080)"),unsafe_allow_html=True)
         with c2e: st.markdown(mc(n_high2,"HIGH (ML)","#ff8c42"),unsafe_allow_html=True)
         with c3e: st.markdown(mc(f"{drugg:.0%}","Druggability est.","#00c896"),unsafe_allow_html=True)
-        with c4e: st.markdown(mc(int(priority),"Priority score / 100","#38bdf8"),unsafe_allow_html=True)
+        with c4e: st.markdown(mc(int(priority),"Priority score / 100",_prio_clr),unsafe_allow_html=True)
+        # Show the verdict + WHY, so a high score can never sit next to "0 critical" unexplained
+        if n_crit2 == 0 and n_high2 == 0:
+            _why_note = " · <b>weak genetic evidence</b> — score reflects druggability/biology, not variant severity"
+        elif n_crit2 == 0:
+            _why_note = " · <b>no critical variants</b> — capped; severity driven by high-impact + pathogenic burden"
+        else:
+            _why_note = ""
+        st.markdown(
+            f"<div style='background:rgba(0,0,0,.15);border:1px solid {_prio_clr}44;border-left:4px solid {_prio_clr};"
+            f"border-radius:8px;padding:.6rem 1rem;margin-top:.5rem;'>"
+            f"<span style='color:{_prio_clr};font-weight:800;font-size:.92rem;'>{_prio_label}</span>"
+            f"<span style='color:var(--text2);font-size:.8rem;margin-left:10px;'>"
+            f"{n_crit2} critical + {n_high2} high-severity variants · {n_path2} confirmed pathogenic · "
+            f"{drugg:.0%} druggability"
+            + _why_note
+            + "</span></div>",
+            unsafe_allow_html=True,
+        )
 
         st.markdown("<hr class='dv'>", unsafe_allow_html=True)
 
