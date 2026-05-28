@@ -3787,17 +3787,46 @@ def estimate_patient_population(diseases: list, cv: dict, gi: dict) -> dict:
     }
     total_prevalence = 0
     matched_diseases = []
+    matched_prevs = []  # collect individual matches, not their raw sum
     for d in diseases[:8]:
         name_l = d.get("name","").lower()
         for key, prev in PREVALENCE_DB.items():
             if key in name_l:
-                total_prevalence += prev
+                matched_prevs.append(prev)
                 matched_diseases.append({"disease": d.get("name",""), "prevalence_per_100k": prev})
                 break
+    # ── Realistic aggregation: a single gene does NOT cause every case of every
+    #    disease it's associated with. Don't just sum — that gives nonsense
+    #    numbers for cancer genes that match many overlapping conditions.
+    #    Approach: take the MAX (largest disease the gene is linked to) and
+    #    add a small contribution (~15%) from each additional matched disease
+    #    to reflect broader phenotype scope without multiplying populations.
+    if matched_prevs:
+        primary = max(matched_prevs)
+        additional = sum(p for p in matched_prevs if p != primary) * 0.15
+        total_prevalence = primary + additional
+    else:
+        total_prevalence = 0
     # World population ~8 billion
     world_pop = 8_000_000_000
     if total_prevalence > 0:
-        estimated_patients = int((total_prevalence / 100_000) * world_pop)
+        raw_patients = int((total_prevalence / 100_000) * world_pop)
+        # Apply genetic-contribution factor — only a small fraction of cases
+        # of a common disease are attributable to any single gene. For rare
+        # Mendelian disorders the factor is ~1 (gene IS the cause); for common
+        # diseases it's much lower. Distinguish by prevalence:
+        if total_prevalence < 5:
+            genetic_factor = 1.0     # rare Mendelian — gene is the cause
+        elif total_prevalence < 50:
+            genetic_factor = 0.5     # rare disease — gene a major contributor
+        elif total_prevalence < 500:
+            genetic_factor = 0.10    # uncommon — gene is one of several causes
+        else:
+            genetic_factor = 0.03    # common disease — gene is ~3% of cases
+        estimated_patients = int(raw_patients * genetic_factor)
+        # Sanity cap: even the biggest single-gene burden (e.g. BRCA1 in breast cancer)
+        # is ~5-15M patients globally; cap at 20M to avoid runaway figures.
+        estimated_patients = min(estimated_patients, 20_000_000)
     else:
         estimated_patients = 0
     n_path = gi.get("n_pathogenic", 0)
@@ -7937,7 +7966,7 @@ with st.sidebar:
     depth=st.selectbox("Depth",["Standard (150 variants)","Deep (400 variants)"],label_visibility="collapsed")
     max_v=150 if "Standard" in depth else 400
     # Build version — bump on each deploy so you can confirm the live app is current
-    st.markdown("<div style='color:#1e3050;font-size:.62rem;text-align:right;margin-top:.3rem;'>build 2026.05.28-l</div>", unsafe_allow_html=True)
+    st.markdown("<div style='color:#1e3050;font-size:.62rem;text-align:right;margin-top:.3rem;'>build 2026.05.28-m</div>", unsafe_allow_html=True)
 
     # Sidebar protein summary
     if st.session_state["pdata"]:
@@ -11635,8 +11664,22 @@ with tab0:
     with sm2: st.markdown(mc(_n_path,f"P/LP variants in ClinVar","#ff2d55","linear-gradient(90deg,#ff2d55,#ff8080)"),unsafe_allow_html=True)
     with sm3: st.markdown(mc(n_crit_s,"High-priority variants (ML)","#ff8c42") if n_crit_s > 0 else mc("0","High-priority variants","#3a6080"),unsafe_allow_html=True)
     with sm4: st.markdown(mc(_pli_str,"gnomAD pLI (LoF intolerance)",_pli_clr),unsafe_allow_html=True)
+    # Diagnostic: if gnomAD fetch failed this session, surface why so we know it's not a code bug
+    _gnomad_err = st.session_state.get("_gnomad_last_error", "")
+    if _gnomad_err and not gnomad_data:
+        st.caption(f"gnomAD fetch detail: {_gnomad_err} — this is a live API issue, not a bug in Protellect. pLI for this protein can be looked up directly at gnomad.broadinstitute.org/gene/" + (gene or ""))
     with sm5: st.markdown(mc(len(drugs_data),"Known targeted drugs","#00c896"),unsafe_allow_html=True)
-    with sm6: st.markdown(mc(f"{patient_data.get('estimated_global_patients',0)//1000}K" if patient_data.get('estimated_global_patients',0)>0 else "Unknown","Est. patients globally","#4a90d9"),unsafe_allow_html=True)
+    with sm6:
+        _pp = patient_data.get('estimated_global_patients',0) if patient_data else 0
+        if _pp <= 0:
+            _pp_str = "Unknown"
+        elif _pp >= 1_000_000:
+            _pp_str = f"{_pp/1_000_000:.1f}M"
+        elif _pp >= 1_000:
+            _pp_str = f"{_pp//1_000}K"
+        else:
+            _pp_str = f"{_pp}"
+        st.markdown(mc(_pp_str, "Est. patients globally", "#4a90d9"), unsafe_allow_html=True)
 
     st.markdown("<hr class='dv'>", unsafe_allow_html=True)
 

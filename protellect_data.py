@@ -902,34 +902,91 @@ def fetch_string_interactions(gene: str, species: int = 9606, limit: int = 10) -
 
 @st.cache_data(show_spinner=False, ttl=3600)
 def fetch_gnomad(gene: str) -> dict:
-    """Fetch constraint + population-stratified allele frequencies from gnomAD v4."""
+    """Fetch constraint + population-stratified allele frequencies from gnomAD v4.
+    Tries the full query first; falls back to constraint-only if the full query 403s."""
+    import time as _t
+    _headers = {"Content-Type":"application/json",
+                "User-Agent":"Mozilla/5.0 (Protellect research tool; +https://protellect.streamlit.app)",
+                "Accept":"application/json"}
+    # ── First try: full query with constraint + variants ────────────────────
+    full_query = """
+    { gene(gene_symbol: "%s", reference_genome: GRCh38) {
+        gnomad_constraint {
+            oe_lof oe_lof_upper oe_lof_lower
+            oe_mis oe_mis_upper oe_mis_lower
+            oe_syn pLI pRec mis_z syn_z
+            lof_hc_lc constraint_flag
+        }
+        variants(dataset: gnomad_r4) {
+            variant_id consequence hgvsc hgvsp
+            genome { ac an af popmax popmax_population
+                populations { id ac an af } }
+            in_silico_predictors { id value flags }
+        }
+    } }
+    """ % gene
+    # ── Fallback query: constraint only (small, almost never throttled) ──────
+    constraint_only_query = """
+    { gene(gene_symbol: "%s", reference_genome: GRCh38) {
+        gnomad_constraint {
+            oe_lof oe_lof_upper oe_lof_lower
+            oe_mis oe_mis_upper oe_mis_lower
+            oe_syn pLI pRec mis_z syn_z
+        }
+    } }
+    """ % gene
+
+    def _post(q, timeout=25):
+        return requests.post("https://gnomad.broadinstitute.org/api",
+                             json={"query": q}, timeout=timeout, headers=_headers)
+
+    data = {}
+    variants_raw = []
+    _fail_reason = ""
     try:
-        # Extended query: constraint + variant-level population AFs
-        query = """
-        { gene(gene_symbol: "%s", reference_genome: GRCh38) {
-            gnomad_constraint {
-                oe_lof oe_lof_upper oe_lof_lower
-                oe_mis oe_mis_upper oe_mis_lower
-                oe_syn pLI pRec mis_z syn_z
-                lof_hc_lc constraint_flag
-            }
-            variants(dataset: gnomad_r4) {
-                variant_id consequence hgvsc hgvsp
-                genome { ac an af popmax popmax_population
-                    populations { id ac an af } }
-                in_silico_predictors { id value flags }
-            }
-        } }
-        """ % gene
-        r = requests.post("https://gnomad.broadinstitute.org/api",
-                         json={"query": query}, timeout=25,
-                         headers={"Content-Type":"application/json",
-                                  "User-Agent":"Mozilla/5.0 (Protellect research tool; +https://protellect.streamlit.app)",
-                                  "Accept":"application/json"})
-        r.raise_for_status()
-        data = r.json().get("data",{}).get("gene",{}) or {}
+        r = _post(full_query, timeout=25)
+        if r.status_code == 200:
+            data = r.json().get("data",{}).get("gene",{}) or {}
+            variants_raw = data.get("variants",[]) or []
+        else:
+            _fail_reason = f"full query HTTP {r.status_code}"
+            # 403 / 429 / 5xx — pause briefly, then retry constraint-only
+            _t.sleep(0.8)
+            r2 = _post(constraint_only_query, timeout=15)
+            if r2.status_code == 200:
+                data = r2.json().get("data",{}).get("gene",{}) or {}
+                variants_raw = []  # constraint-only path skips variants
+                _fail_reason = ""  # recovered
+            else:
+                # Both failed — return empty dict with diagnostic flag
+                try: st.session_state["_gnomad_last_error"] = f"both queries HTTP {r.status_code} / {r2.status_code}"
+                except Exception: pass
+                return {}
+    except Exception as e:
+        _fail_reason = f"exception: {type(e).__name__}"
+        # Last-ditch: try constraint-only one more time
+        try:
+            _t.sleep(0.5)
+            r3 = _post(constraint_only_query, timeout=15)
+            if r3.status_code == 200:
+                data = r3.json().get("data",{}).get("gene",{}) or {}
+                variants_raw = []
+                _fail_reason = ""
+            else:
+                try: st.session_state["_gnomad_last_error"] = f"{_fail_reason}, fallback HTTP {r3.status_code}"
+                except Exception: pass
+                return {}
+        except Exception as e2:
+            try: st.session_state["_gnomad_last_error"] = f"{_fail_reason}, fallback {type(e2).__name__}"
+            except Exception: pass
+            return {}
+
+    if not _fail_reason:
+        try: st.session_state.pop("_gnomad_last_error", None)
+        except Exception: pass
+
+    try:
         constraint = data.get("gnomad_constraint",{}) or {}
-        variants_raw = data.get("variants",[]) or []
         # Distinguish "gene has no constraint data in gnomAD" from "pLI is genuinely 0"
         _has_constraint = constraint.get("pLI") is not None
 
