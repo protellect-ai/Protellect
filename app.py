@@ -860,6 +860,8 @@ def score_variant_ml(
     cons_score = CONS_MAP.get(consequence.lower().replace(" ","_"),
                   CONS_MAP.get(consequence.lower(), 1))
     is_lof = int(cons_score >= 3)
+    pli = 0.5 if pli is None else pli
+    oe_lof_upper = 1.0 if oe_lof_upper is None else oe_lof_upper
     is_lof_intol = int(pli >= 0.9)
     is_constrained = int(oe_lof_upper < 0.35)
     pvs1 = int(is_lof and is_lof_intol)
@@ -3680,7 +3682,7 @@ def generate_excel(gene, pdata, cv, scored, gi, gnomad, string_data,
         ("Pathogenic Variants", gi.get("n_pathogenic",0)),
         ("Total ClinVar Variants", gi.get("n_total",0)),
         ("Variant Density", f"{gi.get('density',0)*100:.2f}%"),
-        ("pLI (LoF intolerance)", gnomad.get("pLI","N/A") if gnomad else "N/A"),
+        ("pLI (LoF intolerance)", (gnomad.get("pLI") if gnomad and gnomad.get("pLI") is not None else "N/A")),
         ("o/e LoF", gnomad.get("oe_lof","N/A") if gnomad else "N/A"),
         ("Known drugs (DGIdb/OT)", len(drugs_data)),
         ("Active clinical trials", len(trials_data)),
@@ -6720,6 +6722,7 @@ def generate_export_report(pdata, cv, gi, gnomad_data, diseases,
         verdict = gi.get("verdict", "")
         seq_len = pdata.get("sequence", {}).get("length", 0) if pdata else 0
         pli_val = gnomad_data.get("pLI", "N/A") if gnomad_data else "N/A"
+        if pli_val is None: pli_val = "N/A"
         oe_lof  = gnomad_data.get("oe_lof_upper", "N/A") if gnomad_data else "N/A"
         mis_z   = gnomad_data.get("mis_z", "N/A") if gnomad_data else "N/A"
         L += [
@@ -12813,7 +12816,7 @@ with tab4:
             unsafe_allow_html=True,
         )
 
-        pli_v   = gnomad_data.get("pLI",0) if gnomad_data else 0
+        pli_v   = (gnomad_data.get("pLI") or 0) if gnomad_data else 0
         n_lof_v = sum(1 for v in scored if any(k in v.get("variant_name","").lower() for k in ["del","ter","fs","stop","nonsense"]) and v.get("score",0)>=3)
         top_crit_hyp = next((v for v in scored if v.get("ml_rank")=="CRITICAL"), {})
         crit_vname   = top_crit_hyp.get("variant_name","top variant")[:30]
