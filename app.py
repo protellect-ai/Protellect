@@ -6686,149 +6686,41 @@ def render_molbio_workspace():
 # the developer's shared key to every visitor of a public Streamlit app.
 # The popup will gracefully degrade to a setup message when no key is set.
 _popup_api_key = st.session_state.get("anthropic_key", "") or ""
-_popup_key_js  = json.dumps(_popup_api_key)
-st.markdown(f"<script>window.PROTO_API_KEY = {_popup_key_js};</script>", unsafe_allow_html=True)
-st.markdown("""
-<style>
-#proto-chat-btn {
-    position: fixed; bottom: 24px; right: 24px; z-index: 9999;
-    width: 52px; height: 52px; border-radius: 50%;
-    background: linear-gradient(135deg, #38bdf8, #6478ff);
-    border: none; cursor: pointer;
-    box-shadow: 0 4px 20px rgba(0,212,232,.35);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.3rem; transition: transform .2s, box-shadow .2s;
-}
-#proto-chat-btn:hover { transform: scale(1.1); box-shadow: 0 6px 28px rgba(0,212,232,.5); }
-#proto-chat-panel {
-    position: fixed; bottom: 88px; right: 24px; z-index: 9998;
-    width: 340px; max-height: 480px;
-    background: #0d1219; border: 1px solid #1e2d3f;
-    border-radius: 14px; box-shadow: 0 8px 40px rgba(0,0,0,.6);
-    display: none; flex-direction: column; overflow: hidden;
-    animation: slideUp .2s ease;
-}
-@keyframes slideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-#proto-chat-panel.open { display: flex; }
-#proto-chat-header {
-    background: linear-gradient(135deg,#080c12,#0d1219);
-    border-bottom: 1px solid #1e2d3f;
-    padding: 12px 16px; display: flex; align-items: center;
-    justify-content: space-between;
-}
-#proto-chat-header span { color: #dce8f5; font-weight: 600; font-size: .88rem;
-    font-family: DM Sans,sans-serif; }
-#proto-chat-close { background:none; border:none; color:#4a6478; cursor:pointer;
-    font-size:1.1rem; padding:0; line-height:1; }
-#proto-chat-close:hover { color:#dce8f5; }
-#proto-chat-messages {
-    flex: 1; overflow-y: auto; padding: 12px 14px;
-    display: flex; flex-direction: column; gap: 8px;
-}
-#proto-chat-messages::-webkit-scrollbar { width: 4px; }
-#proto-chat-messages::-webkit-scrollbar-track { background: transparent; }
-#proto-chat-messages::-webkit-scrollbar-thumb { background: #1e2d3f; border-radius:4px; }
-.pchat-msg { padding: 8px 12px; border-radius: 10px; font-size: .8rem;
-    line-height: 1.5; font-family: DM Sans,sans-serif; max-width: 90%; }
-.pchat-msg.bot { background: #141b25; color: #8da8bf; align-self: flex-start; }
-.pchat-msg.user { background: rgba(0,212,232,.1); color: #38bdf8;
-    border: 1px solid rgba(0,212,232,.2); align-self: flex-end; }
-#proto-chat-footer { border-top: 1px solid #1e2d3f; padding: 10px 12px;
-    display: flex; gap: 8px; }
-#proto-chat-input { flex: 1; background: #080c12; border: 1px solid #1e2d3f;
-    border-radius: 8px; color: #dce8f5; padding: 8px 12px;
-    font-size: .8rem; font-family: DM Sans,sans-serif; outline: none; }
-#proto-chat-input:focus { border-color: #38bdf8; }
-#proto-chat-send { background: rgba(0,212,232,.1); border: 1px solid rgba(0,212,232,.3);
-    color: #38bdf8; border-radius: 7px; padding: 7px 12px; cursor: pointer;
-    font-size: .8rem; font-weight: 600; white-space: nowrap; }
-#proto-chat-send:hover { background: rgba(0,212,232,.2); }
-</style>
 
-<button id="proto-chat-btn" onclick="toggleChat()" title="Lab Assistant"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></button>
-
-<div id="proto-chat-panel">
-  <div id="proto-chat-header">
-    <span style="display:inline-flex;align-items:center;gap:8px;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3v6l-3.5 7a2 2 0 0 0 1.8 2.9h9.4a2 2 0 0 0 1.8-2.9L15 9V3"/><path d="M8 3h8"/></svg>Lab Assistant</span>
-    <button id="proto-chat-close" onclick="toggleChat()">✕</button>
-  </div>
-  <div id="proto-chat-messages">
-    <div class="pchat-msg bot">Hi! I can configure your workspace — tell me about your lab, the proteins you study, or what you want to analyse.</div>
-  </div>
-  <div id="proto-chat-footer">
-    <input id="proto-chat-input" placeholder="e.g. Focus on SCN1A epilepsy..." 
-           onkeydown="if(event.key==='Enter')sendChat()" />
-    <button id="proto-chat-send" onclick="sendChat()">Send</button>
-  </div>
-</div>
-
-<script>
-function toggleChat() {
-    const p = document.getElementById('proto-chat-panel');
-    p.classList.toggle('open');
-    if (p.classList.contains('open')) {
-        document.getElementById('proto-chat-input').focus();
+# ── Floating assistant indicator (bottom-right) ────────────────────────────
+# The real chatbot lives in the sidebar (Lab Setup Assistant). This button is a
+# visible reminder that the chat exists. Clicking it expands the sidebar.
+st.markdown(
+    """<style>
+    #proto-chat-fab {
+        position: fixed; bottom: 22px; right: 22px; z-index: 9999;
+        width: 56px; height: 56px; border-radius: 50%;
+        background: linear-gradient(135deg, #38bdf8, #6478ff);
+        border: 2px solid rgba(255,255,255,.15);
+        box-shadow: 0 6px 24px rgba(56,189,248,.5);
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; transition: transform .2s, box-shadow .2s;
     }
-}
-
-function sendChat() {
-    const inp = document.getElementById('proto-chat-input');
-    const msgs = document.getElementById('proto-chat-messages');
-    const text = inp.value.trim();
-    if (!text) return;
-    inp.value = '';
-
-    // Add user message
-    const um = document.createElement('div');
-    um.className = 'pchat-msg user';
-    um.textContent = text;
-    msgs.appendChild(um);
-    msgs.scrollTop = msgs.scrollHeight;
-
-    // Add bot thinking
-    const bm = document.createElement('div');
-    bm.className = 'pchat-msg bot';
-    bm.textContent = '...';
-    msgs.appendChild(bm);
-    msgs.scrollTop = msgs.scrollHeight;
-
-    // Call Anthropic API (uses key injected from session_state by Python)
-    const apiKey = (typeof window !== 'undefined' && window.PROTO_API_KEY) ? window.PROTO_API_KEY : '';
-    if (!apiKey) {
-        bm.textContent = 'AI assistant unavailable — no API key configured. Open Settings in the sidebar and paste your Anthropic API key to enable the popup chat. (The main Lab Setup Assistant in the sidebar uses your server-side key and works without setup.)';
-        msgs.scrollTop = msgs.scrollHeight;
-        return;
+    #proto-chat-fab:hover { transform: scale(1.08); box-shadow: 0 8px 32px rgba(56,189,248,.7); }
+    #proto-chat-fab-label {
+        position: fixed; bottom: 22px; right: 88px; z-index: 9999;
+        background: #0a1530; color: #e6edf7;
+        padding: 10px 14px; border-radius: 24px; font-size: .75rem;
+        border: 1px solid rgba(56,189,248,.35);
+        box-shadow: 0 4px 14px rgba(0,0,0,.4);
+        font-family: 'Inter','DM Sans',sans-serif;
+        pointer-events: none; opacity: 0; transition: opacity .25s;
+        white-space: nowrap;
     }
-    fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': apiKey,
-            'anthropic-version': '2023-06-01',
-            'anthropic-dangerous-direct-browser-access': 'true'
-        },
-        body: JSON.stringify({
-            model: 'claude-sonnet-4-20250514',
-            max_tokens: 300,
-            system: 'You are the Protellect Lab Assistant. You help biomedical researchers configure their workspace and answer questions about protein analysis, ClinVar variants, gnomAD constraint scores, and experimental design. Be concise — 2-3 sentences max. If the user describes their lab, tell them what domain/settings to use.',
-            messages: [{ role: 'user', content: text }]
-        })
-    })
-    .then(r => r.json())
-    .then(d => {
-        if (d.error) {
-            bm.textContent = 'API error: ' + (d.error.message || 'unknown').slice(0, 150);
-        } else {
-            bm.textContent = d.content?.[0]?.text || 'Sorry, I could not get a response.';
-        }
-        msgs.scrollTop = msgs.scrollHeight;
-    })
-    .catch((err) => {
-        bm.textContent = 'Network error: ' + (err.message || 'check your connection').slice(0, 100);
-    });
-}
-</script>
-""", unsafe_allow_html=True)
+    #proto-chat-fab:hover + #proto-chat-fab-label { opacity: 1; }
+    </style>
+    <a id="proto-chat-fab" href="#" title="Lab Assistant is in the sidebar - click here to open if collapsed" onclick="document.querySelector('[data-testid=stSidebarCollapseButton]')?.click();return false;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
+    </a>
+    <div id="proto-chat-fab-label">Lab Assistant is in the sidebar &rarr;</div>
+    """,
+    unsafe_allow_html=True,
+)
 
 # ── Authentication gate ──────────────────────────────────────────────────
 # Show login page if not authenticated
@@ -8517,8 +8409,8 @@ with st.sidebar:
     # ── Lab chatbot button ──────────────────────────────────────────────────
     try:
         render_lab_chatbot()
-    except Exception:
-        pass
+    except Exception as _e:
+        st.sidebar.error(f"Chatbot init error: {str(_e)[:120]}")
 
     # ── Plan display ───────────────────────────────────────────────────────
     _plan_sb = st.session_state.get("auth_plan","pro")
@@ -9015,19 +8907,38 @@ if search and query and query!=st.session_state["last"]:
     for _clr_key in ["pdata","cv","gene","uid","gi","gnomad","string","trials",
                       "drugs","abstracts","org","ai_result","ot","am","isoforms",
                       "hotspots","patients","excel_bytes","domain_ctx","acmg_auto",
-                      "conflicts","ml_result","clingen","_search_disambiguation"]:
-        st.session_state[_clr_key] = None if _clr_key not in ("string","trials","drugs","abstracts","isoforms","hotspots","scored") else []
+                      "conflicts","ml_result","clingen","_search_disambiguation",
+                      "reg_paths","analogs","roi_data","papers","pdb","analysis_trace"]:
+        st.session_state[_clr_key] = None if _clr_key not in ("string","trials","drugs","abstracts","isoforms","hotspots","scored","papers","reg_paths","analogs","roi_data") else ([] if _clr_key != "reg_paths" else {})
     st.session_state["scored"] = []
+    # Clear any per-protein workspace chat history so questions about prior proteins don't leak
+    for _ws_k in [k for k in list(st.session_state.keys()) if isinstance(k,str) and k.startswith("ws_chat_") and k != "ws_active_chat_key"]:
+        try: del st.session_state[_ws_k]
+        except Exception: pass
     st.session_state["last"] = query
     # Clear cache so stale results never persist between searches
     fetch_uniprot.clear()
 
     # ── LIVE SCAN TRACE — dropdown showing every API call as it happens ─────
+    # Prominent banner above the spinner so it's visible from the start
+    st.markdown(
+        f"<div style='background:linear-gradient(135deg,#050d24,#0a1530);"
+        f"border:1px solid rgba(56,189,248,.3);border-left:4px solid #38bdf8;"
+        f"border-radius:10px;padding:.7rem 1.1rem;margin:.6rem 0;'>"
+        f"<div style='color:#38bdf8;font-weight:700;font-size:.85rem;margin-bottom:2px;'>"
+        f"Analysing <code style='color:#7dd3fc;background:rgba(56,189,248,.1);padding:1px 6px;border-radius:4px;'>{query}</code>"
+        f"</div>"
+        f"<div style='color:#94a3b8;font-size:.72rem;'>Live trace of all API calls below — expand to see exactly which databases are being queried.</div></div>",
+        unsafe_allow_html=True,
+    )
+
     _scan_steps = []
     _scan_box = st.empty()
-    def _scan(label, code_hint, status="run"):
-        """Append a step to the live trace and re-render the dropdown."""
-        _scan_steps.append({"label":label,"code":code_hint,"status":status})
+    def _render_scan():
+        """Re-render the scan trace dropdown from current _scan_steps state."""
+        if not _scan_steps:
+            _scan_box.empty()
+            return
         _rows = []
         for s in _scan_steps:
             if s["status"] == "run":
@@ -9046,23 +8957,29 @@ if search and query and query!=st.session_state["last"]:
                 f"<code style='color:var(--text3);font-size:.65rem;font-family:DM Mono,monospace;display:block;margin-top:1px;'>{s['code']}</code>"
                 f"</div>"
             )
+        _n_done = sum(1 for s in _scan_steps if s["status"]=="ok")
         _scan_box.markdown(
             f"<details open style='background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.4rem .8rem;margin:.4rem 0;'>"
             f"<summary style='color:var(--text);font-weight:700;font-size:.84rem;cursor:pointer;padding:6px 0;'>"
-            f"Analysis trace · {len(_scan_steps)} steps · {sum(1 for s in _scan_steps if s['status']=='ok')} complete</summary>"
+            f"Analysis trace · {len(_scan_steps)} steps · {_n_done} complete</summary>"
             f"<div style='margin-top:.5rem;'>" + "".join(_rows) + "</div></details>",
             unsafe_allow_html=True,
         )
 
+    def _scan(label, code_hint, status="run"):
+        """Append a step to the live trace and re-render."""
+        _scan_steps.append({"label":label,"code":code_hint,"status":status})
+        _render_scan()
+
     def _scan_done(label, code_hint, n_results=None):
+        """Mark a previously-started step as complete."""
         for s in _scan_steps:
             if s["label"] == label and s["status"] == "run":
                 s["status"] = "ok"
                 if n_results is not None:
                     s["code"] = code_hint + f"  → {n_results} results"
                 break
-        _scan(_scan_steps[-1]["label"], _scan_steps[-1]["code"], _scan_steps[-1]["status"])  # re-render
-        _scan_steps.pop()  # pop the duplicate we just appended
+        _render_scan()
 
     with st.spinner(" Fetching UniProt · ClinVar · AlphaFold · PubMed…"):
         try:
@@ -11478,6 +11395,101 @@ def render_lab_chatbot():
     # The floating popup makes a browser-side call to Anthropic and needs
     # a key passed in JS. The sidebar Lab Setup Assistant above uses the
     # server-side key (st.secrets or env) and works without this input.
+    # ── Workspace Chat (always-visible, current-protein aware) ───────────
+    _ws_gene = st.session_state.get("gene","")
+    _ws_chat_title = f"Workspace Chat · {_ws_gene}" if _ws_gene else "Workspace Chat"
+    with st.sidebar.expander(_ws_chat_title, expanded=True):
+        # Init per-protein chat history; clear when protein changes
+        _chat_key = f"ws_chat_{_ws_gene or '_none_'}"
+        if "ws_active_chat_key" not in st.session_state:
+            st.session_state["ws_active_chat_key"] = _chat_key
+        # When the user searches a new protein, reset chat history so it doesn't pollute new context
+        if st.session_state["ws_active_chat_key"] != _chat_key:
+            st.session_state["ws_active_chat_key"] = _chat_key
+            st.session_state[_chat_key] = []
+        if _chat_key not in st.session_state:
+            st.session_state[_chat_key] = []
+        _hist = st.session_state[_chat_key]
+
+        # Status line
+        _ak_ok = bool(_get_anthropic_key())
+        _gk_ok = bool(_get_gemini_key())
+        if _ak_ok or _gk_ok:
+            _provider_lbl = "Claude" if (st.session_state.get("ai_provider","claude") == "claude" and _ak_ok) else "Gemini"
+            st.caption(f"Powered by {_provider_lbl}. Answers grounded in the currently-loaded protein.")
+        else:
+            st.caption("Running in offline mode (no API key). Set ANTHROPIC_API_KEY or GEMINI_API_KEY in Streamlit secrets for full AI.")
+
+        if not _ws_gene:
+            st.info("Search a protein in the sidebar above first — then ask anything about it here.")
+        else:
+            # Render history (last 6 messages)
+            for _m in _hist[-6:]:
+                _role = _m.get("role")
+                _txt = _m.get("content","")
+                if _role == "user":
+                    st.markdown(
+                        f"<div style='background:rgba(56,189,248,.08);border-left:3px solid #38bdf8;"
+                        f"border-radius:6px;padding:6px 9px;margin:4px 0;color:#e6edf7;font-size:.78rem;line-height:1.5;'>"
+                        f"<b style='color:#7dd3fc;font-size:.66rem;text-transform:uppercase;letter-spacing:.4px;'>You</b><br>{_txt}</div>",
+                        unsafe_allow_html=True,
+                    )
+                else:
+                    st.markdown(
+                        f"<div style='background:var(--surface);border-left:3px solid #34d399;"
+                        f"border-radius:6px;padding:6px 9px;margin:4px 0;color:#e6edf7;font-size:.78rem;line-height:1.5;'>"
+                        f"<b style='color:#34d399;font-size:.66rem;text-transform:uppercase;letter-spacing:.4px;'>Protellect</b><br>{_txt[:900]}</div>",
+                        unsafe_allow_html=True,
+                    )
+
+            # Suggested questions (only when history is empty)
+            if not _hist:
+                st.markdown(
+                    f"<div style='color:var(--text3);font-size:.66rem;text-transform:uppercase;"
+                    f"letter-spacing:.5px;margin:.4rem 0 .25rem;'>Suggested questions</div>",
+                    unsafe_allow_html=True,
+                )
+                _sq = [
+                    f"Summarize the genetic evidence for {_ws_gene}",
+                    f"Which variants in {_ws_gene} matter most clinically?",
+                    f"Is {_ws_gene} druggable? What compounds exist?",
+                    f"What experiments should I run next on {_ws_gene}?",
+                ]
+                for i, q in enumerate(_sq):
+                    if st.button(q, key=f"ws_chat_sug_{i}", use_container_width=True):
+                        _hist.append({"role":"user","content":q})
+                        st.session_state[_chat_key] = _hist
+                        with st.spinner("Thinking..."):
+                            _reply = call_claude_api(_hist[-6:], system_prompt=_get_system_prompt())
+                        _hist.append({"role":"assistant","content":_reply})
+                        st.session_state[_chat_key] = _hist
+                        st.rerun()
+
+            # Input + send
+            _ws_input = st.text_area(
+                "Ask anything about " + (_ws_gene or "this protein"),
+                value="",
+                key=f"ws_chat_input_{_chat_key}",
+                height=70,
+                placeholder=f"e.g. What's the pathogenic variant burden in {_ws_gene}?",
+            )
+            colA, colB = st.columns([3,1])
+            with colA:
+                if st.button("Send", key=f"ws_chat_send_{_chat_key}", type="primary", use_container_width=True):
+                    _txt = (_ws_input or "").strip()
+                    if _txt:
+                        _hist.append({"role":"user","content":_txt})
+                        st.session_state[_chat_key] = _hist
+                        with st.spinner("Thinking..."):
+                            _reply = call_claude_api(_hist[-6:], system_prompt=_get_system_prompt())
+                        _hist.append({"role":"assistant","content":_reply})
+                        st.session_state[_chat_key] = _hist
+                        st.rerun()
+            with colB:
+                if st.button("Clear", key=f"ws_chat_clr_{_chat_key}", use_container_width=True):
+                    st.session_state[_chat_key] = []
+                    st.rerun()
+
     # ── AI Provider Selection ──────────────────────────────────────────
     with st.sidebar.expander("AI Provider", expanded=False):
         st.caption("Choose which AI powers the workspace assistant. Both providers have free tiers.")
@@ -13359,7 +13371,11 @@ with tab4:
             ("","Protein degrader (PROTAC)","$$$$","6–12 mo","Destroy hyperactive mutant proteins that cannot be inhibited by conventional drugs.",["Design PROTAC molecule: target-binding warhead + cell-recycling-machinery recruiter.","Synthesise 10–20 candidates.","Measure protein destruction efficiency (DC₅₀) in cells.","Confirm by western blot and mass-spectrometry.","Full proteome check — ensure only target is degraded."],"Hyperactive (gain-of-function) mutations that conventional drugs cannot block.","Loss-of-function mutations — destroying remaining protein makes disease worse.","Selective protein degrader DC₅₀ <100 nM."),
         ]
         for icon3,name3,cost3,timeline3,purpose3,protocol3,focus3,neglect3,outcome3 in EXPS:
-            clr_e,bg_e=COST_MAP.get(cost3,("#3a6080","rgba(58,96,128,.08)"))
+            _cm_entry = COST_MAP.get(cost3,("#3a6080","rgba(58,96,128,.08)","—"))
+            # Defensive: pad short tuples (in case any deployment still has the 2-tuple version)
+            if len(_cm_entry) < 3:
+                _cm_entry = tuple(_cm_entry) + ("—",) * (3 - len(_cm_entry))
+            clr_e, bg_e, _ = _cm_entry[0], _cm_entry[1], _cm_entry[2]
             with st.expander(f"{icon3} {name3}  ·  {cost3}  ·  ⏱ {timeline3}"):
                 c_l,c_r=st.columns([3,2])
                 with c_l:
