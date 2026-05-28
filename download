@@ -1,0 +1,35 @@
+# Secrets — NEVER commit
+.streamlit/secrets.toml
+secrets.toml
+*.env
+.env
+
+# Dev artifacts (these should never have been committed)
+fix_github.py
+fix_github.html
+Push to Github
+push_to_github*
+*.token
+*_token*
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.ipynb_checkpoints/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Data / outputs
+*.tmp
+/tmp/
+uploads/
+outputs/

@@ -1,103 +1,88 @@
-# 🔬 Protellect — Protein Intelligence Platform
+# Protellect
 
-The most powerful protein triage tool in biology.
-Genetics-first · Reduces cost · Saves time · Improves outcomes.
+Biomedical research copilot. Enter a protein name and get a complete, paper-cited
+target dossier — integrating genetic, structural, and clinical evidence from 17
+public databases into a single AI-assisted workspace.
+
+**Live app:** https://protellect-wkyps2qupri6aqhstt48wd.streamlit.app/
 
 ---
 
-## Quick Start
+## What it does
 
-```bash
-pip install -r requirements.txt
-streamlit run app.py
+Protellect collapses the manual, multi-database workflow researchers use to evaluate
+a protein target into a single search. For any gene or UniProt accession it returns:
+
+- A pursue / proceed / deprioritize verdict grounded in ClinVar, gnomAD, and AlphaMissense
+- Associated diseases and pathogenic variant burden
+- AlphaFold 3D structure with disease variants overlaid
+- Druggability assessment (OpenTargets tractability, DGIdb drugs, GPCR binding)
+- ROI-ranked follow-up experiment roadmap
+- An AI copilot grounded in the loaded protein's data, with literature citations
+
+Every methodological claim links to a peer-reviewed reference.
+
+## Integrated data sources
+
+UniProt · ClinVar · gnomAD · AlphaFold · AlphaMissense · STRING · OpenTargets ·
+DGIdb · ClinGen · ClinicalTrials.gov · GPCRdb · PubMed · Semantic Scholar ·
+OpenAlex · CrossRef
+
+## Tech stack
+
+- **Frontend/runtime:** Streamlit, deployed on Streamlit Cloud
+- **Variant scoring:** transparent weighted formula (see VALIDATION.md); optional trained model pack loads if present
+- **AI providers:** Anthropic Claude and Google Gemini (configured via secrets)
+
+## Project structure
+
+```
+app.py                    Main application — UI flow, tabs, auth, workspace logic
+protellect_data.py        All external API fetchers (UniProt, ClinVar, gnomAD, …)
+protellect_citations.py   Peer-reviewed citation library + cite() helper
+protellect_icons.py       SVG icon system
+requirements.txt          Python dependencies
 ```
 
-Opens at **http://localhost:8501**
+The data, citation, and icon layers are imported by `app.py`. They are
+side-effect-free (no Streamlit calls at import time), so `set_page_config`
+remains the first Streamlit command as required.
 
----
+## Configuration
 
-## Login
+All credentials and API keys are read from Streamlit secrets — never hardcoded.
+See [DEPLOY.md](DEPLOY.md) for full deployment instructions.
 
-| Email | Password | Access |
-|-------|----------|--------|
-| `protellect@gmail.com` | `dev@protellect` | Enterprise (unlimited) |
-| `demo@protellect.com` | `protellect2024` | Free (5 searches) |
+Required secrets (Streamlit Cloud → Settings → Secrets):
 
----
+```toml
+ANTHROPIC_API_KEY = "sk-ant-..."     # optional — enables Claude
+GEMINI_API_KEY    = "AIza..."        # optional — enables Gemini
 
-## Research Domains
+[credentials]
+"you@example.com" = "your-password"  # app login accounts
 
-Select your domain on the landing page — every analysis is tailored:
-
-| Domain | Specialisation |
-|--------|---------------|
-| 🧠 Neuroscience | BBB penetrance, iPSC-neurons, synaptic proteins, ion channels |
-| 🎗 Cancer Biology | Somatic/germline split, metastasis, organoids, spatial transcriptomics |
-| 💊 Pharmaceuticals | GPCR pipeline, Filamin Ser2152-P assay, HTS, ADMET |
-| 🦠 Microbiome | Annotation engine, taxonomy KB, host-microbe interactions, BGC |
-| ⚛️ Molecular Biology | Kinase assays, AP-MS interactome, HDX-MS, cryo-EM |
-
----
-
-## Tabs
-
-| Tab | Contents |
-|-----|----------|
-| 📋 Summary | Verdict banner, metrics, disease associations, top experiments |
-| 🔴 Triage | Variant landscape, genomic integrity score, condition mapping |
-| 📋 Case Study | Mutation cascade animation, clinical interpretation |
-| 🔬 Explorer | 3D structure, domain expansion cards, AlphaMissense landscape |
-| 🧪 Experiments | ROI-ranked experiment cards — unique per protein type, no generic fallbacks |
-| 🤖 AI Report | Claude synthesis with live web search (requires API key) |
-| 🗂️ Workspace | Search history, Excel export (9 sheets) |
-| 🔗 Disease Link | Disease → proteins mapping |
-| ⚗️ Chemistry | Hydrophobicity profile, amino acid composition, phosphorylation map, GPCR animation, electrostatic surface, **interactive chemical backbone renderer** |
-| 💊 Pharma | Druggability atlas, per-domain drug scores, disease prevention strategies |
-
----
-
-## Data Sources (all live, cached)
-
-UniProt · ClinVar · AlphaFold EBI · AlphaMissense · gnomAD · STRING-DB ·
-OpenTargets · GTEx · ClinicalTrials.gov · PubMed · DGIdb · Anthropic Claude API
-
----
-
-## Key Science
-
-**Genomic Integrity Score** — ClinVar P/LP variant density per 100 aa. Primary triage signal.
-
-**Filamin Ser2152-P IP Assay** — GPCR agonist → H8 dislodges → PKA phosphorylates
-Ser2152. More receptor-proximal than cAMP/IP3/β-arrestin. FLNA only (not B/C).
-PMID: 26124276.
-
-**AlphaMissense threshold** — 0.564 pathogenic (configurable, default 0.70).
-
-**Tier 1 variant criteria** — ClinVar ≥4 stars + AlphaMissense ≥0.70 + gnomAD AF <0.001% + pLDDT ≥70.
-
----
-
-## Deploy to Streamlit Cloud
-
-1. Push to GitHub: `github.com/protellect-ai/Protellect`
-2. Go to [streamlit.io/cloud](https://streamlit.io/cloud)
-3. Connect repo · Set main file: `app.py`
-4. Deploy
-
-**CRITICAL**: Upload `app.py` (starts with `from __future__ import annotations`)
-NOT `config.toml` (starts with `[theme]`). These are different files.
-
----
-
-## Fix GitHub if app.py is wrong
-
-```bash
-cd Protellect_Final
-python3 fix_github.py ghp_YOUR_TOKEN_HERE
+[credential_plans]
+"you@example.com" = "enterprise"     # free | pro | enterprise
 ```
 
-Get token: github.com/settings/tokens → New token (classic) → tick `repo` → Generate
+If no credentials are configured, the app falls back to a single free-tier demo
+account and guest access.
 
----
+## Validation
 
-*Protellect — Built for researchers who want to spend money on proteins that matter.*
+The variant-scoring model and the genomic-integrity verdict are evaluated against
+held-out ClinVar classifications. See [VALIDATION.md](VALIDATION.md) for methodology,
+baselines, and metrics.
+
+## Status
+
+Private beta. For research use only — not a clinical diagnostic device.
+
+## License
+
+See [LICENSE](LICENSE).
+
+## Contact
+
+protellect@gmail.com

@@ -1,57 +1,53 @@
-# DEPLOYMENT INSTRUCTIONS
+# Deploying Protellect
 
-## The Problem
-You're getting an error showing "[theme]" on line 1 of app.py. This means Streamlit Cloud is somehow reading the wrong file or the repository structure is incorrect.
+## On Streamlit Cloud (recommended)
 
-## SOLUTION: Test with this minimal version first
-
-### Step 1: Deploy This Test Version
-
-**Option A: GitHub (Recommended)**
-1. Create a NEW GitHub repository called `protellect-test`
-2. Upload ONLY these 2 files to the ROOT of the repo:
+1. Push these files to your GitHub repo root:
    - `app.py`
+   - `protellect_data.py`
+   - `protellect_citations.py`
+   - `protellect_icons.py`
    - `requirements.txt`
-3. Go to https://share.streamlit.io
-4. Click "New app"
-5. Select your `protellect-test` repository
-6. Main file path: `app.py`
-7. Click "Deploy"
 
-**Option B: Direct Upload**
-1. Go to https://share.streamlit.io
-2. Click "New app" → "Upload from zip"
-3. Upload the protellect_test.zip file
-4. Click "Deploy"
+2. At https://share.streamlit.io connect the repo and set the entry point to `app.py`.
 
-### Step 2: Verify It Works
-If you see "If you see this message, the app deployed successfully!" then Streamlit Cloud is working.
+3. In **Manage app → Settings → Secrets**, add:
 
-### Step 3: Diagnose The Issue
-If this MINIMAL version works but the full version doesn't, the problem is:
-- File too large
-- Too many dependencies
-- Or a specific line of code causing issues
+   ```toml
+   ANTHROPIC_API_KEY = "sk-ant-api03-..."   # optional, enables Claude chat
+   GEMINI_API_KEY    = "AIza..."            # optional, enables Gemini chat
 
-### Step 4: Full App Deployment
-Once the test works, I'll provide the full app with all features.
+   [credentials]
+   "you@example.com" = "your-strong-password"
 
-## Common Causes of "[theme]" Error
+   [credential_plans]
+   "you@example.com" = "enterprise"          # free | pro | enterprise
+   ```
 
-1. **Wrong repo structure** - The .streamlit folder might be in the wrong place
-2. **File naming** - Streamlit might be reading config.toml instead of app.py
-3. **Encoding issue** - Some character in the file is confusing Python
-4. **Python version** - Streamlit Cloud might be using Python 3.9 which has issues
+4. The app reboots automatically when secrets are saved.
 
-## Troubleshooting Questions
+## Important notes
 
-Please answer these so I can help:
+- **`set_page_config` must stay first.** The three helper modules are imported
+  before it, but they make no Streamlit calls at import time, so this is safe.
+- **No credentials in code.** All login accounts come from `[credentials]` in
+  secrets. If none are set, the app falls back to one free-tier demo account
+  plus guest access.
+- **API keys are optional.** Without an AI key, the workspace chat uses a
+  rule-based offline fallback. All 17 data-source integrations work without any
+  key (they query public APIs).
+- **File size.** `app.py` is large. If the GitHub web editor refuses to display
+  it, push via git on the command line instead:
 
-1. Are you uploading a ZIP or using GitHub?
-2. If GitHub: What's your repository URL?
-3. If GitHub: Run `ls -la` in your repo root - what files do you see?
-4. What exact error message do you see NOW with this test version?
+  ```bash
+  git add app.py protellect_data.py protellect_citations.py protellect_icons.py requirements.txt
+  git commit -m "Modular split"
+  git push
+  ```
 
----
+## Local development
 
-Once this test works, we'll add the full Protellect functionality back in steps.
+```bash
+pip install -r requirements.txt
+streamlit run app.py
+```
