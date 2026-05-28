@@ -191,7 +191,34 @@ def decrement_search():
     pass
 
 
-st.set_page_config(page_title="Protellect", page_icon="",
+import base64 as _b64_pre
+import io as _io_pre
+try:
+    from PIL import Image as _PIL_pre
+except Exception:
+    _PIL_pre = None
+
+# Logo for favicon — actual full base64 lives at LOGO_B64 below; we need a
+# minimal copy here because set_page_config MUST be the first Streamlit call.
+# We import the full base64 string by re-reading this file's source.
+_PAGE_ICON = "🧬"  # fallback emoji
+try:
+    if _PIL_pre is not None:
+        # Pull LOGO_B64 from the source file itself (it's defined later in this file).
+        import os as _os_pre
+        _this_file = __file__ if "__file__" in dir() else None
+        if _this_file and _os_pre.path.exists(_this_file):
+            with open(_this_file, "r", encoding="utf-8", errors="ignore") as _fh:
+                _src = _fh.read()
+            import re as _re_pre
+            _m_logo = _re_pre.search(r'^LOGO_B64\s*=\s*"([^"]+)"', _src, _re_pre.MULTILINE)
+            if _m_logo:
+                _bytes = _b64_pre.b64decode(_m_logo.group(1))
+                _PAGE_ICON = _PIL_pre.open(_io_pre.BytesIO(_bytes))
+except Exception:
+    _PAGE_ICON = "🧬"
+
+st.set_page_config(page_title="Protellect", page_icon=_PAGE_ICON,
                    layout="wide", initial_sidebar_state="expanded")
 
 LOGO_B64 = "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"
@@ -6679,6 +6706,105 @@ def render_molbio_workspace():
             st.markdown(f"<div style='background:#020617;border:1px solid #f9731622;border-radius:8px;padding:7px 10px;margin:3px 0;'><div style='color:#fb923c;font-size:.72rem;font-weight:700;'>{step}</div><div style='color:#3a6080;font-size:.7rem;line-height:1.5;margin-top:2px;'>{sdesc}</div></div>", unsafe_allow_html=True)
 
 
+def render_workspace_chat():
+    """Always-visible per-protein chat in the sidebar."""
+    # ── Workspace Chat (always-visible, current-protein aware) ───────────
+    _ws_gene = st.session_state.get("gene","")
+    _ws_chat_title = f"Workspace Chat · {_ws_gene}" if _ws_gene else "Workspace Chat"
+    with st.sidebar.expander(_ws_chat_title, expanded=True):
+        # Init per-protein chat history; clear when protein changes
+        _chat_key = f"ws_chat_{_ws_gene or '_none_'}"
+        if "ws_active_chat_key" not in st.session_state:
+            st.session_state["ws_active_chat_key"] = _chat_key
+        # When the user searches a new protein, reset chat history so it doesn't pollute new context
+        if st.session_state["ws_active_chat_key"] != _chat_key:
+            st.session_state["ws_active_chat_key"] = _chat_key
+            st.session_state[_chat_key] = []
+        if _chat_key not in st.session_state:
+            st.session_state[_chat_key] = []
+        _hist = st.session_state[_chat_key]
+
+        # Status line
+        _ak_ok = bool(_get_anthropic_key())
+        _gk_ok = bool(_get_gemini_key())
+        if _ak_ok or _gk_ok:
+            _provider_lbl = "Claude" if (st.session_state.get("ai_provider","claude") == "claude" and _ak_ok) else "Gemini"
+            st.caption(f"Powered by {_provider_lbl}. Answers grounded in the currently-loaded protein.")
+        else:
+            st.caption("Running in offline mode (no API key). Set ANTHROPIC_API_KEY or GEMINI_API_KEY in Streamlit secrets for full AI.")
+
+        if not _ws_gene:
+            st.info("Search a protein in the sidebar above first — then ask anything about it here.")
+        else:
+            # Render history (last 6 messages)
+            for _m in _hist[-6:]:
+                _role = _m.get("role")
+                _txt = _m.get("content","")
+                if _role == "user":
+                    st.markdown(
+                        f"<div style='background:rgba(56,189,248,.08);border-left:3px solid #38bdf8;"
+                        f"border-radius:6px;padding:6px 9px;margin:4px 0;color:#e6edf7;font-size:.78rem;line-height:1.5;'>"
+                        f"<b style='color:#7dd3fc;font-size:.66rem;text-transform:uppercase;letter-spacing:.4px;'>You</b><br>{_txt}</div>",
+                        unsafe_allow_html=True,
+                    )
+                else:
+                    st.markdown(
+                        f"<div style='background:var(--surface);border-left:3px solid #34d399;"
+                        f"border-radius:6px;padding:6px 9px;margin:4px 0;color:#e6edf7;font-size:.78rem;line-height:1.5;'>"
+                        f"<b style='color:#34d399;font-size:.66rem;text-transform:uppercase;letter-spacing:.4px;'>Protellect</b><br>{_txt[:900]}</div>",
+                        unsafe_allow_html=True,
+                    )
+
+            # Suggested questions (only when history is empty)
+            if not _hist:
+                st.markdown(
+                    f"<div style='color:var(--text3);font-size:.66rem;text-transform:uppercase;"
+                    f"letter-spacing:.5px;margin:.4rem 0 .25rem;'>Suggested questions</div>",
+                    unsafe_allow_html=True,
+                )
+                _sq = [
+                    f"Summarize the genetic evidence for {_ws_gene}",
+                    f"Which variants in {_ws_gene} matter most clinically?",
+                    f"Is {_ws_gene} druggable? What compounds exist?",
+                    f"What experiments should I run next on {_ws_gene}?",
+                ]
+                for i, q in enumerate(_sq):
+                    if st.button(q, key=f"ws_chat_sug_{i}", use_container_width=True):
+                        _hist.append({"role":"user","content":q})
+                        st.session_state[_chat_key] = _hist
+                        with st.spinner("Thinking..."):
+                            _reply = call_claude_api(_hist[-6:], system_prompt=_get_system_prompt())
+                        _hist.append({"role":"assistant","content":_reply})
+                        st.session_state[_chat_key] = _hist
+                        st.rerun()
+
+            # Input + send
+            _ws_input = st.text_area(
+                "Ask anything about " + (_ws_gene or "this protein"),
+                value="",
+                key=f"ws_chat_input_{_chat_key}",
+                height=70,
+                placeholder=f"e.g. What's the pathogenic variant burden in {_ws_gene}?",
+            )
+            colA, colB = st.columns([3,1])
+            with colA:
+                if st.button("Send", key=f"ws_chat_send_{_chat_key}", type="primary", use_container_width=True):
+                    _txt = (_ws_input or "").strip()
+                    if _txt:
+                        _hist.append({"role":"user","content":_txt})
+                        st.session_state[_chat_key] = _hist
+                        with st.spinner("Thinking..."):
+                            _reply = call_claude_api(_hist[-6:], system_prompt=_get_system_prompt())
+                        _hist.append({"role":"assistant","content":_reply})
+                        st.session_state[_chat_key] = _hist
+                        st.rerun()
+            with colB:
+                if st.button("Clear", key=f"ws_chat_clr_{_chat_key}", use_container_width=True):
+                    st.session_state[_chat_key] = []
+                    st.rerun()
+
+
+
 # ─── Sidebar ────────────────────────────────────────────────────────
 
 # ── Floating Lab Chatbot Popup (bottom-right) ────────────────────────────────
@@ -8418,8 +8544,11 @@ with st.sidebar:
         except Exception:
             pass
 
-    # Note: legacy render_lab_chatbot() call was removed — superseded by the
-    # Workspace Chat expander which is added further below in the sidebar.
+    # Always-visible Workspace Chat (current-protein aware)
+    try:
+        render_workspace_chat()
+    except Exception as _e:
+        st.sidebar.error(f"Chat error: {str(_e)[:140]}")
 
     # ── Plan display ───────────────────────────────────────────────────────
     _plan_sb = st.session_state.get("auth_plan","pro")
@@ -11511,100 +11640,6 @@ def render_lab_chatbot():
     # The floating popup makes a browser-side call to Anthropic and needs
     # a key passed in JS. The sidebar Lab Setup Assistant above uses the
     # server-side key (st.secrets or env) and works without this input.
-    # ── Workspace Chat (always-visible, current-protein aware) ───────────
-    _ws_gene = st.session_state.get("gene","")
-    _ws_chat_title = f"Workspace Chat · {_ws_gene}" if _ws_gene else "Workspace Chat"
-    with st.sidebar.expander(_ws_chat_title, expanded=True):
-        # Init per-protein chat history; clear when protein changes
-        _chat_key = f"ws_chat_{_ws_gene or '_none_'}"
-        if "ws_active_chat_key" not in st.session_state:
-            st.session_state["ws_active_chat_key"] = _chat_key
-        # When the user searches a new protein, reset chat history so it doesn't pollute new context
-        if st.session_state["ws_active_chat_key"] != _chat_key:
-            st.session_state["ws_active_chat_key"] = _chat_key
-            st.session_state[_chat_key] = []
-        if _chat_key not in st.session_state:
-            st.session_state[_chat_key] = []
-        _hist = st.session_state[_chat_key]
-
-        # Status line
-        _ak_ok = bool(_get_anthropic_key())
-        _gk_ok = bool(_get_gemini_key())
-        if _ak_ok or _gk_ok:
-            _provider_lbl = "Claude" if (st.session_state.get("ai_provider","claude") == "claude" and _ak_ok) else "Gemini"
-            st.caption(f"Powered by {_provider_lbl}. Answers grounded in the currently-loaded protein.")
-        else:
-            st.caption("Running in offline mode (no API key). Set ANTHROPIC_API_KEY or GEMINI_API_KEY in Streamlit secrets for full AI.")
-
-        if not _ws_gene:
-            st.info("Search a protein in the sidebar above first — then ask anything about it here.")
-        else:
-            # Render history (last 6 messages)
-            for _m in _hist[-6:]:
-                _role = _m.get("role")
-                _txt = _m.get("content","")
-                if _role == "user":
-                    st.markdown(
-                        f"<div style='background:rgba(56,189,248,.08);border-left:3px solid #38bdf8;"
-                        f"border-radius:6px;padding:6px 9px;margin:4px 0;color:#e6edf7;font-size:.78rem;line-height:1.5;'>"
-                        f"<b style='color:#7dd3fc;font-size:.66rem;text-transform:uppercase;letter-spacing:.4px;'>You</b><br>{_txt}</div>",
-                        unsafe_allow_html=True,
-                    )
-                else:
-                    st.markdown(
-                        f"<div style='background:var(--surface);border-left:3px solid #34d399;"
-                        f"border-radius:6px;padding:6px 9px;margin:4px 0;color:#e6edf7;font-size:.78rem;line-height:1.5;'>"
-                        f"<b style='color:#34d399;font-size:.66rem;text-transform:uppercase;letter-spacing:.4px;'>Protellect</b><br>{_txt[:900]}</div>",
-                        unsafe_allow_html=True,
-                    )
-
-            # Suggested questions (only when history is empty)
-            if not _hist:
-                st.markdown(
-                    f"<div style='color:var(--text3);font-size:.66rem;text-transform:uppercase;"
-                    f"letter-spacing:.5px;margin:.4rem 0 .25rem;'>Suggested questions</div>",
-                    unsafe_allow_html=True,
-                )
-                _sq = [
-                    f"Summarize the genetic evidence for {_ws_gene}",
-                    f"Which variants in {_ws_gene} matter most clinically?",
-                    f"Is {_ws_gene} druggable? What compounds exist?",
-                    f"What experiments should I run next on {_ws_gene}?",
-                ]
-                for i, q in enumerate(_sq):
-                    if st.button(q, key=f"ws_chat_sug_{i}", use_container_width=True):
-                        _hist.append({"role":"user","content":q})
-                        st.session_state[_chat_key] = _hist
-                        with st.spinner("Thinking..."):
-                            _reply = call_claude_api(_hist[-6:], system_prompt=_get_system_prompt())
-                        _hist.append({"role":"assistant","content":_reply})
-                        st.session_state[_chat_key] = _hist
-                        st.rerun()
-
-            # Input + send
-            _ws_input = st.text_area(
-                "Ask anything about " + (_ws_gene or "this protein"),
-                value="",
-                key=f"ws_chat_input_{_chat_key}",
-                height=70,
-                placeholder=f"e.g. What's the pathogenic variant burden in {_ws_gene}?",
-            )
-            colA, colB = st.columns([3,1])
-            with colA:
-                if st.button("Send", key=f"ws_chat_send_{_chat_key}", type="primary", use_container_width=True):
-                    _txt = (_ws_input or "").strip()
-                    if _txt:
-                        _hist.append({"role":"user","content":_txt})
-                        st.session_state[_chat_key] = _hist
-                        with st.spinner("Thinking..."):
-                            _reply = call_claude_api(_hist[-6:], system_prompt=_get_system_prompt())
-                        _hist.append({"role":"assistant","content":_reply})
-                        st.session_state[_chat_key] = _hist
-                        st.rerun()
-            with colB:
-                if st.button("Clear", key=f"ws_chat_clr_{_chat_key}", use_container_width=True):
-                    st.session_state[_chat_key] = []
-                    st.rerun()
 
     # ── AI Provider Selection ──────────────────────────────────────────
     with st.sidebar.expander("AI Provider", expanded=False):
@@ -15180,6 +15215,9 @@ with tab8:
         " Amino Acid Analysis",
         " Hydrophobicity Map",
         " Phosphorylation Sites",
+        " Kinase Sites",
+        " GPCR Architecture",
+        " Lewis / Aromatic Structures",
         " Interactive Backbone",
     ], horizontal=True, key="chem_tab_mode")
 
@@ -15378,6 +15416,272 @@ with tab8:
                         loc = feat.get("location",{}); pos = int(loc.get("start",{}).get("value",0) or 0)
                         desc = feat.get("description","phosphosite"); aa_at = seq_c[pos-1] if pos and pos-1<len(seq_c) else "?"
                         st.markdown(f"<div style='color:#3a6080;font-size:.7rem;'>{aa_at}{pos} — {str(desc)[:40]}</div>", unsafe_allow_html=True)
+
+        elif _chem_mode == " Kinase Sites":
+            sh("", f"Kinase / Phosphorylation Targeting — {gene}")
+            st.markdown(
+                "<div style='color:#94a3b8;font-size:.78rem;margin-bottom:.6rem;line-height:1.55;'>"
+                "Predicted and annotated phosphorylation sites mapped to upstream kinases. "
+                "Useful for kinase-substrate network analysis and identifying druggable signaling nodes.</div>",
+                unsafe_allow_html=True,
+            )
+            # Collect all S/T/Y sites and any UniProt-annotated phospho sites
+            _phospho_anno = [f for f in pdata.get("features",[]) if f.get("type") in ("Modified residue",) and "phospho" in str(f).lower()]
+            _ksty = [(i+1, seq_c[i]) for i in range(len(seq_c)) if seq_c[i] in "STY"]
+            # Heuristic kinase motif scoring (basic consensus motifs from PhosphoSitePlus literature)
+            _MOTIFS = [
+                ("PKA",   "RR[ST]",         "#38bdf8"),  # Arg-Arg upstream
+                ("PKC",   "[ST].R",         "#34d399"),  # Ser/Thr then any + Arg
+                ("CK2",   "[ST]..[DE]",     "#a78bfa"),  # acidic +3
+                ("CDK",   "[ST]P.[RK]",     "#fbbf24"),  # Pro+1 then basic
+                ("ATM/ATR","[ST]Q",          "#fb7185"),  # SQ/TQ DNA damage
+                ("MAPK",  "P[ST]P",         "#f97316"),  # Pro flanking
+                ("Src",   "[Y].[DE]",       "#22d3ee"),  # Tyr kinase
+                ("GSK3",  "[ST]...[ST]",    "#c084fc"),  # primed Ser/Thr
+            ]
+            import re as _re_k
+            _hits = {}
+            for kname, pat, clr in _MOTIFS:
+                _hits[kname] = (clr, [])
+                for m in _re_k.finditer(pat, seq_c):
+                    _hits[kname][1].append(m.start() + 1)
+
+            _c_ks1, _c_ks2 = st.columns([1.4, 0.7])
+            with _c_ks1:
+                import plotly.graph_objects as _go_k
+                fig_k = _go_k.Figure()
+                for kname, (clr, positions) in _hits.items():
+                    if positions:
+                        fig_k.add_trace(_go_k.Scatter(
+                            x=positions, y=[kname]*len(positions),
+                            mode="markers",
+                            marker=dict(color=clr, size=6, line=dict(color="rgba(255,255,255,.2)",width=0.5)),
+                            name=f"{kname} ({len(positions)})",
+                            hovertemplate=f"<b>{kname}</b> site at residue %{{x}}<extra></extra>",
+                        ))
+                # Mark UniProt-annotated phospho sites as black diamonds
+                for feat in _phospho_anno:
+                    pos = int(feat.get("location",{}).get("start",{}).get("value",0) or 0)
+                    if pos: fig_k.add_vline(x=pos, line=dict(color="#22c55e",width=1.2,dash="dot"))
+                fig_k.update_layout(
+                    plot_bgcolor="#020617", paper_bgcolor="#020617",
+                    font_color="#94a3b8", font_size=10,
+                    xaxis=dict(gridcolor="#0a1828", title=f"Position (1–{len(seq_c)})", zeroline=False),
+                    yaxis=dict(gridcolor="#0a1828", tickfont=dict(size=11)),
+                    height=320, margin=dict(t=10,b=40,l=80,r=10),
+                    showlegend=False,
+                )
+                st.plotly_chart(fig_k, use_container_width=True, config={"displayModeBar":False})
+            with _c_ks2:
+                st.markdown(
+                    "<div style='background:#0a1530;border:1px solid #38bdf833;border-radius:10px;padding:12px;'>"
+                    "<div style='color:#38bdf8;font-weight:700;font-size:.85rem;margin-bottom:.4rem;'>Kinase motif hits</div>"
+                    "<div style='color:#94a3b8;font-size:.7rem;line-height:1.7;'>"
+                    + "".join(f"<b style='color:{clr};'>{kn}</b>: {len(pos)} sites<br>"
+                              for kn, (clr, pos) in _hits.items())
+                    + f"<br><b style='color:#22c55e;'>UniProt-annotated:</b> {len(_phospho_anno)}"
+                    "</div></div>",
+                    unsafe_allow_html=True,
+                )
+
+        elif _chem_mode == " GPCR Architecture":
+            sh("", f"GPCR Architecture — {gene}")
+            _is_gpcr_c = g_gpcr(pdata) if pdata else False
+            _gpcr_class_c = g_gpcr_class(pdata) if pdata else ""
+            if not _is_gpcr_c:
+                st.info(f"{gene} is not annotated as a GPCR. GPCR features are not applicable.")
+                # Still show what would be checked — gives user confidence in our negative call
+                st.markdown(
+                    "<div style='color:var(--text3);font-size:.74rem;line-height:1.6;margin-top:8px;'>"
+                    "Criteria checked (none matched):<br>"
+                    " · UniProt keyword 'G-protein coupled receptor'<br>"
+                    " · 7 transmembrane helices in features<br>"
+                    " · PFAM 7tm_1/7tm_2/7tm_3 domain<br>"
+                    " · GPCRdb entry for this UniProt accession</div>",
+                    unsafe_allow_html=True,
+                )
+            else:
+                # GPCR class + TM segments + signaling consequences
+                st.markdown(
+                    f"<div style='background:linear-gradient(135deg,rgba(167,139,250,.1),rgba(56,189,248,.06));"
+                    f"border:1px solid rgba(167,139,250,.3);border-radius:10px;padding:14px 18px;margin-bottom:1rem;'>"
+                    f"<div style='color:#a78bfa;font-weight:700;font-size:.86rem;letter-spacing:.3px;margin-bottom:4px;'>"
+                    f"GPCR confirmed</div>"
+                    f"<div style='color:#e6edf7;font-size:.92rem;font-weight:700;'>Class: {_gpcr_class_c or 'Unclassified'}</div>"
+                    f"</div>",
+                    unsafe_allow_html=True,
+                )
+                # Find TM regions from UniProt features
+                _tm_feats = [f for f in pdata.get("features",[]) if f.get("type") == "Transmembrane"]
+                _tm_ranges = []
+                for f in _tm_feats:
+                    loc = f.get("location",{})
+                    _s = int(loc.get("start",{}).get("value",0) or 0)
+                    _e = int(loc.get("end",{}).get("value",0) or 0)
+                    if _s and _e: _tm_ranges.append((_s, _e))
+                if _tm_ranges:
+                    st.markdown(
+                        f"<div style='color:#94a3b8;font-size:.78rem;margin-bottom:.4rem;'>"
+                        f"<b style='color:#38bdf8;'>{len(_tm_ranges)} transmembrane segments</b> "
+                        f"(UniProt-annotated):</div>",
+                        unsafe_allow_html=True,
+                    )
+                    for i, (s, e) in enumerate(_tm_ranges, 1):
+                        _bar_w = min(96, (e - s + 1) * 100 / len(seq_c) * 3)
+                        st.markdown(
+                            f"<div style='display:flex;align-items:center;gap:10px;margin:3px 0;'>"
+                            f"<div style='color:#a78bfa;font-size:.74rem;font-weight:700;min-width:50px;'>TM{i}</div>"
+                            f"<div style='background:linear-gradient(90deg,#a78bfa,#38bdf8);height:8px;"
+                            f"width:{_bar_w}%;border-radius:4px;'></div>"
+                            f"<div style='color:#94a3b8;font-size:.72rem;'>aa {s}–{e} ({e-s+1} residues)</div>"
+                            f"</div>",
+                            unsafe_allow_html=True,
+                        )
+                else:
+                    st.caption("No transmembrane regions annotated in UniProt features.")
+                # Signaling consequences
+                _g_couplings = {
+                    "Rhodopsin (Class A)":   "Most diverse — couples to Gα_s, Gα_i, Gα_q. Druggable: ~30% of all FDA-approved drugs target Class A GPCRs.",
+                    "Secretin (Class B)":    "Hormone receptors. Predominantly Gα_s → cAMP signaling. Targets for diabetes (GLP-1R), osteoporosis (PTH1R).",
+                    "Adhesion (Class B2)":   "Long N-terminal cell-adhesion domains. Mostly orphan; emerging targets in cancer (ADGRG1/GPR56).",
+                    "Glutamate (Class C)":   "Metabotropic. Gα_q (mGluR1/5), Gα_i (mGluR2-8). CNS targets — schizophrenia, Parkinson's.",
+                    "Frizzled (Class F)":    "Wnt pathway. β-catenin / planar cell polarity. Oncology targets — colorectal, basal cell carcinoma.",
+                }
+                _cls_info = _g_couplings.get(_gpcr_class_c, "Class not yet mapped to a canonical signaling profile.")
+                st.markdown(
+                    f"<div style='background:#0a1530;border-left:3px solid #a78bfa;border-radius:6px;"
+                    f"padding:10px 14px;margin-top:.6rem;color:var(--text);font-size:.78rem;line-height:1.6;'>"
+                    f"<b style='color:#a78bfa;'>Signaling profile:</b> {_cls_info}</div>",
+                    unsafe_allow_html=True,
+                )
+
+        elif _chem_mode == " Lewis / Aromatic Structures":
+            sh("", f"Lewis & Cyclic Structures — {gene}")
+            st.markdown(
+                "<div style='color:#94a3b8;font-size:.78rem;margin-bottom:.6rem;line-height:1.55;'>"
+                "Side-chain Lewis structures for the key chemical functional groups in this protein. "
+                "Aromatic rings (Phe/Tyr/Trp/His) are highlighted because they often participate in "
+                "drug binding via π-stacking and CH-π interactions.</div>",
+                unsafe_allow_html=True,
+            )
+            # Count aromatic / cyclic / charged residues
+            _AROMATIC = {"F","Y","W","H"}
+            _CYCLIC   = {"P"}
+            _CHARGED_POS = {"K","R","H"}
+            _CHARGED_NEG = {"D","E"}
+            _POLAR_UNCHARGED = {"S","T","N","Q","C"}
+            counts = {"aromatic": 0, "cyclic_pro": 0, "pos": 0, "neg": 0, "polar_un": 0}
+            for aa in seq_c:
+                if aa in _AROMATIC: counts["aromatic"] += 1
+                if aa in _CYCLIC: counts["cyclic_pro"] += 1
+                if aa in _CHARGED_POS: counts["pos"] += 1
+                if aa in _CHARGED_NEG: counts["neg"] += 1
+                if aa in _POLAR_UNCHARGED: counts["polar_un"] += 1
+            _total = max(1, len(seq_c))
+
+            # Render Lewis structure SVGs for the most relevant residues
+            LEWIS_SVGS = {
+                "F": ("Phenylalanine (F)", "Aromatic ring · π-stacking",
+                      "<svg viewBox='0 0 120 110' xmlns='http://www.w3.org/2000/svg'>"
+                      "<polygon points='60,20 80,32 80,56 60,68 40,56 40,32' fill='none' stroke='#38bdf8' stroke-width='1.5'/>"
+                      "<line x1='60' y1='20' x2='80' y2='32' stroke='#38bdf8' stroke-width='1'/>"
+                      "<line x1='80' y1='56' x2='60' y2='68' stroke='#38bdf8' stroke-width='1'/>"
+                      "<line x1='40' y1='32' x2='40' y2='56' stroke='#38bdf8' stroke-width='1'/>"
+                      "<line x1='60' y1='68' x2='60' y2='84' stroke='#94a3b8' stroke-width='1.2'/>"
+                      "<text x='60' y='98' fill='#e6edf7' font-size='10' text-anchor='middle' font-family='monospace'>Cα</text>"
+                      "</svg>"),
+                "Y": ("Tyrosine (Y)", "Phenol · H-bond + π-stack",
+                      "<svg viewBox='0 0 120 110' xmlns='http://www.w3.org/2000/svg'>"
+                      "<polygon points='60,20 80,32 80,56 60,68 40,56 40,32' fill='none' stroke='#fbbf24' stroke-width='1.5'/>"
+                      "<line x1='60' y1='20' x2='80' y2='32' stroke='#fbbf24' stroke-width='1'/>"
+                      "<line x1='80' y1='56' x2='60' y2='68' stroke='#fbbf24' stroke-width='1'/>"
+                      "<line x1='40' y1='32' x2='40' y2='56' stroke='#fbbf24' stroke-width='1'/>"
+                      "<line x1='60' y1='20' x2='60' y2='10' stroke='#fb7185' stroke-width='1.5'/>"
+                      "<text x='60' y='8' fill='#fb7185' font-size='10' text-anchor='middle' font-family='monospace'>OH</text>"
+                      "<line x1='60' y1='68' x2='60' y2='84' stroke='#94a3b8' stroke-width='1.2'/>"
+                      "<text x='60' y='98' fill='#e6edf7' font-size='10' text-anchor='middle' font-family='monospace'>Cα</text>"
+                      "</svg>"),
+                "W": ("Tryptophan (W)", "Indole · largest aromatic",
+                      "<svg viewBox='0 0 140 110' xmlns='http://www.w3.org/2000/svg'>"
+                      "<polygon points='40,20 60,30 60,52 40,62 22,52 22,30' fill='none' stroke='#a78bfa' stroke-width='1.5'/>"
+                      "<polygon points='60,30 82,30 92,46 82,62 60,62 60,30' fill='none' stroke='#a78bfa' stroke-width='1.5'/>"
+                      "<text x='75' y='30' fill='#fb7185' font-size='10' text-anchor='middle' font-family='monospace'>N-H</text>"
+                      "<line x1='40' y1='62' x2='40' y2='78' stroke='#94a3b8' stroke-width='1.2'/>"
+                      "<text x='40' y='92' fill='#e6edf7' font-size='10' text-anchor='middle' font-family='monospace'>Cα</text>"
+                      "</svg>"),
+                "H": ("Histidine (H)", "Imidazole · pKa near pH 7",
+                      "<svg viewBox='0 0 120 110' xmlns='http://www.w3.org/2000/svg'>"
+                      "<polygon points='60,20 80,36 70,60 50,60 40,36' fill='none' stroke='#34d399' stroke-width='1.5'/>"
+                      "<text x='80' y='36' fill='#fb7185' font-size='10' text-anchor='middle' font-family='monospace'>N</text>"
+                      "<text x='40' y='36' fill='#fb7185' font-size='10' text-anchor='middle' font-family='monospace'>N-H</text>"
+                      "<line x1='60' y1='60' x2='60' y2='78' stroke='#94a3b8' stroke-width='1.2'/>"
+                      "<text x='60' y='92' fill='#e6edf7' font-size='10' text-anchor='middle' font-family='monospace'>Cα</text>"
+                      "</svg>"),
+                "P": ("Proline (P)", "Cyclic · rigid backbone bend",
+                      "<svg viewBox='0 0 120 110' xmlns='http://www.w3.org/2000/svg'>"
+                      "<polygon points='60,20 80,38 72,60 48,60 40,38' fill='none' stroke='#fb7185' stroke-width='1.5'/>"
+                      "<text x='40' y='38' fill='#38bdf8' font-size='10' text-anchor='middle' font-family='monospace'>N</text>"
+                      "<line x1='40' y1='38' x2='40' y2='80' stroke='#94a3b8' stroke-width='1.2'/>"
+                      "<text x='40' y='94' fill='#e6edf7' font-size='10' text-anchor='middle' font-family='monospace'>Cα (locked)</text>"
+                      "</svg>"),
+            }
+
+            # Show composition row
+            _r1c, _r2c, _r3c, _r4c, _r5c = st.columns(5)
+            for col, (key, label, clr) in zip(
+                [_r1c, _r2c, _r3c, _r4c, _r5c],
+                [("aromatic","Aromatic (F/Y/W/H)","#a78bfa"),
+                 ("cyclic_pro","Proline rings","#fb7185"),
+                 ("pos","Basic (K/R/H)","#38bdf8"),
+                 ("neg","Acidic (D/E)","#fb7185"),
+                 ("polar_un","Polar uncharged","#34d399")],
+            ):
+                _pct = counts[key] / _total * 100
+                col.markdown(
+                    f"<div style='background:var(--surface);border:1px solid {clr}33;border-radius:8px;padding:8px 10px;'>"
+                    f"<div style='color:var(--text3);font-size:.6rem;text-transform:uppercase;letter-spacing:.3px;'>{label}</div>"
+                    f"<div style='color:{clr};font-weight:800;font-size:1.05rem;line-height:1.1;margin-top:2px;'>{counts[key]:,}</div>"
+                    f"<div style='color:var(--text3);font-size:.66rem;'>{_pct:.1f}% of sequence</div></div>",
+                    unsafe_allow_html=True,
+                )
+
+            # Render the actual Lewis structures
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown(
+                "<div style='color:var(--text2);font-size:.74rem;text-transform:uppercase;letter-spacing:.5px;"
+                "margin-bottom:8px;'>Functional group Lewis structures (side chains)</div>",
+                unsafe_allow_html=True,
+            )
+            _cols_lewis = st.columns(5)
+            for col, aa_key in zip(_cols_lewis, ["F","Y","W","H","P"]):
+                _title, _subtitle, _svg = LEWIS_SVGS[aa_key]
+                _count = sum(1 for x in seq_c if x == aa_key)
+                col.markdown(
+                    f"<div style='background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center;'>"
+                    f"<div style='color:var(--text);font-weight:700;font-size:.78rem;'>{_title}</div>"
+                    f"<div style='color:var(--text3);font-size:.65rem;margin-bottom:6px;'>{_subtitle}</div>"
+                    f"<div style='background:#020617;border-radius:6px;padding:4px;'>{_svg}</div>"
+                    f"<div style='color:var(--cyan);font-size:.72rem;font-weight:600;margin-top:4px;'>"
+                    f"{_count:,} in {gene} ({_count/_total*100:.1f}%)</div></div>",
+                    unsafe_allow_html=True,
+                )
+
+            # Druggability note
+            _aromatic_pct = counts["aromatic"] / _total * 100
+            _drug_msg = (
+                "High aromatic content (>10%) — strong candidate for small-molecule binding via π-stacking."
+                if _aromatic_pct > 10 else
+                "Moderate aromatic content (5–10%) — likely binding pockets exist; structural validation recommended."
+                if _aromatic_pct > 5 else
+                "Low aromatic content (<5%) — small-molecule druggability may be limited; consider PROTAC or peptide approaches."
+            )
+            _drug_clr = "#34d399" if _aromatic_pct > 10 else "#fbbf24" if _aromatic_pct > 5 else "#fb7185"
+            st.markdown(
+                f"<div style='background:#0a1530;border-left:3px solid {_drug_clr};border-radius:6px;"
+                f"padding:10px 14px;margin-top:1rem;color:var(--text);font-size:.78rem;line-height:1.6;'>"
+                f"<b style='color:{_drug_clr};'>Druggability inference:</b> {_drug_msg}</div>",
+                unsafe_allow_html=True,
+            )
 
         elif _chem_mode == " Interactive Backbone":
             sh("", f"Interactive Chemical Backbone — {gene}")
