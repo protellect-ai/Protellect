@@ -6782,10 +6782,40 @@ def call_claude_api(messages: list, system_prompt: str | None = None) -> str:
     """Lightweight dispatcher. The full multi-provider version is defined below
     and will replace this stub on subsequent reruns. This stub handles the very
     first render where the chat tries to render before the full helpers load."""
-    api_key = _get_anthropic_key()
+    # Diagnostic: figure out where the key came from + validate format
+    api_key = ""
+    key_source = "none"
+    try:
+        if hasattr(st, "secrets"):
+            _k = st.secrets.get("ANTHROPIC_API_KEY", "")
+            if _k:
+                api_key, key_source = _k, "st.secrets"
+    except Exception:
+        pass
+    if not api_key:
+        import os as _os
+        _k = _os.environ.get("ANTHROPIC_API_KEY", "")
+        if _k:
+            api_key, key_source = _k, "env"
+    if not api_key:
+        _k = st.session_state.get("anthropic_key", "")
+        if _k:
+            api_key, key_source = _k, "session_state"
+
     if not api_key:
         return ("AI assistant: no API key configured. Add ANTHROPIC_API_KEY in "
-                "Streamlit secrets to enable full chat.")
+                "Streamlit Cloud → Settings → Secrets to enable chat.")
+
+    # Sanity-check key format before sending
+    _key_trimmed = api_key.strip()
+    if _key_trimmed != api_key:
+        return (f"API key has surrounding whitespace (source: {key_source}). "
+                f"Edit the secret and remove leading/trailing spaces.")
+    if not _key_trimmed.startswith("sk-ant-"):
+        return (f"API key format is wrong (source: {key_source}). Anthropic keys start with 'sk-ant-...'. "
+                f"You pasted something that starts with '{_key_trimmed[:8]}...'. "
+                f"Get a real key from console.anthropic.com/settings/keys.")
+
     try:
         r = requests.post(
             "https://api.anthropic.com/v1/messages",
@@ -6797,16 +6827,33 @@ def call_claude_api(messages: list, system_prompt: str | None = None) -> str:
             },
             headers={
                 "Content-Type": "application/json",
-                "x-api-key": api_key,
+                "x-api-key": _key_trimmed,
                 "anthropic-version": "2023-06-01",
             },
             timeout=30,
         )
+        if r.status_code == 401:
+            # Try to parse Anthropic's error body for the specific reason
+            _err_msg = "unknown"
+            try:
+                _err_body = r.json()
+                _err_msg = (_err_body.get("error",{}) or {}).get("message", "no message") or "no message"
+            except Exception:
+                _err_msg = r.text[:200] if r.text else "no response body"
+            return (f"401 Unauthorized from Anthropic (key source: {key_source}, "
+                    f"key starts with '{_key_trimmed[:14]}...', length {len(_key_trimmed)}). "
+                    f"Anthropic says: {_err_msg}. "
+                    f"Common causes: (1) key revoked, (2) no billing credit on the account, "
+                    f"(3) key copied incompletely. Verify at console.anthropic.com.")
+        if r.status_code == 429:
+            return "Rate limit reached. Wait a minute and retry."
         r.raise_for_status()
         data = r.json()
         return "".join(b.get("text","") for b in data.get("content",[]) if b.get("type") == "text") or "(empty)"
+    except requests.HTTPError as he:
+        return f"HTTP {he.response.status_code if he.response else '?'}: {str(he)[:200]}"
     except Exception as e:
-        return f"Connection error: {str(e)[:120]}"
+        return f"Connection error ({type(e).__name__}): {str(e)[:200]}"
 
 
 def render_workspace_chat():
