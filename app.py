@@ -200,7 +200,7 @@ def save_to_workspace(gene, pdata, gi, diseases, scored):
         return
     plan = st.session_state.get("auth_plan","free")
     limit = PLAN_LIMITS[plan]["history"]
-    ws = st.session_state.get("workspace",[])
+    ws = (st.session_state.get("workspace") or [])
     # Avoid duplicates
     existing = [i for i,w in enumerate(ws) if w.get("gene") == gene]
     if existing:
@@ -3877,7 +3877,7 @@ def generate_excel(gene, pdata, cv, scored, gi, gnomad, string_data,
     for col, (name, w) in enumerate([("PMID",12),("Title",80),("Authors",35),("Journal",30),("Year",8),("Experiment Type",22),("PubMed URL",40)],1):
         ws9.column_dimensions[get_column_letter(col)].width = w
         hdr(ws9,1,col,name,DARK,CYAN)
-    all_papers_e = papers + [p2 for p2 in (st.session_state.get("abstracts",[]) or []) if p2.get("pmid","") not in {p3.get("pmid","") for p3 in papers}]
+    all_papers_e = papers + [p2 for p2 in ((st.session_state.get("abstracts") or [])) if p2.get("pmid","") not in {p3.get("pmid","") for p3 in papers}]
     for r_idx, p_e in enumerate(all_papers_e, 2):
         val(ws9,r_idx,1,p_e.get("pmid",""),None,"0066AA",True)
         val(ws9,r_idx,2,p_e.get("title","")[:150])
@@ -5289,6 +5289,10 @@ MICROBE_TAXONOMY_KB = {
 
 def render_oncology_panel(gene, pdata, cv, scored, gi, gnomad, ot_data, am_scores, string_data, patient_data):
     """Patient-specific oncology analysis: metastasis, early detection, treatment stratification."""
+    # Boundary guard: callers may pass None for any of these (session value set to None).
+    pdata = pdata or {}; cv = cv or {}; scored = scored or []; gi = gi or {}
+    gnomad = gnomad or {}; ot_data = ot_data or {}; am_scores = am_scores or {}
+    string_data = string_data or []; patient_data = patient_data or {}
     diseases = g_diseases(pdata)
     cancer_diseases = [d for d in diseases if any(k in d.get("name","").lower() for k in
                        ["cancer","carcinoma","tumor","tumour","sarcoma","glioma","lymphoma","leukemia","leukaemia","melanoma","myeloma","adenocarcinoma"])]
@@ -7427,15 +7431,15 @@ with st.sidebar:
         _eg = st.session_state.get("gene","")
         if _ep and _eg:
             render_export_button(
-                _ep, st.session_state.get("cv",{}),
-                st.session_state.get("gi",{}),
-                st.session_state.get("gnomad",{}),
-                st.session_state.get("scored",[])[:0],  # diseases pulled inside fn
-                st.session_state.get("scored",[]),
+                _ep, (st.session_state.get("cv") or {}),
+                (st.session_state.get("gi") or {}),
+                (st.session_state.get("gnomad") or {}),
+                (st.session_state.get("scored") or [])[:0],  # diseases pulled inside fn
+                (st.session_state.get("scored") or []),
                 _eg, st.session_state.get("uid",""),
-                st.session_state.get("drugs",[]),
-                st.session_state.get("trials",[]),
-                st.session_state.get("ot",{}),
+                (st.session_state.get("drugs") or []),
+                (st.session_state.get("trials") or []),
+                (st.session_state.get("ot") or {}),
             )
     except Exception:
         pass
@@ -7445,7 +7449,7 @@ with st.sidebar:
     if _lb_done:
         _lb_name   = st.session_state.get("lab_name","") or st.session_state.get("lab_pi","")
         _lb_domain = st.session_state.get("lab_domain","")
-        _lb_prots  = st.session_state.get("lab_proteins",[])
+        _lb_prots  = (st.session_state.get("lab_proteins") or [])
         _lb_sens   = st.session_state.get("sensitivity",50)
         st.markdown(
             f"<div style='background:#0a1a0a;border:1px solid #22c55e22;border-radius:9px;"
@@ -7466,16 +7470,16 @@ with st.sidebar:
         try:
             render_export_button(
                 _exp_pdata,
-                st.session_state.get("cv",{}),
-                st.session_state.get("gi",{}),
-                st.session_state.get("gnomad",{}),
+                (st.session_state.get("cv") or {}),
+                (st.session_state.get("gi") or {}),
+                (st.session_state.get("gnomad") or {}),
                 [],  # diseases pulled inside
-                st.session_state.get("scored",[]),
+                (st.session_state.get("scored") or []),
                 _exp_gene,
                 st.session_state.get("uid",""),
-                st.session_state.get("drugs",[]),
-                st.session_state.get("trials",[]),
-                st.session_state.get("ot",{}),
+                (st.session_state.get("drugs") or []),
+                (st.session_state.get("trials") or []),
+                (st.session_state.get("ot") or {}),
             )
         except Exception:
             pass
@@ -7511,9 +7515,9 @@ with st.sidebar:
                                "High (sensitive) = surfaces more candidates including single-submitter and moderate structural impact.")
     st.session_state["sensitivity"]=sensitivity
     # Compute real density label from current protein if loaded
-    _gi_now = st.session_state.get("gi",{})
+    _gi_now = (st.session_state.get("gi") or {})
     _density_now = _gi_now.get("density",0)*100 if _gi_now else 0
-    _plen_now = st.session_state.get("pdata",{}).get("sequence",{}).get("length",1) if st.session_state.get("pdata") else 1
+    _plen_now = (st.session_state.get("pdata") or {}).get("sequence",{}).get("length",1) if st.session_state.get("pdata") else 1
     _path_now = _gi_now.get("n_pathogenic",0) if _gi_now else 0
     _total_now = _gi_now.get("n_total",1) if _gi_now else 1
     if _gi_now and _path_now > 0:
@@ -7547,7 +7551,7 @@ with st.sidebar:
     depth=st.selectbox("Depth",["Standard (150 variants)","Deep (400 variants)"],label_visibility="collapsed")
     max_v=150 if "Standard" in depth else 400
     # Build version — bump on each deploy so you can confirm the live app is current
-    st.markdown("<div style='color:#1e3050;font-size:.62rem;text-align:right;margin-top:.3rem;'>build 2026.05.28-d</div>", unsafe_allow_html=True)
+    st.markdown("<div style='color:#1e3050;font-size:.62rem;text-align:right;margin-top:.3rem;'>build 2026.05.28-e</div>", unsafe_allow_html=True)
 
     # Sidebar protein summary
     if st.session_state["pdata"]:
@@ -7629,18 +7633,18 @@ with st.sidebar:
             with st.spinner('Building Excel workbook (9 sheets)...'):
                 xl_bytes = generate_excel(
                     gene3, p3, cv3, scored3,
-                    st.session_state.get('gi',{}),
-                    st.session_state.get('gnomad',{}),
-                    st.session_state.get('string',[]),
-                    st.session_state.get('drugs',[]),
-                    st.session_state.get('trials',[]),
-                    st.session_state.get('ot',{}),
+                    (st.session_state.get('gi') or {}),
+                    (st.session_state.get('gnomad') or {}),
+                    (st.session_state.get('string') or []),
+                    (st.session_state.get('drugs') or []),
+                    (st.session_state.get('trials') or []),
+                    (st.session_state.get('ot') or {}),
                     g_diseases(p3),
-                    st.session_state.get('papers',[]),
-                    st.session_state.get('patients',{}),
-                    compute_experiment_roi(scored3,st.session_state.get('gi',{}),g_ptype(p3),st.session_state.get('gnomad',{}),st.session_state.get('ot',{})),
-                    st.session_state.get('am',{}),
-                    st.session_state.get('hotspots',[]),
+                    (st.session_state.get('papers') or []),
+                    (st.session_state.get('patients') or {}),
+                    compute_experiment_roi(scored3,(st.session_state.get('gi') or {}),g_ptype(p3),(st.session_state.get('gnomad') or {}),(st.session_state.get('ot') or {})),
+                    (st.session_state.get('am') or {}),
+                    (st.session_state.get('hotspots') or []),
                 )
                 if xl_bytes:
                     st.session_state['excel_bytes'] = xl_bytes
@@ -7692,7 +7696,7 @@ with st.container():
 # ── Empty-state hint when no protein is loaded ────────────────────────────────
 if not st.session_state.get("pdata") and not st.session_state.get("csv_triage_active"):
     _ob_focus_pre = st.session_state.get("ob_focus","") or st.session_state.get("lab_focus","")
-    _ob_prots_pre = st.session_state.get("ob_proteins","") or ",".join(st.session_state.get("lab_proteins",[]))
+    _ob_prots_pre = st.session_state.get("ob_proteins","") or ",".join((st.session_state.get("lab_proteins") or []))
     _first_prot = _ob_prots_pre.split(",")[0].strip() if _ob_prots_pre else ""
     _suggest = _first_prot or "TP53"
     st.markdown(
@@ -7945,14 +7949,14 @@ if _rd_final == "Oncology":
             st.markdown("<hr class='dv'>", unsafe_allow_html=True)
             render_oncology_panel(
                 _gene_f, _pdata_f,
-                st.session_state.get("cv",{}),
-                st.session_state.get("scored",[]),
-                st.session_state.get("gi",{}),
-                st.session_state.get("gnomad",{}),
-                st.session_state.get("ot",{}),
-                st.session_state.get("am",{}),
-                st.session_state.get("string",[]),
-                st.session_state.get("patients",{}),
+                (st.session_state.get("cv") or {}),
+                (st.session_state.get("scored") or []),
+                (st.session_state.get("gi") or {}),
+                (st.session_state.get("gnomad") or {}),
+                (st.session_state.get("ot") or {}),
+                (st.session_state.get("am") or {}),
+                (st.session_state.get("string") or []),
+                (st.session_state.get("patients") or {}),
             )
 
 elif _rd_final == "Neuroscience":
@@ -8073,13 +8077,19 @@ if search and query:
         )
         st.stop()  # Stop here — don't proceed with a search that returns garbage
 
-    # Clear ALL stale protein data before each new search
-    for _clr_key in ["pdata","cv","gene","uid","gi","gnomad","string","trials",
-                      "drugs","abstracts","org","ai_result","ot","am","isoforms",
-                      "hotspots","patients","excel_bytes","domain_ctx","acmg_auto",
-                      "conflicts","ml_result","clingen","_search_disambiguation",
-                      "reg_paths","analogs","roi_data","papers","pdb","analysis_trace"]:
-        st.session_state[_clr_key] = None if _clr_key not in ("string","trials","drugs","abstracts","isoforms","hotspots","scored","papers","reg_paths","analogs","roi_data") else ([] if _clr_key != "reg_paths" else {})
+    # Clear ALL stale protein data before each new search.
+    # Clear each key to its CORRECT empty type so downstream .get(...) + attribute
+    # access never hits a None (the cause of the recurring AttributeErrors).
+    _dict_keys = {"pdata","cv","gi","gnomad","org","ai_result","ot","am","patients",
+                  "domain_ctx","acmg_auto","ml_result","clingen","reg_paths"}
+    _list_keys = {"string","trials","drugs","abstracts","isoforms","hotspots","scored",
+                  "papers","analogs","roi_data","conflicts","analysis_trace"}
+    _str_keys  = {"gene","uid","pdb","_search_disambiguation"}
+    for _clr_key in (_dict_keys | _list_keys | _str_keys | {"excel_bytes"}):
+        if _clr_key in _dict_keys:   st.session_state[_clr_key] = {}
+        elif _clr_key in _list_keys: st.session_state[_clr_key] = []
+        elif _clr_key in _str_keys:  st.session_state[_clr_key] = ""
+        else:                        st.session_state[_clr_key] = None  # excel_bytes (binary)
     st.session_state["scored"] = []
     # Clear any per-protein workspace chat history so questions about prior proteins don't leak
     for _ws_k in [k for k in list(st.session_state.keys()) if isinstance(k,str) and k.startswith("ws_chat_") and k != "ws_active_chat_key"]:
@@ -8742,8 +8752,8 @@ if st.session_state["csv_df"] is not None and not st.session_state["pdata"]:
 
 # ─── Main variables ──────────────────────────────────────────────────
 pdata=st.session_state.get("pdata") or {}; cv=st.session_state.get("cv") or {}
-pdb=st.session_state.get("pdb",""); papers=st.session_state.get("papers",[])
-scored=st.session_state.get("scored",[]); gene=st.session_state.get("gene","")
+pdb=st.session_state.get("pdb",""); papers=(st.session_state.get("papers") or [])
+scored=(st.session_state.get("scored") or []); gene=st.session_state.get("gene","")
 assay=st.session_state.get("assay",""); uid=st.session_state.get("uid","")
 cv = cv or {}; summary=cv.get("summary",{}); variants=cv.get("variants",[])
 diseases=g_diseases(pdata) if pdata else []
@@ -8767,10 +8777,10 @@ protein_length = pdata.get("sequence",{}).get("length") or len(pdata.get("sequen
 gi=st.session_state.get("gi") or compute_gi(cv,protein_length)
 
 # ── Conflict flags + ACMG badges + ML probability (shown in verdict area) ─
-_conflicts_hook = st.session_state.get("conflicts", [])
-_acmg_hook      = st.session_state.get("acmg_auto", {})
-_dom_ctx        = st.session_state.get("domain_ctx", {})
-_ml_res         = st.session_state.get("ml_result", {})
+_conflicts_hook = (st.session_state.get("conflicts") or [])
+_acmg_hook      = (st.session_state.get("acmg_auto") or {})
+_dom_ctx        = (st.session_state.get("domain_ctx") or {})
+_ml_res         = (st.session_state.get("ml_result") or {})
 
 def _render_enhanced_signals():
     """Show conflict flags, ACMG badges, hotspot, ML probability, ClinGen validity."""
@@ -9529,9 +9539,9 @@ if _pdata_f and _gene_f:
                 "<b>Hover</b> over residue for details · Toggle view modes and signal animation above.</div>",
                 unsafe_allow_html=True,
             )
-            _cv_hook = st.session_state.get("cv",{})
-            _am_hook = st.session_state.get("am",{})
-            _gnomad_hook = st.session_state.get("gnomad",{})
+            _cv_hook = (st.session_state.get("cv") or {})
+            _am_hook = (st.session_state.get("am") or {})
+            _gnomad_hook = (st.session_state.get("gnomad") or {})
             _phos_feats = [f for f in _pdata_f.get("features",[]) if f.get("type") in ("Modified residue","MOD_RES") and "phospho" in f.get("description","").lower()]
             _bind_feats = [f for f in _pdata_f.get("features",[]) if f.get("type") in ("Binding site","BINDING","Active site","ACT_SITE")]
             _bind_dicts = []
@@ -10091,7 +10101,11 @@ def apply_config_to_workspace(cfg: dict) -> list[str]:
         for clr in ["pdata","cv","scored","gene","uid","gi","gnomad","string","trials",
                     "drugs","abstracts","org","ai_result","ot","am","isoforms","hotspots",
                     "patients","excel_bytes","domain_ctx","acmg_auto","conflicts","ml_result"]:
-            st.session_state[clr] = None
+            if clr in ("gene","uid"):       st.session_state[clr] = ""
+            elif clr == "excel_bytes":      st.session_state[clr] = None
+            elif clr in ("scored","string","trials","drugs","abstracts","isoforms","hotspots","conflicts"):
+                                            st.session_state[clr] = []
+            else:                           st.session_state[clr] = {}
         st.session_state["research_domain"] = domain
         st.session_state["_last_domain"] = domain
         changes.append(f"Domain → **{domain}**")
@@ -10166,10 +10180,10 @@ def _build_workspace_context() -> str:
     gnomad = st.session_state.get("gnomad") or {}
     drugs = st.session_state.get("drugs") or []
     lab_focus = st.session_state.get("ob_focus","") or st.session_state.get("lab_focus","")
-    lab_prots = st.session_state.get("ob_proteins","") or ",".join(st.session_state.get("lab_proteins",[]))
+    lab_prots = st.session_state.get("ob_proteins","") or ",".join((st.session_state.get("lab_proteins") or []))
     research_domain = st.session_state.get("research_domain","")
     active_goal = st.session_state.get("active_goal","")
-    papers = st.session_state.get("ob_papers", []) or []
+    papers = (st.session_state.get("ob_papers") or [])
     trace = st.session_state.get("analysis_trace") or {}
     practitioner = st.session_state.get("practitioner_mode", False)
 
@@ -10258,7 +10272,7 @@ def _offline_chat_fallback(user_msg: str) -> str:
     m = (user_msg or "").lower()
     gene = st.session_state.get("gene","")
     gi = st.session_state.get("gi") or {}
-    papers = st.session_state.get("ob_papers", []) or []
+    papers = (st.session_state.get("ob_papers") or [])
     parts = []
     if any(k in m for k in ["clinvar", "variant", "pathogenic"]):
         if gi.get("n_pathogenic") is not None:
@@ -10403,7 +10417,7 @@ def render_lab_chatbot():
     is_open    = st.session_state.get("lab_chat_open", False)
     is_done    = st.session_state.get("lab_setup_complete", False)
     lab_name   = st.session_state.get("lab_name","")
-    chat_hist  = st.session_state.get("lab_chat_history", [])
+    chat_hist  = (st.session_state.get("lab_chat_history") or [])
 
     # ── Floating trigger button ───────────────────────────────────────────────
     btn_label = (
@@ -10634,7 +10648,7 @@ def render_lab_chatbot():
             st.rerun()
 
     # ── Recent Work — previous searches with one-click reload ─────────────────
-    _ws_hist = st.session_state.get("workspace", []) or []
+    _ws_hist = (st.session_state.get("workspace") or [])
     _hist_count = len(_ws_hist)
     if _hist_count > 0:
         with st.sidebar.expander(f"Recent Work ({_hist_count} {'protein' if _hist_count == 1 else 'proteins'})", expanded=False):
@@ -10673,9 +10687,9 @@ def render_lab_chatbot():
     _trace_p = st.session_state.get("analysis_trace")
     _gene_p  = st.session_state.get("gene","")
     _goal_p  = st.session_state.get("active_goal","")
-    _papers_p = st.session_state.get("ob_papers", []) or []
-    _drugs_p  = st.session_state.get("drugs", []) or []
-    _trials_p = st.session_state.get("trials", []) or []
+    _papers_p = (st.session_state.get("ob_papers") or [])
+    _drugs_p  = (st.session_state.get("drugs") or [])
+    _trials_p = (st.session_state.get("trials") or [])
     if _gene_p:
         with st.sidebar.expander(f"Proof of Value · {_gene_p}", expanded=True):
             # ── Estimated time + money saved ─────────────────────────────────
@@ -10863,11 +10877,11 @@ def render_lab_chatbot():
                 )
 
     # ── Lab Library (papers pulled from lab focus) ──────────────────────────
-    _lab_papers = st.session_state.get("ob_papers", []) or []
+    _lab_papers = (st.session_state.get("ob_papers") or [])
     _lab_focus_sb = (st.session_state.get("ob_focus","") or
                      st.session_state.get("lab_focus","") or "")
     _lab_prots_sb = (st.session_state.get("ob_proteins","") or
-                     ",".join(st.session_state.get("lab_proteins",[])) or "")
+                     ",".join((st.session_state.get("lab_proteins") or [])) or "")
     with st.sidebar.expander(f"Lab Library ({len(_lab_papers)} papers)", expanded=False):
         if not _lab_papers and not _lab_focus_sb:
             st.caption("Configure your lab in the onboarding wizard or sidebar chatbot to pull relevant papers from Semantic Scholar.")
@@ -13192,7 +13206,7 @@ with tab5:
             st.session_state["ai_result"] = result
             st.rerun()
     
-    ai = st.session_state.get("ai_result", {})
+    ai = (st.session_state.get("ai_result") or {})
     if not ai:
         # Show preview of available data
         st.markdown("<hr class='dv'>", unsafe_allow_html=True)
@@ -13611,7 +13625,7 @@ with tab6:
         _tab_disabled_banner("Workspace")
     _rd6 = st.session_state.get("research_domain","")
     _lab_done = st.session_state.get("lab_setup_complete", False)
-    _lab_prots = st.session_state.get("lab_proteins", [])
+    _lab_prots = (st.session_state.get("lab_proteins") or [])
     _lab_focus = st.session_state.get("lab_focus","")
 
     # ── HEADER ────────────────────────────────────────────────────────────────
@@ -13643,7 +13657,7 @@ with tab6:
     # ════════════════════════════════════════════════════════════════════════
     if _scr_mode == " Saved Proteins":
         st.markdown("<hr class='dv'>", unsafe_allow_html=True)
-        _ws = st.session_state.get("workspace", []) or []
+        _ws = (st.session_state.get("workspace") or [])
         # Offer to add the currently-loaded protein
         _cur_gene = st.session_state.get("gene","")
         _c_add1, _c_add2 = st.columns([3,1])
@@ -13663,7 +13677,7 @@ with tab6:
                 else:
                     st.info(f"{_cur_gene} is already saved.")
 
-        _ws = st.session_state.get("workspace", []) or []
+        _ws = (st.session_state.get("workspace") or [])
         if not _ws:
             st.markdown(
                 "<div style='background:#050d24;border:1px solid #0d2545;border-radius:10px;"
@@ -13730,7 +13744,7 @@ with tab6:
     # ════════════════════════════════════════════════════════════════════════
     elif _scr_mode == " Compare":
         st.markdown("<hr class='dv'>", unsafe_allow_html=True)
-        _ws = st.session_state.get("workspace", []) or []
+        _ws = (st.session_state.get("workspace") or [])
         if len(_ws) < 2:
             st.info("Save at least 2 proteins (in the Saved Proteins tab) to compare them side-by-side.")
         else:
@@ -13817,10 +13831,10 @@ with tab6:
         # ── Run screening loop ─────────────────────────────────────────────
         if st.session_state.get("screener_running") and st.session_state.get("screener_genes_run"):
             _genes_to_run = st.session_state["screener_genes_run"]
-            _results = st.session_state.get("screener_results", [])
+            _results = (st.session_state.get("screener_results") or [])
             _already_done = {r["gene"] for r in _results}
             _todo = [g for g in _genes_to_run if g not in _already_done]
-            _filters = st.session_state.get("screener_filters", {})
+            _filters = (st.session_state.get("screener_filters") or {})
 
             if _todo:
                 _prog = st.progress(len(_results)/len(_genes_to_run),
@@ -13885,7 +13899,7 @@ with tab6:
                 if len(_results) >= len(_genes_to_run):
                     st.session_state["screener_running"] = False
                     # Save to history
-                    hist = st.session_state.get("screener_history", [])
+                    hist = (st.session_state.get("screener_history") or [])
                     hist.append({
                         "genes": _genes_to_run,
                         "results": _results,
@@ -13896,8 +13910,8 @@ with tab6:
                 st.rerun()
 
         # ── Results table ──────────────────────────────────────────────────
-        _results = st.session_state.get("screener_results", [])
-        _filters = st.session_state.get("screener_filters", {})
+        _results = (st.session_state.get("screener_results") or [])
+        _filters = (st.session_state.get("screener_filters") or {})
 
         if _results and not st.session_state.get("screener_running"):
             st.success(f"Screen complete — {len([r for r in _results if not r.get('error')])} of {len(_results)} proteins analysed. Results below.")
@@ -14029,9 +14043,9 @@ with tab6:
         if _lab_done:
             _cfg_dom  = st.session_state.get("lab_domain","—")
             _cfg_goal = st.session_state.get("lab_goal","—")
-            _cfg_prot = st.session_state.get("lab_proteins",[])
-            _cfg_dis  = st.session_state.get("lab_diseases",[])
-            _cfg_tech = st.session_state.get("lab_techniques",[])
+            _cfg_prot = (st.session_state.get("lab_proteins") or [])
+            _cfg_dis  = (st.session_state.get("lab_diseases") or [])
+            _cfg_tech = (st.session_state.get("lab_techniques") or [])
             _cfg_sens = st.session_state.get("sensitivity",50)
             _cfg_org  = st.session_state.get("lab_model_organism","—")
             st.markdown(
@@ -14075,7 +14089,7 @@ with tab6:
             unsafe_allow_html=True
         )
 
-        _chat_hist = st.session_state.get("lab_chat_history",[])
+        _chat_hist = (st.session_state.get("lab_chat_history") or [])
 
         # Show chat history
         _chat_container = st.container()
@@ -14172,7 +14186,7 @@ with tab6:
     elif _scr_mode == " Screener History":
         st.markdown("<hr class='dv'>", unsafe_allow_html=True)
         sh("", "Previous Screens")
-        _hist = st.session_state.get("screener_history",[])
+        _hist = (st.session_state.get("screener_history") or [])
         if not _hist:
             st.info("No screens run yet. Go to Protein Screener and run your first screen.")
         else:
@@ -14253,7 +14267,7 @@ with tab7:
         "as opposed to being an associated bystander or expression change without causal mutation.</div>",
         unsafe_allow_html=True,
     )
-    ws = st.session_state.get("workspace", [])
+    ws = (st.session_state.get("workspace") or [])
     dis_search_ws = st.session_state.get("disease_search","")
 
     if not ws:
@@ -14445,7 +14459,7 @@ with tab8:
             _mw_display = f"{mw_kda} kDa" + (f" (est. {_eff_mw} kDa glycosylated)" if _glyco_mw_add > 0 else "")
 
             # ── IDR detection from AlphaFold pLDDT ──────────────────────────────
-            _am_data = st.session_state.get("am",{}) or {}
+            _am_data = (st.session_state.get("am") or {})
             _idr_residues = 0
             _idr_pct = 0.0
             if _am_data and isinstance(_am_data, dict):
@@ -15116,9 +15130,9 @@ with tab9:
     _ot9 = st.session_state.get("ot") or {}
     _gnomad9 = st.session_state.get("gnomad") or {}
     _pdb9 = st.session_state.get("pdb","")
-    _gi9 = st.session_state.get("gi",{})
-    _am9 = st.session_state.get("am",{})
-    _string9 = st.session_state.get("string",[])
+    _gi9 = (st.session_state.get("gi") or {})
+    _am9 = (st.session_state.get("am") or {})
+    _string9 = (st.session_state.get("string") or [])
     _seq9 = g_seq(_pdata9) if _pdata9 else ""
     _is_gpcr9 = g_gpcr(_pdata9) if _pdata9 else False
     _is_kin9 = any("kinase" in k.lower() for k in [kw.get("value","") for kw in (_pdata9 or {}).get("keywords",[])])
@@ -15312,7 +15326,7 @@ dr();
 
         # ── Known drugs atlas ────────────────────────────────────────────────────
         _known_drugs9 = _ot9.get("known_drugs_list",[]) if _ot9 else []
-        _dgidb9 = st.session_state.get("drugs",[])
+        _dgidb9 = (st.session_state.get("drugs") or [])
         all_drugs9 = list({d.get("drug") or d for d in _dgidb9 if d.get("drug")})[:12]
         if all_drugs9:
             sh("", "Known Drug Interactions & Approved Compounds")
