@@ -655,6 +655,26 @@ iframe[height="0"] { display: none !important; }
 /* Keep the block container from locking height */
 .block-container { overflow: visible !important; }
 
+/* ── Horizontal overflow fix — nothing should bleed past the viewport ───── */
+html, body, [data-testid="stAppViewContainer"], section[data-testid="stMain"] {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+}
+.block-container {
+  max-width: 100% !important;
+  padding-left: clamp(1rem, 3vw, 3rem) !important;
+  padding-right: clamp(1rem, 3vw, 3rem) !important;
+}
+/* Long unbreakable strings (DNA sequences, formulas) must wrap, not overflow */
+[data-testid="stMarkdownContainer"] div,
+[data-testid="stMarkdownContainer"] p {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+/* Tables and wide content get their own scroll, never push the page wide */
+[data-testid="stMarkdownContainer"] table { display: block; overflow-x: auto; max-width: 100%; }
+
+
 </style>
 """, unsafe_allow_html=True)
 
