@@ -7203,10 +7203,8 @@ def render_rare_disease_workspace():
 # ══════════════════════════════════════════════════════════════════════════════
 
 def fetch_scholar_papers(query: str, n: int = 8) -> list:
-    """
-    Fetch recent papers from Semantic Scholar API (free, no API key).
-    Returns list of dicts: title, authors, year, abstract, citations, url.
-    """
+    """Single-source fetch from Semantic Scholar (kept for backward compatibility).
+    For broader coverage use fetch_papers_multi() which queries 4 sources in parallel."""
     try:
         r = requests.get(
             "https://api.semanticscholar.org/graph/v1/paper/search",
@@ -7226,6 +7224,7 @@ def fetch_scholar_papers(query: str, n: int = 8) -> list:
                     "abstract":  (p.get("abstract") or "")[:280],
                     "citations": p.get("citationCount", 0),
                     "url":       p.get("url") or "",
+                    "source":    "Semantic Scholar",
                 }
                 for p in r.json().get("data", [])
                 if p.get("title")
@@ -7233,6 +7232,184 @@ def fetch_scholar_papers(query: str, n: int = 8) -> list:
     except Exception:
         pass
     return []
+
+
+def _fetch_openalex(query: str, n: int = 6) -> list:
+    """OpenAlex API — open metadata, no key required."""
+    try:
+        r = requests.get(
+            "https://api.openalex.org/works",
+            params={
+                "search": query, "per-page": n, "sort": "cited_by_count:desc",
+                "select": "id,title,authorships,publication_year,abstract_inverted_index,cited_by_count,doi,primary_location",
+            },
+            headers={"User-Agent": "Protellect/1.0 (mailto:contact@protellect.ai)"},
+            timeout=12,
+        )
+        if r.status_code != 200:
+            return []
+        out = []
+        for w in r.json().get("results", []) or []:
+            # Reconstruct abstract from inverted index (OpenAlex's format)
+            inv = w.get("abstract_inverted_index") or {}
+            abstract = ""
+            if inv:
+                positions = []
+                for word, idxs in inv.items():
+                    for i in idxs:
+                        positions.append((i, word))
+                abstract = " ".join(w for _, w in sorted(positions))[:280]
+            authors = ", ".join(
+                (a.get("author") or {}).get("display_name","")
+                for a in (w.get("authorships") or [])[:3]
+            )
+            url = ""
+            if w.get("doi"):
+                url = w["doi"]
+            elif (w.get("primary_location") or {}).get("landing_page_url"):
+                url = w["primary_location"]["landing_page_url"]
+            out.append({
+                "title":     w.get("title","") or "",
+                "authors":   authors,
+                "year":      w.get("publication_year","") or "",
+                "abstract":  abstract,
+                "citations": w.get("cited_by_count", 0),
+                "url":       url,
+                "source":    "OpenAlex",
+            })
+        return [p for p in out if p["title"]]
+    except Exception:
+        return []
+
+
+def _fetch_crossref(query: str, n: int = 6) -> list:
+    """CrossRef REST API — publisher metadata, no key required."""
+    try:
+        r = requests.get(
+            "https://api.crossref.org/works",
+            params={
+                "query": query, "rows": n, "sort": "is-referenced-by-count", "order": "desc",
+            },
+            headers={"User-Agent": "Protellect/1.0 (mailto:contact@protellect.ai)"},
+            timeout=12,
+        )
+        if r.status_code != 200:
+            return []
+        out = []
+        for w in (r.json().get("message", {}) or {}).get("items", []) or []:
+            title = (w.get("title") or [""])[0]
+            authors = ", ".join(
+                f"{a.get('given','')} {a.get('family','')}".strip()
+                for a in (w.get("author") or [])[:3]
+            )
+            year = ""
+            issued = (w.get("issued") or {}).get("date-parts", [[None]])
+            if issued and issued[0] and issued[0][0]:
+                year = issued[0][0]
+            doi = w.get("DOI","")
+            url = f"https://doi.org/{doi}" if doi else (w.get("URL","") or "")
+            out.append({
+                "title":     title,
+                "authors":   authors,
+                "year":      year,
+                "abstract":  (w.get("abstract") or "").replace("<jats:p>","").replace("</jats:p>","")[:280],
+                "citations": w.get("is-referenced-by-count", 0) or 0,
+                "url":       url,
+                "source":    "CrossRef",
+            })
+        return [p for p in out if p["title"]]
+    except Exception:
+        return []
+
+
+def _fetch_pubmed(query: str, n: int = 6) -> list:
+    """NCBI E-utilities PubMed — biomedical literature, no key required (rate-limited to 3 req/s)."""
+    try:
+        # Step 1: esearch for PMIDs
+        r1 = requests.get(
+            "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi",
+            params={"db": "pubmed", "term": query, "retmax": n, "retmode": "json", "sort": "relevance"},
+            timeout=12,
+        )
+        if r1.status_code != 200:
+            return []
+        pmids = (r1.json().get("esearchresult", {}) or {}).get("idlist", []) or []
+        if not pmids:
+            return []
+        # Step 2: esummary for metadata
+        r2 = requests.get(
+            "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi",
+            params={"db": "pubmed", "id": ",".join(pmids), "retmode": "json"},
+            timeout=12,
+        )
+        if r2.status_code != 200:
+            return []
+        results = (r2.json().get("result", {}) or {})
+        out = []
+        for pmid in pmids:
+            rec = results.get(pmid)
+            if not rec or rec.get("error"): continue
+            title = rec.get("title","") or ""
+            authors = ", ".join(a.get("name","") for a in (rec.get("authors") or [])[:3])
+            year = (rec.get("pubdate","") or "")[:4]
+            out.append({
+                "title":     title,
+                "authors":   authors,
+                "year":      year,
+                "abstract":  "",  # esummary doesn't return abstract; would need efetch (skipped for speed)
+                "citations": 0,    # PubMed doesn't expose citation counts directly
+                "url":       f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/",
+                "source":    "PubMed",
+                "pmid":      pmid,
+            })
+        return [p for p in out if p["title"]]
+    except Exception:
+        return []
+
+
+def fetch_papers_multi(query: str, per_source: int = 4, on_progress=None) -> list:
+    """Fetch papers from 4 sources in parallel, deduplicate by title, sort by citations.
+    on_progress(source, n_results) callback fires after each source completes."""
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    sources = [
+        ("Semantic Scholar", lambda: fetch_scholar_papers(query, n=per_source)),
+        ("OpenAlex",         lambda: _fetch_openalex(query, n=per_source)),
+        ("CrossRef",         lambda: _fetch_crossref(query, n=per_source)),
+        ("PubMed",           lambda: _fetch_pubmed(query, n=per_source)),
+    ]
+    results = {}
+    with ThreadPoolExecutor(max_workers=4) as ex:
+        futures = {ex.submit(fn): name for name, fn in sources}
+        for f in as_completed(futures, timeout=15):
+            name = futures[f]
+            try:
+                papers = f.result(timeout=2) or []
+            except Exception:
+                papers = []
+            results[name] = papers
+            if on_progress:
+                try: on_progress(name, len(papers))
+                except Exception: pass
+    # Combine all + deduplicate by lowercased title
+    seen_titles = set()
+    combined = []
+    # Interleave so each source is represented in the top results
+    max_len = max((len(v) for v in results.values()), default=0)
+    for i in range(max_len):
+        for name in ["Semantic Scholar","PubMed","OpenAlex","CrossRef"]:
+            lst = results.get(name) or []
+            if i < len(lst):
+                p = lst[i]
+                key = (p.get("title","") or "")[:60].lower().strip()
+                if key and key not in seen_titles:
+                    seen_titles.add(key)
+                    combined.append(p)
+    # Final sort: prefer ones with citations, but keep some recency
+    combined.sort(key=lambda p: (
+        -(p.get("citations") or 0),
+        -(int(p.get("year") or 0) if str(p.get("year","")).isdigit() else 0),
+    ))
+    return combined
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -7350,32 +7527,66 @@ def render_onboarding():
         )
         st.markdown(
             f"<div style='color:var(--text3);font-size:.8rem;margin-bottom:.9rem;'>"
-            f"Searching Semantic Scholar for recent papers matching: "
+            f"Searching 4 academic databases in parallel for: "
             f"<code style='color:var(--cyan);font-family:DM Mono,monospace;'>{q[:70]}</code></div>",
             unsafe_allow_html=True
         )
 
         if not st.session_state["ob_papers"]:
-            with st.spinner("Fetching papers..."):
-                papers = fetch_scholar_papers(q, n=6)
+            # Live progress UI showing each source as it returns
+            progress_slot = st.container()
+            with progress_slot:
+                progress_box = st.empty()
+                src_status = {"Semantic Scholar":"pending","PubMed":"pending","OpenAlex":"pending","CrossRef":"pending"}
+                def _render_progress():
+                    rows = []
+                    for src, st_v in src_status.items():
+                        if st_v == "pending":
+                            rows.append(f"<div style='color:var(--text3);font-size:.74rem;padding:3px 0;'>[ … ] {src} — querying…</div>")
+                        elif isinstance(st_v, int):
+                            clr = "var(--green)" if st_v > 0 else "var(--text3)"
+                            rows.append(f"<div style='color:{clr};font-size:.74rem;padding:3px 0;'>[ ✓ ] {src} — {st_v} results</div>")
+                        else:
+                            rows.append(f"<div style='color:var(--rose);font-size:.74rem;padding:3px 0;'>[ ✕ ] {src} — {st_v}</div>")
+                    progress_box.markdown(
+                        f"<div style='background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-family:DM Mono,monospace;'>"
+                        + "".join(rows) + "</div>",
+                        unsafe_allow_html=True,
+                    )
+                _render_progress()
+
+                def _on_progress(source, n_results):
+                    src_status[source] = int(n_results)
+                    _render_progress()
+
+                papers = fetch_papers_multi(q, per_source=4, on_progress=_on_progress)
                 if st.session_state["ob_proteins"]:
                     g1 = st.session_state["ob_proteins"].split(",")[0].strip()
-                    extra = fetch_scholar_papers(f"{g1} protein disease variants mechanism", n=4)
-                    seen = {p["title"] for p in papers}
-                    papers += [p for p in extra if p["title"] not in seen]
-                st.session_state["ob_papers"] = papers[:9]
+                    extra = fetch_papers_multi(f"{g1} protein disease variants mechanism", per_source=3)
+                    seen = {(p.get("title","") or "")[:60].lower() for p in papers}
+                    papers += [p for p in extra if (p.get("title","") or "")[:60].lower() not in seen]
+                st.session_state["ob_papers"] = papers[:12]
 
         papers = st.session_state["ob_papers"]
         if papers:
+            # Source breakdown
+            src_counts = {}
+            for p in papers:
+                s = p.get("source","unknown")
+                src_counts[s] = src_counts.get(s, 0) + 1
+            src_summary = " · ".join(f"{n} {s}" for s, n in sorted(src_counts.items(), key=lambda x:-x[1]))
             st.markdown(
-                f"<div style='color:var(--green);font-size:.78rem;font-weight:600;margin-bottom:.6rem;'>"
-                f"{len(papers)} papers loaded — pre-loaded into your AI report context</div>",
+                f"<div style='color:var(--green);font-size:.78rem;font-weight:600;margin-bottom:.4rem;'>"
+                f"{len(papers)} papers loaded across 4 databases — pre-loaded into your AI report context</div>"
+                f"<div style='color:var(--text3);font-size:.7rem;margin-bottom:.6rem;font-family:DM Mono,monospace;'>{src_summary}</div>",
                 unsafe_allow_html=True
             )
             for p in papers:
                 cc = p.get("citations", 0)
                 cc_clr = "#38bdf8" if cc > 100 else "var(--text2)" if cc > 10 else "var(--text3)"
                 url = p.get("url") or "#"
+                src_tag = p.get("source","")
+                src_color = {"Semantic Scholar":"#38bdf8","PubMed":"#34d399","OpenAlex":"#fbbf24","CrossRef":"#a78bfa"}.get(src_tag,"#94a3b8")
                 st.markdown(
                     f"<div style='background:var(--surface);border:1px solid var(--border);"
                     f"border-radius:7px;padding:9px 12px;margin-bottom:5px;'>"
@@ -8534,8 +8745,52 @@ if not st.session_state.get("pdata") and not st.session_state.get("csv_triage_ac
 # ── Tab visibility (driven by onboarding selection) ──────────────────────────
 ALL_TAB_NAMES = ["Summary","Triage","Case Study","Explorer","Experiments","AI Report","Workspace","Disease Link","Chemistry","Pharma"]
 _ob_selected_tabs = st.session_state.get("ob_tabs_selected") or ALL_TAB_NAMES
-# Ensure at least one tab is visible — if the user unchecked everything, fall back to all
-_visible_tab_names = [n for n in ALL_TAB_NAMES if n in _ob_selected_tabs] or ALL_TAB_NAMES
+
+# ── Goal-driven tab ordering — workspace adapts to research goal ────────────
+# When a user has set a specific research goal, surface the most relevant tabs first.
+# This is the "remodel workspace per research goal" feature.
+GOAL_TAB_PRIORITY = {
+    # Therapeutic / drug discovery — Pharma + Experiments first
+    "therapeutic": ["Summary","Pharma","Experiments","Triage","Explorer","Chemistry","AI Report","Disease Link","Case Study","Workspace"],
+    "drug":        ["Summary","Pharma","Chemistry","Experiments","Triage","Explorer","AI Report","Disease Link","Case Study","Workspace"],
+    # Mechanism / basic research — Explorer + Chemistry first
+    "mechanism":   ["Summary","Explorer","Chemistry","Triage","Case Study","AI Report","Experiments","Disease Link","Pharma","Workspace"],
+    "basic":       ["Summary","Explorer","Chemistry","Triage","AI Report","Case Study","Experiments","Disease Link","Pharma","Workspace"],
+    # Clinical interpretation — Triage + Disease Link + Case Study first
+    "clinical":    ["Summary","Triage","Disease Link","Case Study","AI Report","Experiments","Explorer","Chemistry","Pharma","Workspace"],
+    "variant":     ["Summary","Triage","Disease Link","Case Study","AI Report","Experiments","Explorer","Chemistry","Pharma","Workspace"],
+    # Biomarker — Triage + Disease Link + Experiments
+    "biomarker":   ["Summary","Triage","Disease Link","Experiments","AI Report","Explorer","Case Study","Chemistry","Pharma","Workspace"],
+    # Experimental pathway — Experiments first
+    "experiment":  ["Summary","Experiments","Triage","Explorer","Chemistry","AI Report","Case Study","Disease Link","Pharma","Workspace"],
+}
+
+def _resolve_goal_keyword(goal_text: str) -> str:
+    """Extract a goal keyword from the active_goal text for priority lookup."""
+    if not goal_text: return ""
+    t = goal_text.lower()
+    for key in GOAL_TAB_PRIORITY:
+        if key in t: return key
+    # Common keyword fallbacks
+    if any(w in t for w in ["target","therapy","therapeutic","treatment"]): return "therapeutic"
+    if any(w in t for w in ["drug","compound","screen","hts"]):              return "drug"
+    if any(w in t for w in ["mechanism","how","why","function"]):            return "mechanism"
+    if any(w in t for w in ["basic","characteris","characterize"]):          return "basic"
+    if any(w in t for w in ["clinical","diagnos","interpret","report out"]): return "clinical"
+    if any(w in t for w in ["variant","mutation","vus"]):                    return "variant"
+    if any(w in t for w in ["biomarker","panel","signature"]):               return "biomarker"
+    if any(w in t for w in ["experiment","assay","protocol","next step"]):   return "experiment"
+    return ""
+
+_goal_key = _resolve_goal_keyword(st.session_state.get("active_goal",""))
+if _goal_key and _goal_key in GOAL_TAB_PRIORITY:
+    _goal_order = GOAL_TAB_PRIORITY[_goal_key]
+    # Reorder selected tabs by goal priority; tabs not in priority go to end
+    _visible_tab_names = [t for t in _goal_order if t in _ob_selected_tabs] or ALL_TAB_NAMES
+    _goal_remodeled = True
+else:
+    _visible_tab_names = [n for n in ALL_TAB_NAMES if n in _ob_selected_tabs] or ALL_TAB_NAMES
+    _goal_remodeled = False
 
 def _tab_visible(name: str) -> bool:
     """True if this tab was selected during onboarding."""
@@ -8574,6 +8829,10 @@ class _SinkTab:
 
 # Logo strip directly above the tabs — keeps the brand visible at the workspace anchor
 _rd_for_strip = st.session_state.get("research_domain","")
+_ag_for_strip = st.session_state.get("active_goal","")
+_subtitle = (f"Workspace · {_rd_for_strip}" if _rd_for_strip else "Biomedical protein triage")
+if _goal_remodeled and _ag_for_strip:
+    _subtitle = f"Workspace remodeled for: {_ag_for_strip[:55]}"
 st.markdown(
     f"<div style='display:flex;align-items:center;gap:12px;margin:.6rem 0 .3rem;padding:.5rem .9rem;"
     f"background:linear-gradient(90deg,rgba(56,189,248,.06),rgba(56,189,248,0) 60%);"
@@ -8582,12 +8841,12 @@ st.markdown(
     f"filter:drop-shadow(0 0 6px rgba(56,189,248,.4));'>"
     f"<div style='flex:1;'>"
     f"<div style='color:#e6edf7;font-weight:800;font-size:1rem;letter-spacing:-.2px;'>Protellect</div>"
-    f"<div style='color:#94a3b8;font-size:.72rem;'>"
-    f"{('Workspace · ' + _rd_for_strip) if _rd_for_strip else 'Biomedical protein triage'}</div>"
+    f"<div style='color:#94a3b8;font-size:.72rem;'>{_subtitle}</div>"
     f"</div>"
-    f"<div style='color:#5b6b80;font-size:.7rem;text-transform:uppercase;letter-spacing:.6px;'>"
-    f"{len(_visible_tab_names)} of {len(ALL_TAB_NAMES)} tabs active</div>"
-    f"</div>",
+    f"<div style='color:#5b6b80;font-size:.7rem;text-transform:uppercase;letter-spacing:.6px;text-align:right;'>"
+    f"{len(_visible_tab_names)} of {len(ALL_TAB_NAMES)} tabs active"
+    + (f"<br><span style='color:#38bdf8;text-transform:none;letter-spacing:0;'>reordered by goal</span>" if _goal_remodeled else "")
+    + f"</div></div>",
     unsafe_allow_html=True,
 )
 
@@ -8762,9 +9021,54 @@ if search and query and query!=st.session_state["last"]:
     st.session_state["last"] = query
     # Clear cache so stale results never persist between searches
     fetch_uniprot.clear()
+
+    # ── LIVE SCAN TRACE — dropdown showing every API call as it happens ─────
+    _scan_steps = []
+    _scan_box = st.empty()
+    def _scan(label, code_hint, status="run"):
+        """Append a step to the live trace and re-render the dropdown."""
+        _scan_steps.append({"label":label,"code":code_hint,"status":status})
+        _rows = []
+        for s in _scan_steps:
+            if s["status"] == "run":
+                _icon, _clr = "→", "var(--cyan)"
+            elif s["status"] == "ok":
+                _icon, _clr = "✓", "var(--green)"
+            elif s["status"] == "skip":
+                _icon, _clr = "·", "var(--text3)"
+            else:
+                _icon, _clr = "✕", "var(--rose)"
+            _rows.append(
+                f"<div style='padding:4px 0;border-bottom:1px solid rgba(56,189,248,.06);'>"
+                f"<div style='display:flex;justify-content:space-between;align-items:center;'>"
+                f"<span style='color:{_clr};font-weight:700;font-size:.78rem;'>[{_icon}] {s['label']}</span>"
+                f"</div>"
+                f"<code style='color:var(--text3);font-size:.65rem;font-family:DM Mono,monospace;display:block;margin-top:1px;'>{s['code']}</code>"
+                f"</div>"
+            )
+        _scan_box.markdown(
+            f"<details open style='background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.4rem .8rem;margin:.4rem 0;'>"
+            f"<summary style='color:var(--text);font-weight:700;font-size:.84rem;cursor:pointer;padding:6px 0;'>"
+            f"Analysis trace · {len(_scan_steps)} steps · {sum(1 for s in _scan_steps if s['status']=='ok')} complete</summary>"
+            f"<div style='margin-top:.5rem;'>" + "".join(_rows) + "</div></details>",
+            unsafe_allow_html=True,
+        )
+
+    def _scan_done(label, code_hint, n_results=None):
+        for s in _scan_steps:
+            if s["label"] == label and s["status"] == "run":
+                s["status"] = "ok"
+                if n_results is not None:
+                    s["code"] = code_hint + f"  → {n_results} results"
+                break
+        _scan(_scan_steps[-1]["label"], _scan_steps[-1]["code"], _scan_steps[-1]["status"])  # re-render
+        _scan_steps.pop()  # pop the duplicate we just appended
+
     with st.spinner(" Fetching UniProt · ClinVar · AlphaFold · PubMed…"):
         try:
+            _scan("UniProt", f"GET https://rest.uniprot.org/uniprotkb/search?query={query}")
             pdata=fetch_uniprot(query)
+            _scan_done("UniProt", f"GET https://rest.uniprot.org/uniprotkb/search?query={query}", 1 if pdata else 0)
             # Final organism guard — reject anything not Homo sapiens
             _org_check = pdata.get("organism",{})
             _sci_name  = _org_check.get("scientificName","")
@@ -8798,9 +9102,15 @@ if search and query and query!=st.session_state["last"]:
                     st.session_state["_search_disambiguation"] = None
             elif not st.session_state.get("_search_disambiguation"):
                 st.session_state["_search_disambiguation"] = None
+            _scan("ClinVar (NCBI)", f"GET https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=clinvar&term={gene}[gene]")
             cv=fetch_clinvar(gene,max_v); st.session_state["cv"]=cv
+            _scan_done("ClinVar (NCBI)", f"GET clinvar?term={gene}[gene]", len((cv or {}).get("variants",[])))
+            _scan("AlphaFold (EBI)", f"GET https://alphafold.ebi.ac.uk/files/AF-{uid}-F1-model_v4.pdb")
             pdb=fetch_pdb(uid); st.session_state["pdb"]=pdb
+            _scan_done("AlphaFold (EBI)", f"GET alphafold AF-{uid}", 1 if pdb else 0)
+            _scan("Europe PMC", f"GET europepmc.org/webservices/rest/search?query={gene}")
             papers=fetch_papers(gene); st.session_state["papers"]=papers
+            _scan_done("Europe PMC", f"GET europepmc.org search query={gene}", len(papers or []))
             scored=ml_score_variants(cv.get("variants",[]),sensitivity)
             st.session_state["scored"]=scored
             protein_len=pdata.get("sequence",{}).get("length",1)
@@ -8810,11 +9120,21 @@ if search and query and query!=st.session_state["last"]:
             st.session_state["assay"]=assay_txt; st.session_state["last"]=query
             # Extended data fetches
             with st.spinner(" Fetching interactions, population genetics & drug data..."):
+                _scan("gnomAD v4", f"POST gnomad.broadinstitute.org/api  query={{ gene(symbol:{gene}) constraint }}")
                 gnomad_data  = fetch_gnomad(gene)
+                _scan_done("gnomAD v4", f"POST gnomad.broadinstitute.org/api {gene}", 1 if gnomad_data else 0)
+                _scan("STRING-DB", f"GET string-db.org/api/json/network?identifiers={gene}")
                 string_data  = fetch_string_interactions(gene)
+                _scan_done("STRING-DB", f"GET string-db.org/api network={gene}", len(string_data or []))
+                _scan("ClinicalTrials.gov", f"GET clinicaltrials.gov/api/v2/studies?query.term={gene}")
                 trials_data  = fetch_clinical_trials(gene)
+                _scan_done("ClinicalTrials.gov", f"GET clinicaltrials.gov  q={gene}", len(trials_data or []))
+                _scan("DGIdb (drug)", f"POST dgidb.org/api/graphql  genes:[{gene}]")
                 drugs_data   = fetch_dgidb(gene)
+                _scan_done("DGIdb (drug)", f"POST dgidb.org/api {gene}", len(drugs_data or []))
+                _scan("PubMed abstracts", f"GET eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term={gene}")
                 abstracts    = fetch_pubmed_abstracts(gene)
+                _scan_done("PubMed abstracts", f"GET pubmed esearch {gene}", len(abstracts or []))
                 org_class    = classify_organism(pdata)
                 st.session_state["gnomad"]   = gnomad_data
                 st.session_state["string"]   = string_data
@@ -8824,16 +9144,28 @@ if search and query and query!=st.session_state["last"]:
                 st.session_state["org"]      = org_class
             # Power features
             with st.spinner(" Fetching OpenTargets, AlphaMissense & computing hotspots..."):
+                _scan("OpenTargets Platform", f"POST api.platform.opentargets.org  query target({gene})")
                 ot_data   = fetch_opentargets(gene)
+                _scan_done("OpenTargets Platform", f"POST opentargets {gene}", 1 if ot_data else 0)
+                _scan("AlphaMissense", f"GET https://alphamissense.hegelab.org/{uid}")
                 am_scores = fetch_alphamissense(uid)
+                _scan_done("AlphaMissense", f"GET alphamissense {uid}", len(am_scores or {}))
+                _scan("UniProt isoforms", f"GET uniprot.org/uniprotkb/{uid}/isoforms")
                 isoforms  = fetch_isoforms(uid)
+                _scan_done("UniProt isoforms", f"GET uniprot {uid}/isoforms", len(isoforms or []))
+                _scan("Hotspot clustering", f"compute_hotspot_clusters(variants={len(cv.get('variants',[]))}, L={protein_len})")
                 hotspots  = compute_hotspot_clusters(cv.get("variants",[]), pdata.get("sequence",{}).get("length",1))
+                _scan_done("Hotspot clustering", f"compute_hotspot_clusters L={protein_len}", len(hotspots or []))
+                _scan("Patient population estimation", f"estimate_patient_population(diseases={len(g_diseases(pdata) or [])})")
                 patient_d = estimate_patient_population(g_diseases(pdata), cv, compute_gi(cv, pdata.get("sequence",{}).get("length",1)))
+                _scan_done("Patient population estimation", f"estimate_patient_population", 1 if patient_d else 0)
                 # ── ClinGen gene-disease validity ─────────────────────────────
+                _scan("ClinGen", f"GET search.clinicalgenome.org/kb/gene-validity?search={gene}")
                 try:
                     clingen_data = fetch_clingen(gene)
                 except Exception:
                     clingen_data = {"classifications": []}
+                _scan_done("ClinGen", f"GET clinicalgenome.org/{gene}", len((clingen_data or {}).get("classifications",[])))
                 st.session_state["clingen"]   = clingen_data
                 st.session_state["ot"]        = ot_data
                 st.session_state["am"]        = am_scores
@@ -10853,18 +11185,79 @@ def _offline_chat_fallback(user_msg: str) -> str:
     return " ".join(parts)
 
 
-def call_claude_api(messages: list, system_prompt: str | None = None) -> str:
-    """Call Claude API for chatbot responses. Falls back to a rule-based answer
-    when no API key is set so the chatbot is never completely dead."""
-    api_key = _get_anthropic_key()
-    sys_prompt = system_prompt if system_prompt is not None else _get_system_prompt()
+def _get_gemini_key() -> str:
+    """Resolve Google Gemini / Vertex AI API key from secrets, env, or session state."""
+    try:
+        k = st.secrets.get("GEMINI_API_KEY", "") if hasattr(st, "secrets") else ""
+        if k: return k
+        k = st.secrets.get("GOOGLE_API_KEY", "") if hasattr(st, "secrets") else ""
+        if k: return k
+    except Exception:
+        pass
+    import os as _os
+    return _os.environ.get("GEMINI_API_KEY","") or _os.environ.get("GOOGLE_API_KEY","") or st.session_state.get("gemini_key", "") or ""
+
+
+def _call_gemini(messages: list, system_prompt: str) -> str:
+    """Call Google Gemini API (works for Gemini and Vertex AI's Gemini models).
+    Free tier available; requires GEMINI_API_KEY in Streamlit secrets."""
+    api_key = _get_gemini_key()
     if not api_key:
-        # Try offline fallback for the last user message
+        return "Gemini unavailable — set GEMINI_API_KEY in Streamlit Cloud secrets."
+    # Convert Anthropic-style messages to Gemini's contents format
+    contents = []
+    for m in messages:
+        role = "model" if m.get("role") == "assistant" else "user"
+        contents.append({"role": role, "parts": [{"text": m.get("content","")}]})
+    payload = {
+        "contents": contents,
+        "systemInstruction": {"parts": [{"text": system_prompt}]},
+        "generationConfig": {"maxOutputTokens": 600, "temperature": 0.4},
+    }
+    try:
+        r = requests.post(
+            f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}",
+            json=payload,
+            headers={"Content-Type": "application/json"},
+            timeout=30,
+        )
+        if r.status_code == 401 or r.status_code == 403:
+            return "Gemini: API key rejected (401/403). Check GEMINI_API_KEY in Streamlit secrets."
+        if r.status_code == 429:
+            return "Gemini: rate limit reached. Please wait a moment."
+        r.raise_for_status()
+        data = r.json()
+        candidates = data.get("candidates", []) or []
+        if not candidates: return "Gemini: empty response."
+        parts = (candidates[0].get("content", {}) or {}).get("parts", []) or []
+        return "".join(p.get("text","") for p in parts) or "Gemini: empty response."
+    except Exception as e:
+        return f"Gemini connection error: {str(e)[:120]}."
+
+
+def call_claude_api(messages: list, system_prompt: str | None = None) -> str:
+    """Multi-provider AI dispatch. Routes to Anthropic Claude or Google Gemini based
+    on st.session_state['ai_provider']. Falls back to rule-based offline answer
+    when no keys are configured."""
+    sys_prompt = system_prompt if system_prompt is not None else _get_system_prompt()
+    provider = (st.session_state.get("ai_provider", "claude") or "claude").lower()
+
+    if provider in ("gemini", "vertex", "deepmind", "google"):
+        gemini_key = _get_gemini_key()
+        if gemini_key:
+            return _call_gemini(messages, sys_prompt)
+        # Fall through to Claude if Gemini not configured
+
+    api_key = _get_anthropic_key()
+    if not api_key:
+        # Try Gemini as last resort before offline
+        if _get_gemini_key():
+            return _call_gemini(messages, sys_prompt)
         last_user = next((m for m in reversed(messages) if m.get("role") == "user"), None)
         if last_user:
             return _offline_chat_fallback(last_user.get("content",""))
-        return ("AI assistant unavailable — no Anthropic API key configured. "
-                "Set ANTHROPIC_API_KEY in Streamlit Cloud Settings → Secrets to enable full conversation.")
+        return ("AI assistant unavailable — set ANTHROPIC_API_KEY or GEMINI_API_KEY "
+                "in Streamlit Cloud Settings → Secrets to enable full conversation.")
     try:
         payload = {
             "model": "claude-sonnet-4-20250514",
@@ -10883,7 +11276,7 @@ def call_claude_api(messages: list, system_prompt: str | None = None) -> str:
             timeout=30,
         )
         if r.status_code == 401:
-            return "AI assistant: API key was rejected (401). Check that ANTHROPIC_API_KEY is valid."
+            return "AI assistant: ANTHROPIC_API_KEY rejected (401). Check it in Streamlit secrets."
         if r.status_code == 429:
             return "AI assistant: rate limit reached. Please wait a moment and try again."
         r.raise_for_status()
@@ -10893,6 +11286,9 @@ def call_claude_api(messages: list, system_prompt: str | None = None) -> str:
             if block.get("type") == "text"
         ) or "(empty response)"
     except Exception as e:
+        # If Claude fails, try Gemini as backup
+        if _get_gemini_key():
+            return _call_gemini(messages, sys_prompt) + " (Claude unavailable, used Gemini.)"
         return f"Connection error: {str(e)[:120]}. Please try again."
 
 
@@ -11082,6 +11478,41 @@ def render_lab_chatbot():
     # The floating popup makes a browser-side call to Anthropic and needs
     # a key passed in JS. The sidebar Lab Setup Assistant above uses the
     # server-side key (st.secrets or env) and works without this input.
+    # ── AI Provider Selection ──────────────────────────────────────────
+    with st.sidebar.expander("AI Provider", expanded=False):
+        st.caption("Choose which AI powers the workspace assistant. Both providers have free tiers.")
+        _provider_options = ["Anthropic Claude (default)", "Google Gemini / Vertex"]
+        _current_provider = st.session_state.get("ai_provider", "claude")
+        _provider_idx = 1 if _current_provider in ("gemini","vertex","deepmind","google") else 0
+        _sel = st.radio(
+            "Active provider",
+            _provider_options,
+            index=_provider_idx,
+            key="ai_provider_radio",
+            label_visibility="collapsed",
+        )
+        new_provider = "gemini" if "Gemini" in _sel else "claude"
+        if new_provider != _current_provider:
+            st.session_state["ai_provider"] = new_provider
+            st.rerun()
+        _ck = _get_anthropic_key()
+        _gk = _get_gemini_key()
+        st.markdown(
+            f"<div style='font-size:.7rem;color:var(--text3);line-height:1.6;'>"
+            f"<b style='color:{'#34d399' if _ck else '#5b6b80'};'>Claude:</b> {'configured' if _ck else 'no key — set ANTHROPIC_API_KEY in Streamlit secrets'}<br>"
+            f"<b style='color:{'#34d399' if _gk else '#5b6b80'};'>Gemini:</b> {'configured' if _gk else 'no key — set GEMINI_API_KEY in Streamlit secrets'}"
+            f"</div>",
+            unsafe_allow_html=True,
+        )
+        st.session_state["gemini_key"] = st.text_input(
+            "Gemini API key (optional)",
+            value=st.session_state.get("gemini_key",""),
+            type="password",
+            key="gemini_key_input",
+            placeholder="AIza...",
+        )
+
+    # ── Popup chat: API key ────────────────────────────────────────────
     with st.sidebar.expander("Popup chat: API key", expanded=False):
         st.caption(
             "The floating bottom-right popup calls Anthropic directly from your browser. "
@@ -11131,14 +11562,14 @@ def render_lab_chatbot():
                 if st.button("Refresh papers", key="lab_lib_refresh", use_container_width=True):
                     _q = (_lab_focus_sb + " " + _lab_prots_sb.split(",")[0]).strip() if _lab_prots_sb else _lab_focus_sb
                     if _q:
-                        with st.spinner("Searching Semantic Scholar..."):
+                        with st.spinner("Searching 4 academic databases..."):
                             try:
-                                _new_papers = fetch_scholar_papers(_q, n=8)
+                                _new_papers = fetch_papers_multi(_q, per_source=4)
                                 if _lab_prots_sb:
                                     _g1 = _lab_prots_sb.split(",")[0].strip()
-                                    _extra = fetch_scholar_papers(f"{_g1} protein disease variants mechanism", n=4)
-                                    _seen = {p["title"] for p in _new_papers}
-                                    _new_papers += [p for p in _extra if p["title"] not in _seen]
+                                    _extra = fetch_papers_multi(f"{_g1} protein disease variants mechanism", per_source=3)
+                                    _seen = {(p.get("title","") or "")[:60].lower() for p in _new_papers}
+                                    _new_papers += [p for p in _extra if (p.get("title","") or "")[:60].lower() not in _seen]
                                 st.session_state["ob_papers"] = _new_papers[:12]
                                 st.rerun()
                             except Exception as _ex:
