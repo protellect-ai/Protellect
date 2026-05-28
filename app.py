@@ -4323,6 +4323,15 @@ def build_disease_timeline_html(
         "noonan":              (0,   0,  3, "Birth/neonatal"),
         "marfan":              (10, 25, 50, "Teens–30s"),
         "ehlers":              (5,  20, 40, "Childhood–adult"),
+        # Congenital / developmental disorders — present at or near birth
+        "dysplasia":           (0,   1, 20, "Congenital/infancy"),
+        "heterotopia":         (0,   8, 35, "Infancy–childhood"),
+        "otopalatodigital":    (0,   0,  5, "Congenital"),
+        "melnick":             (0,   0,  5, "Congenital"),
+        "frontometaphyseal":   (0,   1, 15, "Congenital/childhood"),
+        "syndrome":            (0,   3, 25, "Childhood"),
+        "dystrophy":           (0,  10, 35, "Childhood–adult"),
+        "deficiency":          (0,   2, 20, "Infancy–childhood"),
         "default":             (20, 45, 70, "Adult onset"),
     }
 
@@ -4417,14 +4426,35 @@ def build_disease_timeline_html(
             if key != "default" and key in name_l:
                 prog = stages; break
 
-        # Severity — varies per disease by its own attributes (not a constant)
-        sev = min(97, max(5, _tl_p*7 + _tl_lof*8 + cv_count*4 +
-                          (8 if "dominant" in inh.lower() else 0) +
-                          (10 if any(k in name_l for k in ["cancer","carcinoma","fatal","congenital","lethal","dysplasia"]) else 0) +
-                          (6 if any(k in name_l for k in ["cardiomyopathy","myopathy","muscular"]) else 0) +
-                          (-12 if any(k in name_l for k in ["mild","benign","attenuated","subclinical"]) else 0) +
-                          # length-based tiebreaker so distinct diseases differ slightly
-                          (len(name) % 7)))
+        # ── Severity (0–100) — derived from clinical attributes, explainable ─────
+        # Base severity by disease class (clinical seriousness of the phenotype)
+        if any(k in name_l for k in ["lethal","fatal","lissencephaly"]):
+            _sev_base = 80
+        elif any(k in name_l for k in ["cancer","carcinoma","leukemia","lymphoma","sarcoma"]):
+            _sev_base = 72
+        elif any(k in name_l for k in ["cardiomyopathy","heart"]):
+            _sev_base = 62
+        elif any(k in name_l for k in ["dysplasia","muscular dystrophy"]):
+            _sev_base = 58
+        elif any(k in name_l for k in ["myopathy","epilepsy","heterotopia","syndrome"]):
+            _sev_base = 50
+        elif any(k in name_l for k in ["mild","benign","attenuated","susceptibility"]):
+            _sev_base = 25
+        else:
+            _sev_base = 45
+        # Modifiers
+        _sev_mods = 0
+        if "dominant" in inh.lower():        _sev_mods += 6   # single allele suffices
+        if "recessive" in inh.lower():       _sev_mods -= 2
+        if "x-linked" in inh.lower():        _sev_mods += 4   # often more severe in males
+        if "congenital" in name_l:           _sev_mods += 8   # present from birth
+        if onset_data[1] <= 5:               _sev_mods += 6   # very early typical onset
+        if _tl_lof > 0:                      _sev_mods += min(10, _tl_lof*3)  # LoF variants present
+        if _tl_p   > 0:                      _sev_mods += min(8, _tl_p*2)
+        # Variant burden specific to THIS disease nudges severity so same-class
+        # diseases differ by their actual evidence, not a flat constant.
+        _sev_mods += min(6, cv_count)
+        sev = max(8, min(95, _sev_base + _sev_mods))
         onset_early, onset_typical, onset_late, onset_label = onset_data
 
         timeline_items.append({
@@ -13565,15 +13595,143 @@ with tab6:
     """, unsafe_allow_html=True)
 
     _scr_mode = st.radio("", [
+        " Saved Proteins",
+        " Compare",
         " Protein Screener",
+        " Project Notes",
         " AI Lab Configurator",
         " Screener History",
     ], horizontal=True, key="tab6_mode")
 
     # ════════════════════════════════════════════════════════════════════════
+    #  MODE 0: SAVED PROTEINS — the project hub (shortlist of analysed proteins)
+    # ════════════════════════════════════════════════════════════════════════
+    if _scr_mode == " Saved Proteins":
+        st.markdown("<hr class='dv'>", unsafe_allow_html=True)
+        _ws = st.session_state.get("workspace", []) or []
+        # Offer to add the currently-loaded protein
+        _cur_gene = st.session_state.get("gene","")
+        _c_add1, _c_add2 = st.columns([3,1])
+        with _c_add1:
+            sh("", "Your shortlist")
+            st.caption("Proteins you've analysed this session. Star a protein here, compare them side-by-side, and jump back into any one.")
+        with _c_add2:
+            if _cur_gene and st.button(f"+ Add {_cur_gene} to shortlist", use_container_width=True, key="ws_add_cur"):
+                _saved_genes = {w.get("gene") for w in _ws}
+                if _cur_gene not in _saved_genes:
+                    save_to_workspace(_cur_gene, st.session_state.get("pdata"),
+                                      st.session_state.get("gi") or {},
+                                      g_diseases(st.session_state.get("pdata") or {}),
+                                      st.session_state.get("scored") or [])
+                    st.success(f"{_cur_gene} added.")
+                    st.rerun()
+                else:
+                    st.info(f"{_cur_gene} is already saved.")
+
+        _ws = st.session_state.get("workspace", []) or []
+        if not _ws:
+            st.markdown(
+                "<div style='background:#050d24;border:1px solid #0d2545;border-radius:10px;"
+                "padding:2rem;text-align:center;color:#3a6080;margin-top:1rem;'>"
+                "No saved proteins yet. Analyse a protein from the sidebar, then add it here to build a shortlist "
+                "you can compare and revisit.</div>",
+                unsafe_allow_html=True,
+            )
+        else:
+            # Verdict color map
+            _vc_map = {"prioritise":"#34d399","proceed":"#fbbf24","investigate":"#fbbf24",
+                       "selective":"#fb7185","caution":"#fb7185","deprioritise":"#5b6b80",
+                       "low priority":"#ffd60a","neutral":"#94a3b8"}
+            for _i, _w in enumerate(_ws):
+                _wg   = _w.get("gene","?")
+                _wvr  = (_w.get("verdict","") or "—")
+                _wclr = _vc_map.get(_wvr.lower(), "#94a3b8")
+                _wnp  = _w.get("n_pathogenic", _w.get("n_path", 0))
+                _wnt  = _w.get("n_total", 0)
+                _wden = _w.get("density", 0)
+                _wdis = _w.get("diseases", []) or []
+                _wts  = _w.get("timestamp","")
+                _star = "★" if _w.get("starred") else "☆"
+                _r = st.columns([0.4, 1.2, 1.0, 1.0, 2.2, 1.0, 1.0])
+                if _r[0].button(_star, key=f"ws_star_{_i}", help="Star / unstar"):
+                    _w["starred"] = not _w.get("starred", False)
+                    st.session_state["workspace"][_i] = _w
+                    st.rerun()
+                _r[1].markdown(f"<div style='padding-top:6px;'><b style='color:#b0d8f0;font-size:.95rem;'>{_wg}</b><br>"
+                               f"<span style='color:#3a6080;font-size:.66rem;'>{_wts}</span></div>", unsafe_allow_html=True)
+                _r[2].markdown(f"<div style='padding-top:6px;'><span style='color:{_wclr};font-weight:700;font-size:.78rem;'>{_wvr.upper()}</span></div>", unsafe_allow_html=True)
+                _r[3].markdown(f"<div style='padding-top:6px;color:#b0d8f0;font-size:.78rem;'>{_wnp} P/LP<br><span style='color:#3a6080;font-size:.66rem;'>{_wden:.1f}/100aa</span></div>", unsafe_allow_html=True)
+                _r[4].markdown(f"<div style='padding-top:6px;color:#5a8090;font-size:.72rem;line-height:1.4;'>{' · '.join(_wdis[:2]) if _wdis else 'no diseases listed'}</div>", unsafe_allow_html=True)
+                if _r[5].button("Open →", key=f"ws_open_{_i}", use_container_width=True):
+                    st.session_state["_trigger_search"] = _wg
+                    st.session_state["protein_query_val"] = _wg
+                    st.rerun()
+                if _r[6].button("Remove", key=f"ws_rm_{_i}", use_container_width=True):
+                    st.session_state["workspace"].pop(_i)
+                    st.rerun()
+                st.markdown("<div style='border-bottom:1px solid #0a1828;margin:2px 0;'></div>", unsafe_allow_html=True)
+
+            # Export shortlist
+            if st.button(" Export shortlist as CSV", key="ws_export_shortlist"):
+                import csv as _csv_ws, io as _io_ws
+                _b = _io_ws.StringIO()
+                _w0 = st.session_state["workspace"][0]
+                _wr = _csv_ws.DictWriter(_b, fieldnames=["gene","verdict","n_pathogenic","n_total","density","diseases","timestamp","starred"])
+                _wr.writeheader()
+                for _w in st.session_state["workspace"]:
+                    _wr.writerow({
+                        "gene": _w.get("gene",""), "verdict": _w.get("verdict",""),
+                        "n_pathogenic": _w.get("n_pathogenic", _w.get("n_path",0)),
+                        "n_total": _w.get("n_total",0), "density": _w.get("density",0),
+                        "diseases": "; ".join(_w.get("diseases",[]) or []),
+                        "timestamp": _w.get("timestamp",""), "starred": _w.get("starred",False),
+                    })
+                st.download_button(" Download shortlist", _b.getvalue().encode(),
+                    f"protellect_shortlist_{__import__('datetime').datetime.now().strftime('%Y%m%d')}.csv",
+                    "text/csv", key="ws_dl_shortlist")
+
+    # ════════════════════════════════════════════════════════════════════════
+    #  MODE 0b: COMPARE — side-by-side of saved proteins
+    # ════════════════════════════════════════════════════════════════════════
+    elif _scr_mode == " Compare":
+        st.markdown("<hr class='dv'>", unsafe_allow_html=True)
+        _ws = st.session_state.get("workspace", []) or []
+        if len(_ws) < 2:
+            st.info("Save at least 2 proteins (in the Saved Proteins tab) to compare them side-by-side.")
+        else:
+            sh("", "Side-by-side comparison")
+            _opts = [w.get("gene","?") for w in _ws]
+            _pick = st.multiselect("Choose proteins to compare (2–4):", _opts,
+                                   default=_opts[:min(3,len(_opts))], max_selections=4, key="ws_cmp_pick")
+            _chosen = [w for w in _ws if w.get("gene") in _pick]
+            if len(_chosen) >= 2:
+                _cols = st.columns(len(_chosen))
+                _vc_map = {"prioritise":"#34d399","proceed":"#fbbf24","investigate":"#fbbf24",
+                           "selective":"#fb7185","deprioritise":"#5b6b80","low priority":"#ffd60a","neutral":"#94a3b8"}
+                for _col, _w in zip(_cols, _chosen):
+                    _vr = (_w.get("verdict","") or "—")
+                    _clr = _vc_map.get(_vr.lower(),"#94a3b8")
+                    _dis = _w.get("diseases",[]) or []
+                    _col.markdown(
+                        f"<div style='background:#050d24;border:1px solid {_clr}44;border-top:3px solid {_clr};"
+                        f"border-radius:10px;padding:14px;'>"
+                        f"<div style='color:#b0d8f0;font-weight:800;font-size:1.1rem;'>{_w.get('gene','?')}</div>"
+                        f"<div style='color:{_clr};font-weight:700;font-size:.8rem;margin:4px 0 12px;'>{_vr.upper()}</div>"
+                        f"<div style='color:#3a6080;font-size:.66rem;text-transform:uppercase;letter-spacing:.4px;'>P/LP variants</div>"
+                        f"<div style='color:#ff6b8a;font-weight:700;font-size:1.3rem;margin-bottom:8px;'>{_w.get('n_pathogenic',_w.get('n_path',0))}</div>"
+                        f"<div style='color:#3a6080;font-size:.66rem;text-transform:uppercase;letter-spacing:.4px;'>Variant density</div>"
+                        f"<div style='color:#fbbf24;font-weight:700;font-size:1.1rem;margin-bottom:8px;'>{_w.get('density',0):.1f}<span style='font-size:.6rem;color:#3a6080;'>/100aa</span></div>"
+                        f"<div style='color:#3a6080;font-size:.66rem;text-transform:uppercase;letter-spacing:.4px;'>Diseases ({len(_dis)})</div>"
+                        f"<div style='color:#5a8090;font-size:.7rem;line-height:1.5;'>{'<br>'.join('· '+d for d in _dis[:5]) if _dis else 'none listed'}</div>"
+                        f"</div>",
+                        unsafe_allow_html=True,
+                    )
+                st.caption("Comparison uses the snapshot saved when each protein was added. Re-open a protein to refresh its data.")
+
+    # ════════════════════════════════════════════════════════════════════════
     #  MODE 1: PROTEIN SCREENER
     # ════════════════════════════════════════════════════════════════════════
-    if _scr_mode == " Protein Screener":
+    elif _scr_mode == " Protein Screener":
         st.markdown("<hr class='dv'>", unsafe_allow_html=True)
 
         # ── Input ──────────────────────────────────────────────────────────
@@ -13796,6 +13954,37 @@ with tab6:
 
     # ════════════════════════════════════════════════════════════════════════
     #  MODE 2: AI LAB CONFIGURATOR (FULL CHATBOT)
+    # ════════════════════════════════════════════════════════════════════════
+    # ════════════════════════════════════════════════════════════════════════
+    #  MODE: PROJECT NOTES — free-text research notebook (persists in session)
+    # ════════════════════════════════════════════════════════════════════════
+    elif _scr_mode == " Project Notes":
+        st.markdown("<hr class='dv'>", unsafe_allow_html=True)
+        sh("", "Project notes")
+        st.caption("A scratchpad for your triage decisions, hypotheses, and to-dos. Saved for this session.")
+        _notes = st.text_area(
+            "Notes",
+            value=st.session_state.get("project_notes",""),
+            height=320,
+            placeholder="e.g.\n- FLNA: scaffold, low direct genetic evidence → deprioritise for now\n- TP53: confirmed driver, prioritise — order DMS validation\n- Follow up: check gnomAD constraint for SCN1A\n- Question for team: is the Filamin assay worth running?",
+            label_visibility="collapsed",
+            key="project_notes_input",
+        )
+        _cn1, _cn2 = st.columns([1,3])
+        with _cn1:
+            if st.button(" Save notes", use_container_width=True, key="save_notes"):
+                st.session_state["project_notes"] = _notes
+                st.success("Saved.")
+        with _cn2:
+            if _notes.strip():
+                st.download_button(" Download notes (.txt)", _notes.encode(),
+                    f"protellect_notes_{__import__('datetime').datetime.now().strftime('%Y%m%d')}.txt",
+                    "text/plain", key="dl_notes")
+        # Auto-persist on each render so notes aren't lost on tab switch
+        st.session_state["project_notes"] = _notes
+
+    # ════════════════════════════════════════════════════════════════════════
+    #  MODE 2: AI LAB CONFIGURATOR
     # ════════════════════════════════════════════════════════════════════════
     elif _scr_mode == " AI Lab Configurator":
         st.markdown("<hr class='dv'>", unsafe_allow_html=True)
