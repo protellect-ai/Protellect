@@ -4742,7 +4742,8 @@ def generate_excel(gene, pdata, cv, scored, gi, gnomad, string_data,
         ws3.column_dimensions[get_column_letter(col)].width = w
         hdr(ws3,1,col,name,DARK,CYAN)
     cond_counts_e = {}
-    for v2 in variants:
+    _variants_e = (cv or {}).get("variants", []) if cv else []
+    for v2 in _variants_e:
         if v2.get("score",0)>=2:
             for c2 in v2.get("condition","").split(";"):
                 c2=c2.strip()
@@ -6688,39 +6689,43 @@ def render_molbio_workspace():
 _popup_api_key = st.session_state.get("anthropic_key", "") or ""
 
 # ── Floating assistant indicator (bottom-right) ────────────────────────────
-# The real chatbot lives in the sidebar (Lab Setup Assistant). This button is a
-# visible reminder that the chat exists. Clicking it expands the sidebar.
-st.markdown(
-    """<style>
-    #proto-chat-fab {
-        position: fixed; bottom: 22px; right: 22px; z-index: 9999;
-        width: 56px; height: 56px; border-radius: 50%;
-        background: linear-gradient(135deg, #38bdf8, #6478ff);
-        border: 2px solid rgba(255,255,255,.15);
-        box-shadow: 0 6px 24px rgba(56,189,248,.5);
-        display: flex; align-items: center; justify-content: center;
-        cursor: pointer; transition: transform .2s, box-shadow .2s;
-    }
-    #proto-chat-fab:hover { transform: scale(1.08); box-shadow: 0 8px 32px rgba(56,189,248,.7); }
-    #proto-chat-fab-label {
-        position: fixed; bottom: 22px; right: 88px; z-index: 9999;
-        background: #0a1530; color: #e6edf7;
-        padding: 10px 14px; border-radius: 24px; font-size: .75rem;
-        border: 1px solid rgba(56,189,248,.35);
-        box-shadow: 0 4px 14px rgba(0,0,0,.4);
-        font-family: 'Inter','DM Sans',sans-serif;
-        pointer-events: none; opacity: 0; transition: opacity .25s;
-        white-space: nowrap;
-    }
-    #proto-chat-fab:hover + #proto-chat-fab-label { opacity: 1; }
-    </style>
-    <a id="proto-chat-fab" href="#" title="Lab Assistant is in the sidebar - click here to open if collapsed" onclick="document.querySelector('[data-testid=stSidebarCollapseButton]')?.click();return false;">
-    <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
-    </a>
-    <div id="proto-chat-fab-label">Lab Assistant is in the sidebar &rarr;</div>
-    """,
-    unsafe_allow_html=True,
-)
+# The real chatbot lives in the sidebar (Workspace Chat). This is just a visual
+# reminder. Uses components.html (NOT st.markdown) so HTML can never leak as
+# text — markdown can render leading-whitespace HTML as a code block.
+try:
+    import streamlit.components.v1 as _components
+    _components.html(
+        """<style>
+#proto-chat-fab {
+position: fixed; bottom: 22px; right: 22px; z-index: 9999;
+width: 56px; height: 56px; border-radius: 50%;
+background: linear-gradient(135deg, #38bdf8, #6478ff);
+border: 2px solid rgba(255,255,255,.15);
+box-shadow: 0 6px 24px rgba(56,189,248,.5);
+display: flex; align-items: center; justify-content: center;
+cursor: pointer; transition: transform .2s, box-shadow .2s;
+}
+#proto-chat-fab:hover { transform: scale(1.08); box-shadow: 0 8px 32px rgba(56,189,248,.7); }
+#proto-chat-fab-label {
+position: fixed; bottom: 22px; right: 88px; z-index: 9999;
+background: #0a1530; color: #e6edf7;
+padding: 10px 14px; border-radius: 24px; font-size: .75rem;
+border: 1px solid rgba(56,189,248,.35);
+box-shadow: 0 4px 14px rgba(0,0,0,.4);
+font-family: Inter,'DM Sans',sans-serif;
+pointer-events: none; opacity: 0; transition: opacity .25s;
+white-space: nowrap;
+}
+#proto-chat-fab:hover + #proto-chat-fab-label { opacity: 1; }
+</style>
+<a id="proto-chat-fab" href="#" title="Workspace Chat is in the sidebar" onclick="window.parent.document.querySelector('[data-testid=stSidebarCollapseButton]')?.click();return false;">
+<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
+</a>
+<div id="proto-chat-fab-label">Workspace Chat is in the sidebar &rarr;</div>""",
+        height=0,
+    )
+except Exception:
+    pass
 
 # ── Authentication gate ──────────────────────────────────────────────────
 # Show login page if not authenticated
@@ -8330,12 +8335,19 @@ with st.sidebar:
             sep="\t" if uploaded_csv.name.endswith((".tsv",".txt")) else ","
             df=pd.read_csv(uploaded_csv,sep=sep,on_bad_lines="skip")
             csv_type=detect_csv_type(df)
-            st.session_state["csv_df"]=df; st.session_state["csv_type"]=csv_type
-            # Assay summary in sidebar
-            summary_text=summarise_assay(df,csv_type)
-            st.markdown(f"<div style='background:#050d24;border:1px solid #0c3050;border-radius:8px;padding:8px 10px;margin-top:4px;'><div style='color:#4adaff;font-size:.94rem;font-weight:700;margin-bottom:3px;'>{uploaded_csv.name}</div><div style='color:#1a4060;font-size:.80rem;'>{csv_type.replace('_',' ').title()} · {len(df):,} rows</div><div style='color:#0d2840;font-size:.96rem;margin-top:3px;line-height:1.4;'>{summary_text[:200]}</div></div>", unsafe_allow_html=True)
+            st.session_state["csv_df"]=df
+            st.session_state["csv_type"]=csv_type
+            st.session_state["csv_filename"]=uploaded_csv.name
+            # Reset any manual override when a NEW file is uploaded
+            if st.session_state.get("_csv_last_file") != uploaded_csv.name:
+                st.session_state["_csv_last_file"] = uploaded_csv.name
+                st.session_state["csv_type_override"] = None
+                st.session_state["csv_edit_mode"] = False
+                st.session_state["csv_user_description"] = ""
         except Exception as e:
             st.error(f"CSV error: {e}")
+    # End sidebar CSV upload here — the full top-bar + edit UI is rendered in the main area
+    # (below the empty-state banner / above the tabs) so it doesn't get cut off in the sidebar
 
     # Run Triage button for CSV-only analysis
     if st.session_state.get("csv_df") is not None:
@@ -8718,6 +8730,97 @@ class _SinkTab:
                 pass
         return False  # don't suppress exceptions
 
+
+# ── CSV Detection Bar (visible when a wet-lab CSV is loaded) ─────────────────
+_csv_df_top = st.session_state.get("csv_df")
+if _csv_df_top is not None:
+    _csv_name_top = st.session_state.get("csv_filename","uploaded.csv")
+    _csv_type_top = st.session_state.get("csv_type_override") or st.session_state.get("csv_type","generic")
+    _csv_user_desc = st.session_state.get("csv_user_description","")
+    _csv_summary = _csv_user_desc.strip() if _csv_user_desc.strip() else summarise_assay(_csv_df_top, _csv_type_top)
+    _type_pretty = _csv_type_top.replace("_"," ").title()
+    _is_overridden = bool(st.session_state.get("csv_type_override")) or bool(_csv_user_desc.strip())
+
+    if not st.session_state.get("csv_edit_mode"):
+        # Display bar
+        st.markdown(
+            f"<div style='background:linear-gradient(90deg,rgba(56,189,248,.1),rgba(56,189,248,.02));"
+            f"border:1px solid rgba(56,189,248,.32);border-left:4px solid #38bdf8;"
+            f"border-radius:10px;padding:.7rem 1.1rem;margin:.5rem 0;'>"
+            f"<div style='display:flex;align-items:center;gap:14px;'>"
+            f"<div style='flex:1;'>"
+            f"<div style='color:#94a3b8;font-size:.66rem;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;'>"
+            f"Wet-lab CSV loaded · {len(_csv_df_top):,} rows × {len(_csv_df_top.columns)} columns"
+            f"</div>"
+            f"<div style='color:#e6edf7;font-size:.86rem;font-weight:700;margin-bottom:3px;'>"
+            f"{_csv_name_top} · <span style='color:#38bdf8;'>{_type_pretty}</span>"
+            f"{' <span style=color:#34d399;font-size:.72rem;font-weight:600;>(manual override)</span>' if _is_overridden else ''}"
+            f"</div>"
+            f"<div style='color:#94a3b8;font-size:.75rem;line-height:1.5;'>{_csv_summary[:280]}</div>"
+            f"</div></div></div>",
+            unsafe_allow_html=True,
+        )
+        _ec1, _ec2, _ec3 = st.columns([1,1,5])
+        with _ec1:
+            if st.button("Is this not right? Edit", key="csv_edit_btn"):
+                st.session_state["csv_edit_mode"] = True
+                st.rerun()
+        with _ec2:
+            if st.button("Run analysis from this CSV", key="csv_run_btn", type="primary"):
+                st.session_state["csv_triage_active"] = True
+                st.rerun()
+    else:
+        # Edit mode
+        st.markdown(
+            f"<div style='background:linear-gradient(135deg,#050d24,#0a1530);"
+            f"border:1px solid rgba(167,139,250,.4);border-left:4px solid #a78bfa;"
+            f"border-radius:10px;padding:.9rem 1.2rem;margin:.5rem 0;'>"
+            f"<div style='color:#a78bfa;font-weight:700;font-size:.9rem;margin-bottom:6px;'>"
+            f"Correct the CSV interpretation</div>"
+            f"<div style='color:#94a3b8;font-size:.74rem;line-height:1.6;'>"
+            f"Override the auto-detected type and/or describe what this CSV actually contains. "
+            f"All downstream analysis (Triage, Experiments, AI Report) will use your description as the ground truth.</div></div>",
+            unsafe_allow_html=True,
+        )
+        _CSV_TYPES = ["expression","variants","proteomics","stats","generic"]
+        _CSV_LABELS = {
+            "expression":  "Gene expression — RNA-seq / microarray / qPCR fold-changes",
+            "variants":    "Variants — VCF-derived, ClinVar-style classifications",
+            "proteomics":  "Proteomics — mass-spec intensities / abundance ratios",
+            "stats":       "Statistical results — p-values, GWAS, differential analysis",
+            "generic":     "Generic tabular data (let the AI infer from your description)",
+        }
+        _new_type = st.selectbox(
+            "Actual CSV type",
+            _CSV_TYPES,
+            index=_CSV_TYPES.index(_csv_type_top) if _csv_type_top in _CSV_TYPES else 4,
+            format_func=lambda x: _CSV_LABELS.get(x,x),
+            key="csv_type_override_sel",
+        )
+        _new_desc = st.text_area(
+            "Describe what this CSV is about (this becomes ground truth for all analysis)",
+            value=_csv_user_desc,
+            placeholder="e.g. Patient-derived iPSC western blot densitometry. 12 patient lines vs 4 healthy controls. Values are normalized to GAPDH. Variants tested: p.Arg175His, p.Gly12Asp...",
+            height=110,
+            key="csv_user_desc_input",
+        )
+        # Quick preview of first 5 rows
+        with st.expander(f"Preview first 5 rows of {_csv_name_top}", expanded=False):
+            st.dataframe(_csv_df_top.head(5), use_container_width=True)
+        _sc1, _sc2 = st.columns([1,4])
+        with _sc1:
+            if st.button("Save & re-run", key="csv_save_override", type="primary"):
+                st.session_state["csv_type_override"] = _new_type
+                st.session_state["csv_user_description"] = _new_desc.strip()
+                st.session_state["csv_edit_mode"] = False
+                # If a protein is loaded, mark for re-analysis using the new description
+                if st.session_state.get("pdata"):
+                    st.session_state["csv_reanalyze_pending"] = True
+                st.rerun()
+        with _sc2:
+            if st.button("Cancel", key="csv_cancel_override"):
+                st.session_state["csv_edit_mode"] = False
+                st.rerun()
 
 # Logo strip directly above the tabs — keeps the brand visible at the workspace anchor
 _rd_for_strip = st.session_state.get("research_domain","")
@@ -11049,6 +11152,20 @@ def _build_workspace_context() -> str:
             ctx.append(f"  [{i}] {t} ({yr})")
     if trace and trace.get("steps"):
         ctx.append(f"Last analysis trace ({trace.get('gene','')}): {len(trace['steps'])} APIs queried — UniProt, ClinVar, gnomAD, AlphaMissense, STRING, OpenTargets, DGIdb, PubMed, ClinGen, ML scorer.")
+    # ── CSV wet-lab context (user-provided ground truth) ─────────────────
+    _csv_df = st.session_state.get("csv_df")
+    if _csv_df is not None:
+        _csv_name  = st.session_state.get("csv_filename","uploaded.csv")
+        _csv_type  = st.session_state.get("csv_type_override") or st.session_state.get("csv_type","generic")
+        _csv_udesc = st.session_state.get("csv_user_description","")
+        ctx.append(f"Wet-lab CSV loaded: {_csv_name} · {len(_csv_df):,} rows × {len(_csv_df.columns)} columns · type={_csv_type}")
+        if _csv_udesc.strip():
+            ctx.append(f"User-provided CSV description (USE AS GROUND TRUTH): {_csv_udesc.strip()[:400]}")
+        else:
+            try:
+                ctx.append(f"CSV columns: {', '.join(list(_csv_df.columns)[:8])}")
+            except Exception:
+                pass
     return "\n".join(ctx) if ctx else ""
 
 
