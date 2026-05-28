@@ -3743,15 +3743,47 @@ def estimate_patient_population(diseases: list, cv: dict, gi: dict) -> dict:
     - Inheritance pattern
     This gives VCs the market size figure they need.
     """
-    # Known disease prevalence estimates (per 100,000)
+    # Known disease prevalence estimates (per 100,000). Conservative literature-based.
     PREVALENCE_DB = {
+        # Cardiac
         "cardiomyopathy": 200, "dilated cardiomyopathy": 40, "hypertrophic cardiomyopathy": 200,
+        "restrictive cardiomyopathy": 5, "long qt": 30, "brugada": 5, "arrhythmogenic": 20,
+        # Cancer
         "breast cancer": 1600, "colorectal cancer": 450, "lung cancer": 700,
-        "glanzmann": 0.1, "thrombasthenia": 0.1, "haemophilia": 10,
+        "ovarian cancer": 80, "prostate cancer": 1100, "pancreatic cancer": 80,
+        "glioma": 30, "leukemia": 130, "lymphoma": 220, "melanoma": 250, "sarcoma": 25,
+        "retinoblastoma": 1, "neuroblastoma": 2,
+        # Haematological
+        "glanzmann": 0.1, "thrombasthenia": 0.1, "haemophilia": 10, "hemophilia": 10,
+        "von willebrand": 100, "thrombocytopenia": 25,
+        # Common rare disease
         "cystic fibrosis": 3, "sickle cell": 30, "thalassemia": 45,
+        # Neurological
         "parkinson": 160, "alzheimer": 600, "huntington": 5,
         "autism": 700, "intellectual disability": 3000, "epilepsy": 600,
-        "leukemia": 130, "lymphoma": 220, "glioma": 30,
+        "ataxia": 25, "dystonia": 16, "spastic paraplegia": 2,
+        # X-linked / skeletal / FLNA-related family
+        "heterotopia": 0.5, "periventricular": 0.5,
+        "otopalatodigital": 0.05, "frontometaphyseal": 0.02,
+        "melnick-needles": 0.02, "melnick": 0.02,
+        "dysplasia": 5, "skeletal dysplasia": 5,
+        # Muscular / myopathy (FLNC etc.)
+        "myopathy": 5, "myofibrillar": 0.5, "distal myopathy": 0.5,
+        "muscular dystrophy": 17, "duchenne": 2, "becker": 0.5,
+        # Connective tissue
+        "ehlers-danlos": 50, "marfan": 20, "loeys-dietz": 0.3, "osteogenesis": 1,
+        # Metabolic / lysosomal
+        "deficiency": 5, "gaucher": 1, "fabry": 0.5, "pompe": 0.3,
+        "phenylketonuria": 10, "homocystinuria": 0.5,
+        # Endocrine
+        "diabetes": 8500, "thyroid": 1200,
+        # Renal
+        "polycystic kidney": 200, "alport": 1,
+        # Misc syndromes commonly hit
+        "noonan": 100, "rett": 1, "fragile x": 5, "angelman": 1, "prader-willi": 1.5,
+        "tuberous sclerosis": 8, "neurofibromatosis": 30,
+        "von hippel-lindau": 3, "li-fraumeni": 1, "cowden": 1, "lynch": 50,
+        "syndrome": 2,  # generic floor for any unmatched "X syndrome" — rare
     }
     total_prevalence = 0
     matched_diseases = []
@@ -7905,7 +7937,7 @@ with st.sidebar:
     depth=st.selectbox("Depth",["Standard (150 variants)","Deep (400 variants)"],label_visibility="collapsed")
     max_v=150 if "Standard" in depth else 400
     # Build version — bump on each deploy so you can confirm the live app is current
-    st.markdown("<div style='color:#1e3050;font-size:.62rem;text-align:right;margin-top:.3rem;'>build 2026.05.28-k</div>", unsafe_allow_html=True)
+    st.markdown("<div style='color:#1e3050;font-size:.62rem;text-align:right;margin-top:.3rem;'>build 2026.05.28-l</div>", unsafe_allow_html=True)
 
     # Sidebar protein summary
     if st.session_state["pdata"]:
