@@ -7565,10 +7565,11 @@ with st.sidebar:
                 css3=RANK_CSS[rk3]
                 st.markdown(f"<div style='display:flex;align-items:center;gap:6px;margin:3px 0;'><span class='badge {css3}'>{rk3}</span><span style='color:#5a8090;font-size:.81rem;'>{name3[:32]}</span></div>", unsafe_allow_html=True)
         _ent3 = classify_entity(p3)
-        _gi3  = st.session_state.get("gi",{})
+        _gi3  = st.session_state.get("gi") or {}
         _n_crit3 = sum(1 for v in scored3 if v.get("ml_rank")=="CRITICAL")
         _n_lof3  = sum(1 for v in scored3 if any(k in v.get("variant_name","").lower() for k in ["del","ter","fs","stop","nonsense"]) and v.get("score",0)>=3)
-        _pli3    = st.session_state.get("gnomad",{}).get("pLI",0) or 0
+        _gnomad3 = st.session_state.get("gnomad") or {}
+        _pli3    = (_gnomad3.get("pLI") if isinstance(_gnomad3, dict) else 0) or 0
         _goal3   = get_goal_config(active_goal)
         # Generate protein-specific experiments from actual data
         _exps3 = []
@@ -7576,7 +7577,7 @@ with st.sidebar:
             _exps3 = [
                 f"ADP-Glo kinase assay — test {min(3,_n_crit3)} CRITICAL variants vs WT",
                 f"pERK/pAKT western — downstream signalling loss in mutant cells",
-                f"{'HTS inhibitor screen (tractable)' if st.session_state.get('ot',{}).get('tractability',{}).get('Small molecule') else 'Allosteric site mapping by HDX-MS'}",
+                f"{'HTS inhibitor screen (tractable)' if ((st.session_state.get('ot') or {}).get('tractability') or {}).get('Small molecule') else 'Allosteric site mapping by HDX-MS'}",
             ]
         elif _ent3["ptype"] == "gpcr":
             _exps3 = [
@@ -15051,7 +15052,8 @@ with tab8:
             st.markdown("<div style='color:#3a6080;font-size:.78rem;margin-bottom:.4rem;'>Full N-Cα-C=O backbone. Drag to pan · Scroll to zoom · Hover for details.</div>", unsafe_allow_html=True)
             _phos2 = [f for f in pdata.get("features",[]) if f.get("type") in ("Modified residue","Glycosylation")]
             _bind2 = [f for f in pdata.get("features",[]) if f.get("type") in ("Binding site","Active site")]
-            _pLI_c = st.session_state.get("gnomad",{}).get("pLI",0) or 0
+            _gnomad_c = st.session_state.get("gnomad") or {}
+            _pLI_c = (_gnomad_c.get("pLI") if isinstance(_gnomad_c, dict) else 0) or 0
             try:
                 render_chemical_backbone(seq_c, cv.get("variants",[]) if cv else [], _phos2, _bind2, gene, _pLI_c)
             except Exception as _cbe:
