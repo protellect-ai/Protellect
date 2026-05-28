@@ -13660,6 +13660,9 @@ with tab6:
         _results = st.session_state.get("screener_results", [])
         _filters = st.session_state.get("screener_filters", {})
 
+        if _results and not st.session_state.get("screener_running"):
+            st.success(f"Screen complete — {len([r for r in _results if not r.get('error')])} of {len(_results)} proteins analysed. Results below.")
+
         if _results:
             # Apply filters
             _filtered = [r for r in _results if not r.get("error") and
@@ -14488,19 +14491,64 @@ with tab8:
                             break
 
                 # Known scaffold/adapter signatures from literature
+                # Structured scaffold knowledge: receptors bound · binding interface · effect on GPCR
                 _SCAFFOLD_GENES = {
-                    "FLNA":  "Filamin-A is a major GPCR scaffold. Binds dopamine D2/D3, μ-opioid, calcium-sensing receptors. Modulates GPCR trafficking, internalization, signaling.",
-                    "FLNB":  "Filamin-B — actin-crosslinking scaffold; binds CaSR, dopamine receptors.",
-                    "FLNC":  "Filamin-C — muscle-specific isoform; sarcomeric Z-disc scaffold.",
-                    "AKAP5": "A-kinase anchoring protein 79/150 — anchors PKA near β-adrenergic, muscarinic, NMDA receptors.",
-                    "DLG4":  "PSD-95 — scaffolds NMDA, AMPA, mGluR5 at postsynaptic density.",
-                    "SHANK1":"Shank scaffold — anchors mGluR5, NMDA receptors.",
-                    "SHANK3":"Shank3 — postsynaptic GPCR scaffold; ASD-associated.",
-                    "HOMER1":"Homer scaffold — couples mGluRs to IP3R for Ca2+ signaling.",
-                    "GIPC1": "GIPC1/PDZ — binds many GPCR C-tails (LPA, neuropilin).",
-                    "NHERF1":"Na+/H+ exchanger regulatory factor — anchors β2-adrenergic, P2Y, PTH1R.",
-                    "NHERF2":"NHERF2 — similar PDZ scaffold for GPCRs.",
-                    "TAMALIN":"Tamalin — mGluR scaffold.",
+                    "FLNA": {
+                        "summary": "Filamin-A — the prototypical GPCR scaffold. Actin-crosslinking protein whose C-terminal Ig-like repeats (esp. repeat 19–24) dock the cytoplasmic tails of many GPCRs.",
+                        "receptors": "Dopamine D2 / D3, μ-opioid (OPRM1), calcium-sensing receptor (CaSR), CXCR4, somatostatin SSTR2, β-arrestin complexes",
+                        "interface": "Ig-like repeat 19 binds the GPCR C-terminal tail; repeat 21 anchors the actin cytoskeleton — bridging receptor to cytoskeleton.",
+                        "effect": "Controls receptor trafficking and surface expression, anchors receptors to the actin cortex, scaffolds G-protein/β-arrestin signaling, and gates internalization/recycling. Loss of FLNA mislocalizes D2/D3 and CaSR and blunts downstream cAMP/Ca²⁺ responses.",
+                        "pmid": "26124276",
+                    },
+                    "FLNB": {
+                        "summary": "Filamin-B — actin-crosslinking paralog of FLNA with overlapping scaffold function.",
+                        "receptors": "Calcium-sensing receptor (CaSR), dopamine receptors",
+                        "interface": "C-terminal Ig repeats bind receptor tails analogously to FLNA.",
+                        "effect": "Stabilizes receptor surface localization and couples receptors to cytoskeletal remodeling; partially redundant with FLNA.",
+                        "pmid": "",
+                    },
+                    "FLNC": {
+                        "summary": "Filamin-C — muscle-specific filamin isoform localized to the sarcomeric Z-disc. Its scaffold role is mechanical/structural rather than canonical neuronal-GPCR signaling.",
+                        "receptors": "Limited direct GPCR binding; functions mainly as a Z-disc mechano-scaffold in cardiac/skeletal muscle. Shares the filamin Ig-repeat architecture that mediates GPCR-tail binding in FLNA/B.",
+                        "interface": "C-terminal Ig-like repeats (homologous to FLNA repeat 19–24) provide the same tail-binding surface, but in muscle FLNC primarily anchors sarcomeric and costameric partners.",
+                        "effect": "In muscle, transmits mechanical signals at the Z-disc; FLNC mutations drive myofibrillar myopathy and cardiomyopathy. GPCR-modulation potential is inferred from the conserved filamin fold, not from strong direct neuronal-receptor evidence.",
+                        "pmid": "",
+                    },
+                    "AKAP5": {
+                        "summary": "A-kinase anchoring protein 79/150 — scaffolds PKA, PKC, and calcineurin adjacent to receptors.",
+                        "receptors": "β-adrenergic (ADRB1/2), muscarinic (CHRM1), NMDA, AMPA receptors",
+                        "interface": "N-terminal targeting domains bind membrane/receptor complexes; C-terminal anchors PKA-RII.",
+                        "effect": "Positions PKA/PKC for rapid receptor phosphorylation — sets the kinetics of β-adrenergic desensitization and resensitization.",
+                        "pmid": "",
+                    },
+                    "DLG4": {
+                        "summary": "PSD-95 — master postsynaptic density scaffold.",
+                        "receptors": "NMDA (GluN2), AMPA, mGluR5, 5-HT2A",
+                        "interface": "PDZ domains bind receptor C-terminal -ESDV / -SXV motifs.",
+                        "effect": "Clusters receptors at the synapse, couples them to downstream signaling enzymes, controls synaptic strength.",
+                        "pmid": "",
+                    },
+                    "SHANK3": {
+                        "summary": "Shank3 — postsynaptic master scaffold; ASD/Phelan-McDermid associated.",
+                        "receptors": "mGluR1/5 (via Homer), NMDA (via PSD-95/GKAP)",
+                        "interface": "PDZ + proline-rich + SAM domains build a multi-receptor lattice.",
+                        "effect": "Organizes the metabotropic-ionotropic receptor complex; loss disrupts mGluR-NMDA crosstalk.",
+                        "pmid": "",
+                    },
+                    "HOMER1": {
+                        "summary": "Homer — couples group I mGluRs to intracellular Ca²⁺ stores.",
+                        "receptors": "mGluR1, mGluR5",
+                        "interface": "EVH1 domain binds the PPXXF motif in the mGluR C-tail; coiled-coil self-multimerizes.",
+                        "effect": "Physically links mGluRs to IP3 receptors, enabling receptor-evoked Ca²⁺ release.",
+                        "pmid": "",
+                    },
+                    "NHERF1": {
+                        "summary": "Na⁺/H⁺ exchanger regulatory factor 1 — PDZ adapter for receptor trafficking.",
+                        "receptors": "β2-adrenergic, P2Y, PTH1R, CFTR",
+                        "interface": "Two PDZ domains bind receptor -D-S/T-x-L C-termini; ERM domain links actin.",
+                        "effect": "Controls receptor recycling vs degradation after internalization — determines resensitization.",
+                        "pmid": "",
+                    },
                 }
                 _scaffold_info = _SCAFFOLD_GENES.get(gene.upper(), "")
 
@@ -14514,13 +14562,50 @@ with tab8:
                         f"{gene} is not a GPCR itself but binds and modulates GPCRs.</div></div>",
                         unsafe_allow_html=True,
                     )
-                    if _scaffold_info:
+                    if _scaffold_info and isinstance(_scaffold_info, dict):
+                        # Summary
                         st.markdown(
                             f"<div style='background:#0a1530;border-left:3px solid #38bdf8;border-radius:6px;"
                             f"padding:10px 14px;margin:6px 0;color:var(--text);font-size:.8rem;line-height:1.6;'>"
-                            f"<b style='color:#38bdf8;'>Curated scaffold role:</b> {_scaffold_info}</div>",
+                            f"<b style='color:#38bdf8;'>What it is:</b> {_scaffold_info['summary']}</div>",
                             unsafe_allow_html=True,
                         )
+                        # Three detail cards: receptors bound / binding interface / effect on GPCR
+                        _d1, _d2, _d3 = st.columns(3)
+                        with _d1:
+                            st.markdown(
+                                f"<div style='background:var(--surface);border:1px solid rgba(56,189,248,.25);"
+                                f"border-radius:10px;padding:12px;height:100%;'>"
+                                f"<div style='color:#38bdf8;font-size:.7rem;text-transform:uppercase;letter-spacing:.4px;font-weight:700;margin-bottom:6px;'>"
+                                f"Receptors it binds</div>"
+                                f"<div style='color:var(--text);font-size:.78rem;line-height:1.55;'>{_scaffold_info['receptors']}</div></div>",
+                                unsafe_allow_html=True,
+                            )
+                        with _d2:
+                            st.markdown(
+                                f"<div style='background:var(--surface);border:1px solid rgba(167,139,250,.25);"
+                                f"border-radius:10px;padding:12px;height:100%;'>"
+                                f"<div style='color:#a78bfa;font-size:.7rem;text-transform:uppercase;letter-spacing:.4px;font-weight:700;margin-bottom:6px;'>"
+                                f"Where / how it binds</div>"
+                                f"<div style='color:var(--text);font-size:.78rem;line-height:1.55;'>{_scaffold_info['interface']}</div></div>",
+                                unsafe_allow_html=True,
+                            )
+                        with _d3:
+                            st.markdown(
+                                f"<div style='background:var(--surface);border:1px solid rgba(52,211,153,.25);"
+                                f"border-radius:10px;padding:12px;height:100%;'>"
+                                f"<div style='color:#34d399;font-size:.7rem;text-transform:uppercase;letter-spacing:.4px;font-weight:700;margin-bottom:6px;'>"
+                                f"Effect on the GPCR</div>"
+                                f"<div style='color:var(--text);font-size:.78rem;line-height:1.55;'>{_scaffold_info['effect']}</div></div>",
+                                unsafe_allow_html=True,
+                            )
+                        if _scaffold_info.get("pmid"):
+                            st.markdown(
+                                f"<div style='color:var(--text3);font-size:.68rem;margin-top:8px;'>"
+                                f"Primary reference: <a href='https://pubmed.ncbi.nlm.nih.gov/{_scaffold_info['pmid']}/' "
+                                f"target='_blank' style='color:#a78bfa;text-decoration:none;'>PMID {_scaffold_info['pmid']} ↗</a></div>",
+                                unsafe_allow_html=True,
+                            )
                     if _matched_partners:
                         st.markdown(
                             f"<div style='color:#94a3b8;font-size:.78rem;margin:.7rem 0 .4rem;'>"
