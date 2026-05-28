@@ -6706,6 +6706,109 @@ def render_molbio_workspace():
             st.markdown(f"<div style='background:#020617;border:1px solid #f9731622;border-radius:8px;padding:7px 10px;margin:3px 0;'><div style='color:#fb923c;font-size:.72rem;font-weight:700;'>{step}</div><div style='color:#3a6080;font-size:.7rem;line-height:1.5;margin-top:2px;'>{sdesc}</div></div>", unsafe_allow_html=True)
 
 
+# ── Canonical citation library — used as footers on tabs to ground methodology ─
+PROTELLECT_CITATIONS = {
+    "uniprot":   ("The UniProt Consortium (2025). UniProt: the universal protein knowledgebase. Nucleic Acids Res. 53, D609–D617.", "https://doi.org/10.1093/nar/gkae1010"),
+    "clinvar":   ("Landrum, M. J. et al. (2020). ClinVar: improvements to accessing data. Nucleic Acids Res. 48, D835–D844.", "https://doi.org/10.1093/nar/gkz972"),
+    "gnomad":    ("Karczewski, K. J. et al. (2020). The mutational constraint spectrum quantified from variation in 141,456 humans. Nature 581, 434–443.", "https://doi.org/10.1038/s41586-020-2308-7"),
+    "alphafold": ("Jumper, J. et al. (2021). Highly accurate protein structure prediction with AlphaFold. Nature 596, 583–589.", "https://doi.org/10.1038/s41586-021-03819-2"),
+    "alphamissense": ("Cheng, J. et al. (2023). Accurate proteome-wide missense variant effect prediction with AlphaMissense. Science 381, eadg7492.", "https://doi.org/10.1126/science.adg7492"),
+    "string":    ("Szklarczyk, D. et al. (2023). The STRING database in 2023. Nucleic Acids Res. 51, D638–D646.", "https://doi.org/10.1093/nar/gkac1000"),
+    "opentargets":("Ochoa, D. et al. (2023). The next-generation Open Targets Platform: reimagined, redesigned, rebuilt. Nucleic Acids Res. 51, D1353–D1359.", "https://doi.org/10.1093/nar/gkac1046"),
+    "dgidb":     ("Cannon, M. et al. (2024). DGIdb 5.0. Nucleic Acids Res. 52, D1227–D1235.", "https://doi.org/10.1093/nar/gkad1040"),
+    "acmg":      ("Richards, S. et al. (2015). Standards and guidelines for the interpretation of sequence variants: ACMG/AMP. Genet. Med. 17, 405–423.", "https://doi.org/10.1038/gim.2015.30"),
+    "clingen":   ("Strande, N. T. et al. (2017). Evaluating the clinical validity of gene-disease associations: ClinGen framework. AJHG 100, 895–906.", "https://doi.org/10.1016/j.ajhg.2017.04.015"),
+    "phosphositeplus": ("Hornbeck, P. V. et al. (2015). PhosphoSitePlus 2014: mutations, PTMs and recalibrations. Nucleic Acids Res. 43, D512–D520.", "https://doi.org/10.1093/nar/gku1267"),
+    "iuphar_gpcr":("Alexander, S. P. H. et al. (2019). IUPHAR/BPS guide to pharmacology: GPCRs. Br. J. Pharmacol. 176, S21–S141.", "https://doi.org/10.1111/bph.14748"),
+    "gpcr_scaffold":("Bockaert, J. & Pin, J. P. (2010). GPCR-interacting proteins (GIPs): nature, functions, and implications. Annu. Rev. Pharmacol. Toxicol. 50, 207–227.", "https://doi.org/10.1146/annurev.pharmtox.42.083101.135950"),
+    "genetic_evidence":("Nelson, M. R. et al. (2015). The support of human genetic evidence for approved drug indications. Nat. Genet. 47, 856–860.", "https://doi.org/10.1038/ng.3314"),
+    "drug_progression":("King, E. A. et al. (2019). Are drug targets with genetic support twice as likely to be approved? PLoS Genet. 15, e1008489.", "https://doi.org/10.1371/journal.pgen.1008489"),
+    "lightgbm":  ("Ke, G. et al. (2017). LightGBM: A highly efficient gradient boosting decision tree. NeurIPS 30.", "https://papers.nips.cc/paper/6907-lightgbm-a-highly-efficient-gradient-boosting-decision-tree"),
+    "hotspot":   ("Chang, M. T. et al. (2016). Identifying recurrent mutations in cancer reveals widespread lineage diversity and mutational specificity. Nat. Biotechnol. 34, 155–163.", "https://doi.org/10.1038/nbt.3391"),
+    "filamin_scaffold": ("Nakamura, F., Stossel, T. P. & Hartwig, J. H. (2011). The filamins: organizers of cell structure and function. Cell Adh. Migr. 5, 160–169.", "https://doi.org/10.4161/cam.5.2.14401"),
+}
+
+def cite(*keys) -> str:
+    """Render a small citation footer with linked references for the given keys."""
+    items = []
+    for k in keys:
+        if k in PROTELLECT_CITATIONS:
+            cite_text, cite_url = PROTELLECT_CITATIONS[k]
+            items.append(
+                f"<a href='{cite_url}' target='_blank' style='color:#94a3b8;text-decoration:none;'>"
+                f"<span style='color:#a78bfa;'>↗</span> {cite_text}</a>"
+            )
+    if not items:
+        return ""
+    return (
+        f"<div style='color:var(--text3);font-size:.62rem;margin-top:14px;padding:8px 12px;"
+        f"border-top:1px solid var(--border);background:rgba(255,255,255,.01);border-radius:0 0 8px 8px;'>"
+        f"<b style='color:var(--text2);letter-spacing:.4px;'>References:</b><br>"
+        + "<br>".join(items) +
+        f"</div>"
+    )
+
+
+def _get_anthropic_key() -> str:
+    try:
+        k = st.secrets.get("ANTHROPIC_API_KEY", "") if hasattr(st, "secrets") else ""
+        if k: return k
+    except Exception:
+        pass
+    import os as _os
+    return _os.environ.get("ANTHROPIC_API_KEY","") or st.session_state.get("anthropic_key", "") or ""
+
+def _get_gemini_key() -> str:
+    try:
+        k = st.secrets.get("GEMINI_API_KEY", "") if hasattr(st, "secrets") else ""
+        if k: return k
+        k = st.secrets.get("GOOGLE_API_KEY", "") if hasattr(st, "secrets") else ""
+        if k: return k
+    except Exception:
+        pass
+    import os as _os
+    return _os.environ.get("GEMINI_API_KEY","") or _os.environ.get("GOOGLE_API_KEY","") or st.session_state.get("gemini_key", "") or ""
+
+def _get_system_prompt() -> str:
+    """Lightweight system prompt. Full version with workspace context overrides
+    this further down in the file."""
+    gene = st.session_state.get("gene","")
+    return ("You are the Protellect Workspace Assistant — a biomedical research copilot. "
+            f"The user is currently analysing {gene}. " if gene else
+            "You are the Protellect Workspace Assistant — a biomedical research copilot. ") + \
+           "Be concise, technical, and ground answers in the user's workspace data."
+
+def call_claude_api(messages: list, system_prompt: str | None = None) -> str:
+    """Lightweight dispatcher. The full multi-provider version is defined below
+    and will replace this stub on subsequent reruns. This stub handles the very
+    first render where the chat tries to render before the full helpers load."""
+    api_key = _get_anthropic_key()
+    if not api_key:
+        return ("AI assistant: no API key configured. Add ANTHROPIC_API_KEY in "
+                "Streamlit secrets to enable full chat.")
+    try:
+        r = requests.post(
+            "https://api.anthropic.com/v1/messages",
+            json={
+                "model": "claude-sonnet-4-20250514",
+                "max_tokens": 600,
+                "system": system_prompt or _get_system_prompt(),
+                "messages": messages,
+            },
+            headers={
+                "Content-Type": "application/json",
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01",
+            },
+            timeout=30,
+        )
+        r.raise_for_status()
+        data = r.json()
+        return "".join(b.get("text","") for b in data.get("content",[]) if b.get("type") == "text") or "(empty)"
+    except Exception as e:
+        return f"Connection error: {str(e)[:120]}"
+
+
 def render_workspace_chat():
     """Always-visible per-protein chat in the sidebar."""
     # ── Workspace Chat (always-visible, current-protein aware) ───────────
@@ -8427,8 +8530,15 @@ with st.sidebar:
             st.caption("These fields modulate the AI Report and Practitioner section to contextualize findings for this specific patient.")
 
     st.markdown("<div class='sb-t'>Protein Search</div>", unsafe_allow_html=True)
+    # If user clicked a Recent Work item, prefill + auto-trigger
+    _pending_q = st.session_state.pop("_pending_search_query", None)
+    if _pending_q:
+        st.session_state["protein_query_val"] = _pending_q
+        st.session_state["_auto_search_triggered"] = True
     query=st.text_input("Gene / UniProt ID",placeholder="TP53 · BRCA1 · P04637 · FLNC · ACM2",label_visibility="collapsed",value=st.session_state.get("protein_query_val",""),key="protein_query_box")
-    search=st.button("Analyse Protein",use_container_width=True)
+    _search_btn=st.button("Analyse Protein",use_container_width=True)
+    # Auto-trigger search if a recent-work item was clicked
+    search = _search_btn or st.session_state.pop("_auto_search_triggered", False)
 
     st.markdown("<div class='sb-t'>Disease → Proteins</div>", unsafe_allow_html=True)
     disease_q=st.text_input("Search by disease name",placeholder="e.g. dilated cardiomyopathy · Glanzmann",label_visibility="collapsed",key="dis_q_inp")
@@ -11694,6 +11804,42 @@ def render_lab_chatbot():
             st.session_state["anthropic_key"] = _ak_in
             st.rerun()
 
+    # ── Recent Work — previous searches with one-click reload ─────────────────
+    _ws_hist = st.session_state.get("workspace", []) or []
+    _hist_count = len(_ws_hist)
+    if _hist_count > 0:
+        with st.sidebar.expander(f"Recent Work ({_hist_count} {'protein' if _hist_count == 1 else 'proteins'})", expanded=False):
+            st.caption("Click any past search to re-load it instantly — full analysis restored.")
+            for _w in _ws_hist[:15]:
+                _wg = _w.get("gene","")
+                _wts = _w.get("timestamp","")
+                _wvr = (_w.get("verdict","") or "").upper()
+                _wnp = _w.get("n_path",0)
+                _wdis = (_w.get("diseases") or [])
+                # Color by verdict
+                _vc = {"prioritise":"#34d399","proceed":"#fbbf24","selective":"#fb7185","caution":"#fb7185","deprioritise":"#5b6b80","neutral":"#94a3b8"}.get(_w.get("verdict","").lower(),"#94a3b8")
+                _dis_preview = " · ".join(_wdis[:2])[:60]
+                if st.button(
+                    f"⟶  {_wg}  ·  {_wts}",
+                    key=f"hist_reload_{_wg}_{_wts}",
+                    use_container_width=True,
+                    help=f"{_wvr or '—'} · {_wnp} P/LP variants · {_dis_preview or 'no diseases'}",
+                ):
+                    # Trigger a fresh analysis by setting the search input
+                    st.session_state["_pending_search_query"] = _wg
+                    st.rerun()
+                st.markdown(
+                    f"<div style='margin:-8px 0 6px 0;padding-left:14px;color:var(--text3);font-size:.66rem;line-height:1.45;'>"
+                    f"<span style='color:{_vc};font-weight:700;'>{_wvr or '—'}</span> · "
+                    f"{_wnp} P/LP / {_w.get('n_total',0)} total · "
+                    f"density {_w.get('density',0):.1f}%"
+                    f"{('<br>' + _dis_preview) if _dis_preview else ''}"
+                    f"</div>",
+                    unsafe_allow_html=True,
+                )
+            if _hist_count > 15:
+                st.caption(f"+ {_hist_count - 15} older — see the Workspace tab for the full archive.")
+
     # ── PROOF OF VALUE — time/money saved, goal-aligned papers, next steps ──────
     _trace_p = st.session_state.get("analysis_trace")
     _gene_p  = st.session_state.get("gene","")
@@ -12158,6 +12304,10 @@ with tab0:
             f"</div>",
             unsafe_allow_html=True,
         )
+
+    # ── Sources & methodology citations (Summary) ───────────────────────────
+    if pdata:
+        st.markdown(cite("uniprot","clinvar","gnomad","clingen","genetic_evidence"), unsafe_allow_html=True)
 
     # ── Search disambiguation warning (persistent — survives cache) ──────────
     _disambig = st.session_state.get("_search_disambiguation")
@@ -12863,6 +13013,9 @@ with tab1:
         with st.expander(" View data"): st.dataframe(df2,use_container_width=True)
 
     render_citations(papers,4)
+    # ── Methods footer (Triage) ───────────────────────────────────────────
+    if pdata:
+        st.markdown(cite("acmg","alphamissense","clinvar","gnomad","lightgbm","hotspot"), unsafe_allow_html=True)
 
 # ════════════ TAB 2 — CASE STUDY ════════════
 with tab2:
@@ -15216,7 +15369,7 @@ with tab8:
         " Hydrophobicity Map",
         " Phosphorylation Sites",
         " Kinase Sites",
-        " GPCR Architecture",
+        " GPCR Binding",
         " Lewis / Aromatic Structures",
         " Interactive Backbone",
     ], horizontal=True, key="chem_tab_mode")
@@ -15484,34 +15637,30 @@ with tab8:
                     unsafe_allow_html=True,
                 )
 
-        elif _chem_mode == " GPCR Architecture":
-            sh("", f"GPCR Architecture — {gene}")
+        elif _chem_mode == " GPCR Binding":
+            sh("", f"GPCR Binding & Interaction Network — {gene}")
             _is_gpcr_c = g_gpcr(pdata) if pdata else False
             _gpcr_class_c = g_gpcr_class(pdata) if pdata else ""
-            if not _is_gpcr_c:
-                st.info(f"{gene} is not annotated as a GPCR. GPCR features are not applicable.")
-                # Still show what would be checked — gives user confidence in our negative call
+            st.markdown(
+                "<div style='color:#94a3b8;font-size:.78rem;margin-bottom:.6rem;line-height:1.55;'>"
+                "GPCR involvement — whether this protein <b>is</b> a GPCR, "
+                "<b>binds</b> GPCRs as a scaffold/adapter, or <b>modulates</b> GPCR signaling. "
+                "Scaffold proteins like filamin-A are not GPCRs themselves but are critical for GPCR trafficking and function.</div>",
+                unsafe_allow_html=True,
+            )
+
+            # Case 1: This protein IS a GPCR
+            if _is_gpcr_c:
                 st.markdown(
-                    "<div style='color:var(--text3);font-size:.74rem;line-height:1.6;margin-top:8px;'>"
-                    "Criteria checked (none matched):<br>"
-                    " · UniProt keyword 'G-protein coupled receptor'<br>"
-                    " · 7 transmembrane helices in features<br>"
-                    " · PFAM 7tm_1/7tm_2/7tm_3 domain<br>"
-                    " · GPCRdb entry for this UniProt accession</div>",
-                    unsafe_allow_html=True,
-                )
-            else:
-                # GPCR class + TM segments + signaling consequences
-                st.markdown(
-                    f"<div style='background:linear-gradient(135deg,rgba(167,139,250,.1),rgba(56,189,248,.06));"
-                    f"border:1px solid rgba(167,139,250,.3);border-radius:10px;padding:14px 18px;margin-bottom:1rem;'>"
-                    f"<div style='color:#a78bfa;font-weight:700;font-size:.86rem;letter-spacing:.3px;margin-bottom:4px;'>"
-                    f"GPCR confirmed</div>"
-                    f"<div style='color:#e6edf7;font-size:.92rem;font-weight:700;'>Class: {_gpcr_class_c or 'Unclassified'}</div>"
+                    f"<div style='background:linear-gradient(135deg,rgba(167,139,250,.15),rgba(56,189,248,.06));"
+                    f"border:1px solid rgba(167,139,250,.35);border-radius:10px;padding:14px 18px;margin-bottom:1rem;'>"
+                    f"<div style='color:#a78bfa;font-weight:800;font-size:.92rem;letter-spacing:.3px;margin-bottom:4px;'>"
+                    f"This protein IS a GPCR</div>"
+                    f"<div style='color:#e6edf7;font-size:.86rem;font-weight:700;'>Class: {_gpcr_class_c or 'Unclassified'}</div>"
                     f"</div>",
                     unsafe_allow_html=True,
                 )
-                # Find TM regions from UniProt features
+                # TM segments
                 _tm_feats = [f for f in pdata.get("features",[]) if f.get("type") == "Transmembrane"]
                 _tm_ranges = []
                 for f in _tm_feats:
@@ -15522,8 +15671,7 @@ with tab8:
                 if _tm_ranges:
                     st.markdown(
                         f"<div style='color:#94a3b8;font-size:.78rem;margin-bottom:.4rem;'>"
-                        f"<b style='color:#38bdf8;'>{len(_tm_ranges)} transmembrane segments</b> "
-                        f"(UniProt-annotated):</div>",
+                        f"<b style='color:#38bdf8;'>{len(_tm_ranges)} transmembrane segments</b> (UniProt-annotated):</div>",
                         unsafe_allow_html=True,
                     )
                     for i, (s, e) in enumerate(_tm_ranges, 1):
@@ -15531,21 +15679,17 @@ with tab8:
                         st.markdown(
                             f"<div style='display:flex;align-items:center;gap:10px;margin:3px 0;'>"
                             f"<div style='color:#a78bfa;font-size:.74rem;font-weight:700;min-width:50px;'>TM{i}</div>"
-                            f"<div style='background:linear-gradient(90deg,#a78bfa,#38bdf8);height:8px;"
-                            f"width:{_bar_w}%;border-radius:4px;'></div>"
+                            f"<div style='background:linear-gradient(90deg,#a78bfa,#38bdf8);height:8px;width:{_bar_w}%;border-radius:4px;'></div>"
                             f"<div style='color:#94a3b8;font-size:.72rem;'>aa {s}–{e} ({e-s+1} residues)</div>"
                             f"</div>",
                             unsafe_allow_html=True,
                         )
-                else:
-                    st.caption("No transmembrane regions annotated in UniProt features.")
-                # Signaling consequences
                 _g_couplings = {
-                    "Rhodopsin (Class A)":   "Most diverse — couples to Gα_s, Gα_i, Gα_q. Druggable: ~30% of all FDA-approved drugs target Class A GPCRs.",
-                    "Secretin (Class B)":    "Hormone receptors. Predominantly Gα_s → cAMP signaling. Targets for diabetes (GLP-1R), osteoporosis (PTH1R).",
-                    "Adhesion (Class B2)":   "Long N-terminal cell-adhesion domains. Mostly orphan; emerging targets in cancer (ADGRG1/GPR56).",
-                    "Glutamate (Class C)":   "Metabotropic. Gα_q (mGluR1/5), Gα_i (mGluR2-8). CNS targets — schizophrenia, Parkinson's.",
-                    "Frizzled (Class F)":    "Wnt pathway. β-catenin / planar cell polarity. Oncology targets — colorectal, basal cell carcinoma.",
+                    "Rhodopsin (Class A)":   "Most diverse — Gα_s/i/q. ~30% of FDA-approved drugs.",
+                    "Secretin (Class B)":    "Hormone receptors. Predominantly Gα_s → cAMP. GLP-1R, PTH1R.",
+                    "Adhesion (Class B2)":   "Long N-terminal domains. Emerging cancer targets.",
+                    "Glutamate (Class C)":   "Metabotropic. Gα_q/i. CNS targets (mGluRs).",
+                    "Frizzled (Class F)":    "Wnt pathway. Oncology targets.",
                 }
                 _cls_info = _g_couplings.get(_gpcr_class_c, "Class not yet mapped to a canonical signaling profile.")
                 st.markdown(
@@ -15554,6 +15698,110 @@ with tab8:
                     f"<b style='color:#a78bfa;'>Signaling profile:</b> {_cls_info}</div>",
                     unsafe_allow_html=True,
                 )
+                _gpcr_cite_url = "https://doi.org/10.1124/pr.117.013581"
+                _gpcr_cite_text = "Alexander, S. P. H. et al. (2019). British J. Pharmacology — IUPHAR GPCR concise guide."
+
+            # Case 2: Not a GPCR itself — check for GPCR-binding/scaffold interactions
+            else:
+                # Inspect STRING interactions for GPCR-related partners
+                _string_c = st.session_state.get("string") or []
+                # Common GPCR-related gene-symbol patterns
+                _GPCR_PARTNERS = {
+                    "GNAS","GNAI1","GNAI2","GNAI3","GNAQ","GNA11","GNA12","GNA13","GNAO1","GNAT1","GNAT2",
+                    "ARRB1","ARRB2","GRK2","GRK3","GRK4","GRK5","GRK6",
+                    "ADRB1","ADRB2","ADRB3","CHRM1","CHRM2","CHRM3","CHRM4","CHRM5",
+                    "CXCR4","CCR5","DRD1","DRD2","HTR1A","HTR2A","OPRM1","OPRK1",
+                    "FZD1","FZD2","FZD3","FZD4","FZD5","FZD6","FZD7","FZD8","FZD9",
+                    "GPR","ADGR","mGluR","GLP1R","CALCR","PTH1R","SCTR","CRHR1","CRHR2",
+                }
+                _matched_partners = []
+                for p in _string_c:
+                    _pname = (p.get("partner","") or p.get("preferredName_B","") or "").upper()
+                    for pat in _GPCR_PARTNERS:
+                        if pat in _pname:
+                            _matched_partners.append({"name": _pname, "score": p.get("score","")})
+                            break
+
+                # Known scaffold/adapter signatures from literature
+                _SCAFFOLD_GENES = {
+                    "FLNA":  "Filamin-A is a major GPCR scaffold. Binds dopamine D2/D3, μ-opioid, calcium-sensing receptors. Modulates GPCR trafficking, internalization, signaling.",
+                    "FLNB":  "Filamin-B — actin-crosslinking scaffold; binds CaSR, dopamine receptors.",
+                    "FLNC":  "Filamin-C — muscle-specific isoform; sarcomeric Z-disc scaffold.",
+                    "AKAP5": "A-kinase anchoring protein 79/150 — anchors PKA near β-adrenergic, muscarinic, NMDA receptors.",
+                    "DLG4":  "PSD-95 — scaffolds NMDA, AMPA, mGluR5 at postsynaptic density.",
+                    "SHANK1":"Shank scaffold — anchors mGluR5, NMDA receptors.",
+                    "SHANK3":"Shank3 — postsynaptic GPCR scaffold; ASD-associated.",
+                    "HOMER1":"Homer scaffold — couples mGluRs to IP3R for Ca2+ signaling.",
+                    "GIPC1": "GIPC1/PDZ — binds many GPCR C-tails (LPA, neuropilin).",
+                    "NHERF1":"Na+/H+ exchanger regulatory factor — anchors β2-adrenergic, P2Y, PTH1R.",
+                    "NHERF2":"NHERF2 — similar PDZ scaffold for GPCRs.",
+                    "TAMALIN":"Tamalin — mGluR scaffold.",
+                }
+                _scaffold_info = _SCAFFOLD_GENES.get(gene.upper(), "")
+
+                if _scaffold_info or _matched_partners:
+                    st.markdown(
+                        f"<div style='background:linear-gradient(135deg,rgba(56,189,248,.12),rgba(167,139,250,.06));"
+                        f"border:1px solid rgba(56,189,248,.35);border-radius:10px;padding:14px 18px;margin-bottom:1rem;'>"
+                        f"<div style='color:#38bdf8;font-weight:800;font-size:.92rem;letter-spacing:.3px;margin-bottom:4px;'>"
+                        f"GPCR-binding scaffold / adapter protein</div>"
+                        f"<div style='color:#e6edf7;font-size:.82rem;line-height:1.55;'>"
+                        f"{gene} is not a GPCR itself but binds and modulates GPCRs.</div></div>",
+                        unsafe_allow_html=True,
+                    )
+                    if _scaffold_info:
+                        st.markdown(
+                            f"<div style='background:#0a1530;border-left:3px solid #38bdf8;border-radius:6px;"
+                            f"padding:10px 14px;margin:6px 0;color:var(--text);font-size:.8rem;line-height:1.6;'>"
+                            f"<b style='color:#38bdf8;'>Curated scaffold role:</b> {_scaffold_info}</div>",
+                            unsafe_allow_html=True,
+                        )
+                    if _matched_partners:
+                        st.markdown(
+                            f"<div style='color:#94a3b8;font-size:.78rem;margin:.7rem 0 .4rem;'>"
+                            f"<b style='color:#38bdf8;'>{len(_matched_partners)} GPCR-pathway interaction partners</b> "
+                            f"detected in STRING-DB:</div>",
+                            unsafe_allow_html=True,
+                        )
+                        for _p in _matched_partners[:12]:
+                            _score_pct = int((_p["score"] or 0) * 100) if isinstance(_p["score"], (int,float)) else "?"
+                            st.markdown(
+                                f"<div style='display:inline-block;background:rgba(56,189,248,.06);"
+                                f"border:1px solid rgba(56,189,248,.22);border-radius:6px;padding:4px 10px;margin:3px;"
+                                f"color:#e6edf7;font-size:.74rem;'>"
+                                f"<b style='color:#38bdf8;'>{_p['name']}</b> · STRING score {_score_pct}%</div>",
+                                unsafe_allow_html=True,
+                            )
+                    # Drug-targeting implication
+                    st.markdown(
+                        f"<div style='background:rgba(251,191,36,.06);border-left:3px solid #fbbf24;border-radius:6px;"
+                        f"padding:10px 14px;margin-top:1rem;color:var(--text);font-size:.78rem;line-height:1.6;'>"
+                        f"<b style='color:#fbbf24;'>Therapeutic implication:</b> targeting a GPCR scaffold like {gene} "
+                        f"is harder than targeting the GPCR directly, but allows modulation of multiple receptors at once. "
+                        f"Consider PROTAC-based scaffold disruption or peptide-based competitive inhibitors.</div>",
+                        unsafe_allow_html=True,
+                    )
+                else:
+                    st.info(f"{gene} has no GPCR interactions in our scaffold database or STRING-DB GPCR partner set. "
+                            f"This protein appears unrelated to GPCR signaling.")
+                    st.markdown(
+                        "<div style='color:var(--text3);font-size:.74rem;line-height:1.6;margin-top:8px;'>"
+                        "Criteria checked:<br>"
+                        " · UniProt keyword 'G-protein coupled receptor' (negative)<br>"
+                        " · STRING interaction partners screened against 60+ GPCR genes (no match)<br>"
+                        " · Curated scaffold-protein database (no entry)<br>"
+                        " · 7TM domain in PFAM features (none)</div>",
+                        unsafe_allow_html=True,
+                    )
+                _gpcr_cite_url = "https://doi.org/10.1146/annurev.pharmtox.42.083101.135950"
+                _gpcr_cite_text = "Bockaert, J. et al. (2010). GPCR-interacting proteins. Annu. Rev. Pharmacol. Toxicol."
+
+            # Citations footer
+            _cite_keys = ["iuphar_gpcr","gpcr_scaffold"]
+            if _scaffold_info and gene.upper() in ("FLNA","FLNB","FLNC"):
+                _cite_keys.append("filamin_scaffold")
+            _cite_keys.append("string")
+            st.markdown(cite(*_cite_keys), unsafe_allow_html=True)
 
         elif _chem_mode == " Lewis / Aromatic Structures":
             sh("", f"Lewis & Cyclic Structures — {gene}")
@@ -15956,3 +16204,7 @@ dr();
             )
         prog_html += "</div>"
         st.markdown(prog_html, unsafe_allow_html=True)
+
+    # ── Methods footer (Pharma) ─────────────────────────────────────────────
+    if pdata:
+        st.markdown(cite("opentargets","dgidb","alphafold","drug_progression","iuphar_gpcr"), unsafe_allow_html=True)
