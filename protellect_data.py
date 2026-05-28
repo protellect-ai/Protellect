@@ -1422,9 +1422,10 @@ def _fetch_pubmed(query: str, n: int = 6) -> list:
         return []
 
 @st.cache_data(show_spinner=False, ttl=3600)
-def fetch_papers_multi(query: str, per_source: int = 4, on_progress=None) -> list:
+def fetch_papers_multi(query: str, per_source: int = 4, _on_progress=None) -> list:
     """Fetch papers from 4 sources in parallel, deduplicate by title, sort by citations.
-    on_progress(source, n_results) callback fires after each source completes."""
+    _on_progress(source, n_results) callback fires after each source completes.
+    Leading underscore tells Streamlit not to include this callback in the cache key."""
     from concurrent.futures import ThreadPoolExecutor, as_completed
     sources = [
         ("Semantic Scholar", lambda: fetch_scholar_papers(query, n=per_source)),
@@ -1442,8 +1443,8 @@ def fetch_papers_multi(query: str, per_source: int = 4, on_progress=None) -> lis
             except Exception:
                 papers = []
             results[name] = papers
-            if on_progress:
-                try: on_progress(name, len(papers))
+            if _on_progress:
+                try: _on_progress(name, len(papers))
                 except Exception: pass
     # Combine all + deduplicate by lowercased title
     seen_titles = set()

@@ -6514,7 +6514,7 @@ def render_onboarding():
                     src_status[source] = int(n_results)
                     _render_progress()
 
-                papers = fetch_papers_multi(q, per_source=4, on_progress=_on_progress)
+                papers = fetch_papers_multi(q, per_source=4, _on_progress=_on_progress)
                 if st.session_state["ob_proteins"]:
                     g1 = st.session_state["ob_proteins"].split(",")[0].strip()
                     extra = fetch_papers_multi(f"{g1} protein disease variants mechanism", per_source=3)
@@ -7551,7 +7551,7 @@ with st.sidebar:
     depth=st.selectbox("Depth",["Standard (150 variants)","Deep (400 variants)"],label_visibility="collapsed")
     max_v=150 if "Standard" in depth else 400
     # Build version — bump on each deploy so you can confirm the live app is current
-    st.markdown("<div style='color:#1e3050;font-size:.62rem;text-align:right;margin-top:.3rem;'>build 2026.05.28-e</div>", unsafe_allow_html=True)
+    st.markdown("<div style='color:#1e3050;font-size:.62rem;text-align:right;margin-top:.3rem;'>build 2026.05.28-f</div>", unsafe_allow_html=True)
 
     # Sidebar protein summary
     if st.session_state["pdata"]:
