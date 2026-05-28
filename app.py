@@ -1534,6 +1534,8 @@ def g_diseases(p):
     """
     out = []
     seen = set()
+    if not isinstance(p, dict):
+        return out  # nothing to extract from a missing / malformed protein record
 
     # Detect the gene's chromosome so we can infer X/Y-linked inheritance when a
     # specific disease note doesn't state it. FLNA, for example, is on the X
@@ -7544,6 +7546,8 @@ with st.sidebar:
     st.markdown("<div class='sb-t'>Data Depth</div>", unsafe_allow_html=True)
     depth=st.selectbox("Depth",["Standard (150 variants)","Deep (400 variants)"],label_visibility="collapsed")
     max_v=150 if "Standard" in depth else 400
+    # Build version — bump on each deploy so you can confirm the live app is current
+    st.markdown("<div style='color:#1e3050;font-size:.62rem;text-align:right;margin-top:.3rem;'>build 2026.05.28-d</div>", unsafe_allow_html=True)
 
     # Sidebar protein summary
     if st.session_state["pdata"]:
@@ -7924,7 +7928,7 @@ tab8 = _tab_by_name.get("Chemistry",    _SinkTab())
 tab9 = _tab_by_name.get("Pharma",       _SinkTab())
 
 _rd_final = st.session_state.get("research_domain","")
-_pdata_f = st.session_state.get("pdata",{})
+_pdata_f = st.session_state.get("pdata") or {}
 _gene_f = st.session_state.get("gene","")
 
 # ── Domain landing pages (shown before or alongside protein analysis) ──────
@@ -15106,11 +15110,11 @@ with tab9:
     if not _tab_visible("Pharma"):
         _tab_disabled_banner("Pharma")
     _gene9 = st.session_state.get("gene","")
-    _pdata9 = st.session_state.get("pdata",{})
-    _cv9 = st.session_state.get("cv",{})
-    _scored9 = st.session_state.get("scored",[])
-    _ot9 = st.session_state.get("ot",{})
-    _gnomad9 = st.session_state.get("gnomad",{})
+    _pdata9 = st.session_state.get("pdata") or {}
+    _cv9 = st.session_state.get("cv") or {}
+    _scored9 = st.session_state.get("scored") or []
+    _ot9 = st.session_state.get("ot") or {}
+    _gnomad9 = st.session_state.get("gnomad") or {}
     _pdb9 = st.session_state.get("pdb","")
     _gi9 = st.session_state.get("gi",{})
     _am9 = st.session_state.get("am",{})
