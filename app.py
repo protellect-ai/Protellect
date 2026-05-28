@@ -643,6 +643,18 @@ details { border:1px solid var(--border) !important; border-radius:8px !importan
   color: var(--text) !important;
 }
 
+/* ── Scroll fix — ensure the main app area always scrolls normally ───────── */
+section[data-testid="stMain"],
+.main,
+[data-testid="stAppViewContainer"] {
+  overflow-y: auto !important;
+  height: auto !important;
+}
+/* Component iframes must never capture page scroll when they don't need to */
+iframe[height="0"] { display: none !important; }
+/* Keep the block container from locking height */
+.block-container { overflow: visible !important; }
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -6968,40 +6980,11 @@ _popup_api_key = st.session_state.get("anthropic_key", "") or ""
 # The real chatbot lives in the sidebar (Workspace Chat). This is just a visual
 # reminder. Uses components.html (NOT st.markdown) so HTML can never leak as
 # text — markdown can render leading-whitespace HTML as a code block.
-try:
-    import streamlit.components.v1 as _components
-    _components.html(
-        """<style>
-#proto-chat-fab {
-position: fixed; bottom: 22px; right: 22px; z-index: 9999;
-width: 56px; height: 56px; border-radius: 50%;
-background: linear-gradient(135deg, #38bdf8, #6478ff);
-border: 2px solid rgba(255,255,255,.15);
-box-shadow: 0 6px 24px rgba(56,189,248,.5);
-display: flex; align-items: center; justify-content: center;
-cursor: pointer; transition: transform .2s, box-shadow .2s;
-}
-#proto-chat-fab:hover { transform: scale(1.08); box-shadow: 0 8px 32px rgba(56,189,248,.7); }
-#proto-chat-fab-label {
-position: fixed; bottom: 22px; right: 88px; z-index: 9999;
-background: #0a1530; color: #e6edf7;
-padding: 10px 14px; border-radius: 24px; font-size: .75rem;
-border: 1px solid rgba(56,189,248,.35);
-box-shadow: 0 4px 14px rgba(0,0,0,.4);
-font-family: Inter,'DM Sans',sans-serif;
-pointer-events: none; opacity: 0; transition: opacity .25s;
-white-space: nowrap;
-}
-#proto-chat-fab:hover + #proto-chat-fab-label { opacity: 1; }
-</style>
-<a id="proto-chat-fab" href="#" title="Workspace Chat is in the sidebar" onclick="window.parent.document.querySelector('[data-testid=stSidebarCollapseButton]')?.click();return false;">
-<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
-</a>
-<div id="proto-chat-fab-label">Workspace Chat is in the sidebar &rarr;</div>""",
-        height=0,
-    )
-except Exception:
-    pass
+# NOTE: The floating chat FAB was removed — rendering it via components.html
+# created a zero-height iframe that intercepted wheel/scroll events and broke
+# page scrolling. The Workspace Chat lives in the sidebar, so the FAB was
+# redundant. If a visual reminder is wanted later, use a pure-CSS ::after on
+# an existing element instead of an iframe.
 
 # ── Authentication gate ──────────────────────────────────────────────────
 # Show login page if not authenticated
