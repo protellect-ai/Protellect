@@ -1421,11 +1421,15 @@ def _fetch_pubmed(query: str, n: int = 6) -> list:
     except Exception:
         return []
 
-@st.cache_data(show_spinner=False, ttl=3600)
+# NOTE: This function is intentionally NOT decorated with @st.cache_data.
+# It accepts an `_on_progress` callback which Streamlit's cache replay machinery
+# cannot serialize (the closure breaks CacheReplayClosureError). The four inner
+# source fetchers (fetch_scholar_papers, _fetch_openalex, _fetch_crossref,
+# _fetch_pubmed) are individually cached with 1-hour TTLs, so repeated calls
+# still hit those caches — the outer dedup + sort takes microseconds.
 def fetch_papers_multi(query: str, per_source: int = 4, _on_progress=None) -> list:
     """Fetch papers from 4 sources in parallel, deduplicate by title, sort by citations.
-    _on_progress(source, n_results) callback fires after each source completes.
-    Leading underscore tells Streamlit not to include this callback in the cache key."""
+    _on_progress(source, n_results) callback fires after each source completes."""
     from concurrent.futures import ThreadPoolExecutor, as_completed
     sources = [
         ("Semantic Scholar", lambda: fetch_scholar_papers(query, n=per_source)),

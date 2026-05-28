@@ -687,6 +687,7 @@ html, body {
   overflow-x: hidden;          /* clip sideways bleed */
   overflow-y: auto;            /* but always allow vertical scroll */
   max-width: 100%;
+  overscroll-behavior-y: auto; /* don't let any child lock the document scroll */
 }
 [data-testid="stAppViewContainer"] {
   overflow-x: hidden;
@@ -694,6 +695,7 @@ html, body {
 }
 section[data-testid="stMain"] {
   overflow-y: auto !important; /* the main column scrolls */
+  overscroll-behavior-y: auto;
 }
 /* Zero-height helper iframes must not reserve space or grab the wheel */
 iframe[height="0"], iframe[height="0px"] { display: none !important; }
@@ -702,6 +704,7 @@ iframe[height="0"], iframe[height="0px"] { display: none !important; }
   padding-left: clamp(1rem, 3vw, 3rem) !important;
   padding-right: clamp(1rem, 3vw, 3rem) !important;
   overflow: visible !important;
+  padding-bottom: 4rem !important;  /* room past Streamlit "Manage app" badge so last items aren't hidden */
 }
 /* Long unbreakable strings (DNA sequences, formulas) wrap instead of widening page */
 [data-testid="stMarkdownContainer"] div,
@@ -711,8 +714,20 @@ iframe[height="0"], iframe[height="0px"] { display: none !important; }
 }
 /* Wide tables get their own scroll, never push the page wide */
 [data-testid="stMarkdownContainer"] table { display: block; overflow-x: auto; max-width: 100%; }
-/* Component iframes (3D viewers, cascade) shouldn't capture page wheel events */
-iframe { max-width: 100% !important; }
+/* Component iframes shouldn't trap wheel events when scrolling over them.
+   pointer-events:none would also disable clicks, so instead we make sure
+   iframes don't reserve more height than declared and don't lock overscroll. */
+iframe {
+  max-width: 100% !important;
+  overscroll-behavior: contain;
+}
+/* st.expander content should expand naturally without an inner scroll container
+   that competes with the page scroll on long tabs (Chemistry, Pharma). */
+[data-testid="stExpander"] [data-testid="stExpanderDetails"] { overflow: visible !important; }
+[data-testid="stExpander"] { overflow: visible !important; }
+/* Plotly charts should not lock wheel events (their internal scroll-zoom on hover
+   is what makes the page feel "stuck"). */
+.js-plotly-plot, .plot-container { overscroll-behavior: contain; }
 
 
 </style>
@@ -2240,6 +2255,315 @@ def summarise_assay(df, csv_type):
                "generic":f"Dataset: {n_rows:,} rows × {n_cols} columns. Column headers: {', '.join(df.columns[:6].tolist())}."}
     return summaries.get(csv_type, summaries["generic"])
 
+# ─────────────────────────────────────────────────────────────────────────────
+# CSV-driven workspace helpers — used by EVERY tab to render CSV-tailored content
+# when a CSV is loaded. The CSV is the experiment; the protein search is a cue.
+# ─────────────────────────────────────────────────────────────────────────────
+def csv_extract_candidates(df, csv_type, max_n=15):
+    if df is None or len(df) == 0: return []
+    import re as _rex
+    cols_l = {c: c.lower() for c in df.columns}
+    gene_col = next((c for c, l in cols_l.items() if any(k == l or k+"s" == l or l.startswith(k+"_") or l.endswith("_"+k)
+                     for k in ("gene","symbol","name","geneid","gene_id"))), None)
+    fc_col   = next((c for c, l in cols_l.items() if any(k in l for k in ("fold","logfc","log2fc","log2_fold","lfc"))), None)
+    eff_col  = next((c for c, l in cols_l.items() if any(k in l for k in ("effect","score","fitness","ddg","stability","enrich","activity","ic50","ki","kd"))), None)
+    p_col    = next((c for c, l in cols_l.items() if any(k in l for k in ("pvalue","p_val","padj","fdr","qvalue","p.value","p-value"))), None)
+    pos_col  = next((c for c, l in cols_l.items() if any(k in l for k in ("residue","position","resi","aa_pos","site"))), None)
+    mut_col  = next((c for c, l in cols_l.items() if any(k in l for k in ("mutation","variant","change","substitution","hgvs","mut"))), None)
+    primary_score = fc_col or eff_col
+    if not primary_score:
+        for c in df.columns:
+            try:
+                if df[c].dtype.kind in "fi": primary_score = c; break
+            except Exception: pass
+    if not primary_score: return []
+    try:
+        _w = df.copy()
+        _w["_abs_score"] = _w[primary_score].astype(float).abs()
+        if p_col:
+            try: _w = _w[_w[p_col].astype(float) < 0.05]
+            except Exception: pass
+        _w = _w.sort_values("_abs_score", ascending=False).head(max_n)
+        cands = []
+        for i, (_, row) in enumerate(_w.iterrows(), 1):
+            try:    score = float(row[primary_score])
+            except: score = 0.0
+            try:    pval = float(row[p_col]) if p_col else None
+            except: pval = None
+            g = ""
+            if gene_col: g = str(row.get(gene_col, "")).strip()
+            elif mut_col and pos_col is None:
+                m = _rex.match(r"([A-Za-z*])([0-9]+)([A-Za-z*])", str(row.get(mut_col, "")))
+                if m: g = f"pos {m.group(2)}"
+            elif pos_col: g = f"pos {row.get(pos_col, '?')}"
+            if not g: g = f"row {i}"
+            label_units = "log₂FC" if (fc_col and primary_score == fc_col) else "effect"
+            arrow = "↑" if score > 0 else ("↓" if score < 0 else "·")
+            cands.append({"gene": g, "rank": i, "score": score, "abs_score": abs(score),
+                          "score_label": f"{label_units} = {score:+.2f}", "arrow": arrow,
+                          "p_value": pval, "raw_row": row.to_dict()})
+        return cands
+    except Exception: return []
+
+def csv_section_header(title, sub=""):
+    return (f"<div style='background:linear-gradient(90deg,rgba(56,189,248,.10),transparent);"
+            f"border-left:3px solid #38bdf8;border-radius:6px;padding:.55rem .9rem;margin:1rem 0 .8rem;'>"
+            f"<div style='color:#38bdf8;font-weight:800;font-size:.9rem;'>{title}</div>"
+            + (f"<div style='color:var(--text2);font-size:.78rem;margin-top:2px;'>{sub}</div>" if sub else "")
+            + "</div>")
+
+def csv_candidate_card(c, color="#38bdf8"):
+    _p = f" · p = {c['p_value']:.2g}" if c.get('p_value') is not None else ""
+    return (f"<div style='background:var(--surface);border:1px solid rgba(56,189,248,.18);"
+            f"border-radius:10px;padding:.7rem 1rem;margin-bottom:.5rem;display:flex;align-items:center;gap:.8rem;'>"
+            f"<div style='color:{color};font-weight:800;font-size:1.1rem;min-width:2.5em;'>#{c['rank']}</div>"
+            f"<div style='flex:1;'>"
+            f"<div style='color:var(--text);font-weight:700;font-size:.95rem;'>{c['gene']} <span style='color:{color};font-weight:600;'>{c['arrow']}</span></div>"
+            f"<div style='color:var(--text2);font-size:.78rem;'>{c['score_label']}{_p}</div>"
+            f"</div></div>")
+
+def csv_is_active():
+    return bool(st.session_state.get("csv_triage_active") and st.session_state.get("csv_df") is not None)
+
+def csv_context():
+    if not csv_is_active(): return None, None, []
+    df = st.session_state.get("csv_df")
+    ct = st.session_state.get("csv_type", "generic")
+    cands = csv_extract_candidates(df, ct, max_n=15)
+    return df, ct, cands
+
+
+def render_csv_summary_tab(df, csv_type, cands):
+    st.markdown(csv_section_header(" CSV Overview", f"{len(df):,} rows × {len(df.columns)} columns · type: {csv_type.replace('_',' ').title()}"), unsafe_allow_html=True)
+    c1, c2, c3, c4 = st.columns(4)
+    with c1: st.markdown(mc(f"{len(df):,}", "Rows", "#38bdf8"), unsafe_allow_html=True)
+    with c2: st.markdown(mc(len(df.columns), "Columns", "#4a90d9"), unsafe_allow_html=True)
+    with c3: st.markdown(mc(len(cands), "Top candidates", "#a78bfa"), unsafe_allow_html=True)
+    with c4:
+        _sig = sum(1 for c in cands if c.get('p_value') is not None and c['p_value'] < 0.05) if cands else 0
+        st.markdown(mc(_sig, "Significant (p<0.05)", "#22c55e"), unsafe_allow_html=True)
+    if cands:
+        st.markdown(csv_section_header(" Top candidates from your CSV", "Ranked by |effect|. Click any in the Workspace tab to drill in."), unsafe_allow_html=True)
+        for c in cands[:8]:
+            st.markdown(csv_candidate_card(c), unsafe_allow_html=True)
+
+def render_csv_triage_tab(df, csv_type, cands):
+    st.markdown(csv_section_header(" CSV Triage — Per-Candidate Ranking", "Each candidate scored against effect, significance, and variant context."), unsafe_allow_html=True)
+    if not cands:
+        st.info("No ranked candidates extractable from this CSV. Try a CSV with gene symbols + effect/fold-change columns.")
+        return
+    import pandas as _pd
+    rows = []
+    for c in cands:
+        rows.append({"Rank": c['rank'], "Gene": c['gene'], "Direction": c['arrow'],
+                     "Effect": f"{c['score']:+.2f}", "|Effect|": f"{c['abs_score']:.2f}",
+                     "p-value": f"{c['p_value']:.2g}" if c.get('p_value') is not None else "—",
+                     "Tier": ("Tier 1" if c['rank']<=3 else "Tier 2" if c['rank']<=8 else "Tier 3")})
+    st.dataframe(_pd.DataFrame(rows), use_container_width=True, hide_index=True)
+
+def render_csv_case_study_tab(df, csv_type, cands):
+    if not cands:
+        st.info("Upload a CSV with gene symbols + effect columns to see the top-candidate case study.")
+        return
+    top = cands[0]
+    st.markdown(csv_section_header(f" Case Study — {top['gene']} (top candidate from your CSV)",
+                                   "Strongest signal in the dataset. Recommended workflow below."), unsafe_allow_html=True)
+    _sig_note = f"statistically significant at p = {top['p_value']:.2g}" if top.get('p_value') is not None else "no p-value column"
+    st.markdown(
+        f"<div style='background:var(--surface);border:1px solid rgba(167,139,250,.25);border-radius:10px;"
+        f"padding:1rem 1.2rem;margin-bottom:1rem;'>"
+        f"<div style='color:#a78bfa;font-weight:800;font-size:1.1rem;margin-bottom:.4rem;'>Why {top['gene']}?</div>"
+        f"<div style='color:var(--text);font-size:.88rem;line-height:1.6;'>"
+        f"Among the {len(df):,} entries in your {csv_type.replace('_',' ')} dataset, "
+        f"<b>{top['gene']}</b> has the largest |effect| ({top['score_label']}), {_sig_note}.<br><br>"
+        f"<b>Recommended workflow:</b> search <b>{top['gene']}</b> in the protein box to overlay "
+        f"ClinVar pathogenic variants, gnomAD constraint, AlphaMissense scores, and known drug interactions — "
+        f"the standard target-validation chain.</div></div>", unsafe_allow_html=True)
+    if len(cands) > 1:
+        st.markdown("<div style='color:var(--text2);font-size:.78rem;margin:.6rem 0 .4rem;'>Alternative candidates:</div>", unsafe_allow_html=True)
+        for c in cands[1:5]:
+            st.markdown(csv_candidate_card(c, color="#a78bfa"), unsafe_allow_html=True)
+
+def render_csv_explorer_tab(df, csv_type, cands):
+    st.markdown(csv_section_header(" CSV Explorer", "Full dataset with sorting + filtering."), unsafe_allow_html=True)
+    st.dataframe(df, use_container_width=True, height=400)
+    if csv_type == "expression":
+        try:
+            import plotly.graph_objects as _go3
+            import numpy as _np3
+            cols_l = {c: c.lower() for c in df.columns}
+            fc_col = next((c for c,l in cols_l.items() if any(k in l for k in ("fold","logfc","log2fc","lfc"))), None)
+            p_col  = next((c for c,l in cols_l.items() if any(k in l for k in ("pvalue","p_val","padj","fdr"))), None)
+            gene_col = next((c for c,l in cols_l.items() if any(k in l for k in ("gene","symbol"))), None)
+            if fc_col and p_col:
+                _x = df[fc_col].astype(float)
+                _y = -_np3.log10(df[p_col].astype(float).clip(lower=1e-300))
+                _hover = df[gene_col].astype(str) if gene_col else [f"row {i}" for i in range(len(df))]
+                fig = _go3.Figure(data=_go3.Scatter(x=_x, y=_y, mode='markers', text=_hover,
+                    marker=dict(size=8, color=_x, colorscale='RdBu_r', showscale=True,
+                               colorbar=dict(title="log₂FC"), line=dict(width=0.5, color='white')),
+                    hovertemplate='%{text}<br>log₂FC: %{x:.2f}<br>-log₁₀p: %{y:.2f}<extra></extra>'))
+                fig.add_hline(y=-_np3.log10(0.05), line_dash="dot", line_color="#94a3b8", annotation_text="p=0.05")
+                fig.add_vline(x= 1, line_dash="dot", line_color="#94a3b8")
+                fig.add_vline(x=-1, line_dash="dot", line_color="#94a3b8")
+                fig.update_layout(title="Volcano plot — your CSV", xaxis_title="log₂ Fold Change",
+                                 yaxis_title="-log₁₀(p-value)", template="plotly_dark", height=420,
+                                 paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+                st.plotly_chart(fig, use_container_width=True)
+        except Exception: pass
+
+def render_csv_experiments_tab(df, csv_type, cands):
+    st.markdown(csv_section_header(" Recommended Wet-Lab Experiments", "Based on signal type in your CSV."), unsafe_allow_html=True)
+    if not cands:
+        st.info("Upload a CSV with ranked signals to get experiment recommendations.")
+        return
+    top3 = [c['gene'] for c in cands[:3]]
+    recipes = {
+        "expression": [
+            ("qPCR validation", f"Validate top hits ({', '.join(top3)}) by qPCR in 3 biological replicates. Use GAPDH/ACTB as housekeepers (verify they're stable in your condition first)."),
+            ("Western blot", f"Confirm mRNA changes translate to protein for {top3[0]}. Use total protein normalization (Stain-Free or REVERT)."),
+            ("Pathway enrichment", f"Run GSEA on the {len(df):,}-gene ranked list. MSigDB Hallmarks + GO BP. Look for enrichment in the relevant tissue's pathways."),
+            ("Knockdown validation", f"siRNA/CRISPRi knockdown of {top3[0]} in the relevant cell line, then re-profile to confirm the dependency."),
+        ],
+        "dms": [
+            ("Confirmatory single-variant", "Clone the top 3 deleterious positions individually. Validate by the same functional readout."),
+            ("Structural inspection", "Map top-effect positions onto AlphaFold structure. Active site, interface, or core? That predicts mechanism."),
+            ("Rescue experiment", "Co-express WT + deleterious mutant to test dominant-negative behaviour."),
+        ],
+        "clinical_variants": [
+            ("ACMG re-classification", "Run each VUS through ACMG criteria. Focus on low gnomAD AF + high AlphaMissense."),
+            ("Family segregation", "Request additional family members' genotypes — segregation is strong evidence (PP1/BS4)."),
+            ("Functional assay", "For highest-suspicion VUS: minigene splicing or yeast complementation."),
+        ],
+        "binding_assay": [
+            ("Counterscreen", f"Run top {len(top3)} hits against the closest off-target to assess selectivity."),
+            ("Dose-response", "Move to 8–10 point dose-response in triplicate. Fit IC50/Ki properly."),
+            ("Orthogonal assay", "Confirm hits in a mechanistically different assay to weed out artefacts."),
+        ],
+        "cell_assay": [
+            ("Replicate + dose-response", f"Run top hits ({', '.join(top3)}) in dose-response, 3 biological replicates. IC50 with 95% CI."),
+            ("Mechanism panel", "Apoptosis (Annexin V/PI), proliferation (Ki-67/EdU), cell-cycle (PI)."),
+        ],
+    }
+    chosen = recipes.get(csv_type, [
+        ("Replicate", f"Confirm top signals ({', '.join(top3)}) in biological replicates with a different operator."),
+        ("Cross-reference", "Cross-check top genes against ClinVar pathogenic variants and gnomAD pLI > 0.9."),
+        ("Orthogonal validation", "Use a mechanistically independent readout for the strongest effect."),
+    ])
+    for title, body in chosen:
+        st.markdown(f"<div class='card'><h4>{title}</h4><p>{body}</p></div>", unsafe_allow_html=True)
+
+def render_csv_ai_report_tab(df, csv_type, cands):
+    st.markdown(csv_section_header(" CSV Report", "One-page summary of your experiment."), unsafe_allow_html=True)
+    if not cands:
+        st.info("Need a CSV with ranked signals to write a report.")
+        return
+    top = cands[0]
+    n_sig = sum(1 for c in cands if c.get('p_value') is not None and c['p_value'] < 0.05)
+    summary = (
+        f"<b>Dataset.</b> {len(df):,} entries × {len(df.columns)} columns; type inferred as <b>{csv_type.replace('_',' ')}</b>.<br>"
+        f"<b>Top signal.</b> <b>{top['gene']}</b> shows the largest effect ({top['score_label']})"
+        + (f", significant at p = {top['p_value']:.2g}" if top.get('p_value') is not None else "")
+        + f". Among the top {len(cands)} candidates, {n_sig} are individually significant at p<0.05.<br>"
+        f"<b>Recommended action.</b> Investigate <b>{top['gene']}</b> as the lead — overlay against ClinVar, gnomAD, "
+        f"and drug-target evidence. Secondary candidates ({', '.join(c['gene'] for c in cands[1:4])}) warrant parallel triage.<br>"
+        f"<b>Caveat.</b> This report is generated from the CSV alone — biological/pathway interpretation comes from "
+        f"cross-referencing with curated databases (Protellect's protein tabs).")
+    st.markdown(f"<div style='background:var(--surface);border-radius:12px;padding:1.2rem 1.4rem;font-size:.88rem;line-height:1.7;'>{summary}</div>", unsafe_allow_html=True)
+
+def render_csv_workspace_tab(df, csv_type, cands):
+    st.markdown(csv_section_header(" CSV Candidates — Analyse Any", "Click 'Analyse' to load any candidate in the protein workspace."), unsafe_allow_html=True)
+    if not cands:
+        st.info("No gene-level candidates extracted from this CSV.")
+        return
+    for c in cands[:10]:
+        col_a, col_b = st.columns([4, 1])
+        with col_a:
+            st.markdown(csv_candidate_card(c, color="#22c55e"), unsafe_allow_html=True)
+        with col_b:
+            g = c['gene']
+            _real = bool(g) and not g.startswith("row ") and not g.startswith("pos ")
+            if _real and st.button("Analyse →", key=f"csv_ws_{c['rank']}_{g}", use_container_width=True):
+                st.session_state["_trigger_search"] = g
+                st.rerun()
+
+def render_csv_disease_link_tab(df, csv_type, cands):
+    st.markdown(csv_section_header(" Disease Link — From Your CSV's Top Hits", "Disease-category lookup over top candidates."), unsafe_allow_html=True)
+    if not cands:
+        st.info("Need a CSV with gene symbols to look up disease associations.")
+        return
+    disease_hints = {
+        "BRCA": "Hereditary breast/ovarian cancer", "TP53": "Li-Fraumeni / multi-cancer",
+        "EGFR": "NSCLC", "KRAS": "Pancreatic/colorectal cancer", "MYC": "Oncogenic driver",
+        "PTEN": "Cowden / multi-cancer", "RB1": "Retinoblastoma", "CDKN2A": "Melanoma/pancreatic",
+        "MDM2": "Cancer", "ATM": "Ataxia-telangiectasia / cancer", "FLNA": "X-linked dysplasias / heterotopia",
+        "CHRM3": "Sjögren's syndrome / GI motility", "PIK3CA": "PIK3CA-related overgrowth / cancer",
+        "AKT1": "Proteus syndrome / cancer", "MTOR": "Tuberous sclerosis pathway", "VHL": "Von Hippel-Lindau",
+        "APC": "Familial adenomatous polyposis", "SMAD4": "Juvenile polyposis", "STK11": "Peutz-Jeghers",
+        "NF1": "Neurofibromatosis 1", "NF2": "Neurofibromatosis 2", "TSC1": "Tuberous sclerosis 1", "TSC2": "Tuberous sclerosis 2",
+    }
+    found_any = False
+    for c in cands[:10]:
+        g = c['gene'].upper()
+        hint = ""
+        for k, v in disease_hints.items():
+            if k in g: hint = v; break
+        if hint:
+            found_any = True
+            st.markdown(f"<div class='card'><h4>{c['gene']}</h4><p>{hint}</p></div>", unsafe_allow_html=True)
+    if not found_any:
+        st.markdown(f"<div style='color:var(--text2);font-size:.85rem;'>No quick disease hints recognised. "
+                    f"Search any candidate (e.g. <b>{cands[0]['gene']}</b>) in the protein box for full UniProt + OMIM breakdown.</div>",
+                    unsafe_allow_html=True)
+
+def render_csv_chemistry_tab(df, csv_type, cands):
+    st.markdown(csv_section_header(" Chemistry View", "Per-CSV chemistry context."), unsafe_allow_html=True)
+    if csv_type in ("binding_assay","cell_assay"):
+        cols_l = {c: c.lower() for c in df.columns}
+        ic50_col = next((c for c,l in cols_l.items() if any(k in l for k in ("ic50","ki","kd","ec50"))), None)
+        compound_col = next((c for c,l in cols_l.items() if any(k in l for k in ("compound","ligand","drug","molecule","smiles"))), None)
+        if compound_col and ic50_col:
+            try:
+                _df = df[[compound_col, ic50_col]].copy().sort_values(ic50_col).head(10)
+                st.markdown("<div style='color:var(--text2);font-size:.82rem;margin-bottom:.5rem;'>Top compounds by potency:</div>", unsafe_allow_html=True)
+                st.dataframe(_df, use_container_width=True, hide_index=True)
+                return
+            except Exception: pass
+    st.markdown(f"<div style='color:var(--text2);font-size:.85rem;'>Your CSV (<b>{csv_type.replace('_',' ')}</b>) doesn't carry compound-level chemistry data. "
+                f"Search a protein " + (f"(e.g. <b>{cands[0]['gene']}</b> from your CSV)" if cands else "") +
+                " for residue-level chemistry analysis.</div>", unsafe_allow_html=True)
+
+def render_csv_pharma_tab(df, csv_type, cands):
+    st.markdown(csv_section_header(" Drug Repurposing — Your CSV's Top Hits", "Quick known-drug lookup (full DGIdb runs per protein search)."), unsafe_allow_html=True)
+    if not cands:
+        st.info("Need a CSV with gene-symbol candidates to look up drugs.")
+        return
+    known_drugs = {
+        "EGFR":"Erlotinib, Gefitinib, Osimertinib, Cetuximab", "ERBB2":"Trastuzumab, Lapatinib, T-DM1",
+        "BRCA1":"Olaparib (PARP inhibitor)", "BRCA2":"Olaparib, Talazoparib",
+        "KRAS":"Sotorasib, Adagrasib (G12C-specific)", "TP53":"No direct drug; MDM2 inhibitors in trials",
+        "MDM2":"Idasanutlin, Milademetan (trials)", "PIK3CA":"Alpelisib", "AKT1":"Capivasertib, Ipatasertib",
+        "MTOR":"Everolimus, Sirolimus, Temsirolimus", "ATM":"Synthetic lethality with PARP",
+        "VHL":"Belzutifan", "CHRM3":"Tiotropium, Ipratropium, Darifenacin", "FLNA":"No approved drug",
+    }
+    found = []
+    for c in cands[:10]:
+        g = c['gene'].upper()
+        if g in known_drugs: found.append((c, known_drugs[g]))
+    if found:
+        for c, drugs in found:
+            st.markdown(f"<div style='background:var(--surface);border-left:3px solid #22c55e;border-radius:8px;"
+                        f"padding:.7rem 1rem;margin-bottom:.5rem;'>"
+                        f"<div style='color:var(--text);font-weight:700;font-size:.92rem;'>{c['gene']} "
+                        f"<span style='color:#22c55e;font-size:.78rem;font-weight:600;margin-left:8px;'>has drugs</span></div>"
+                        f"<div style='color:var(--text2);font-size:.8rem;margin-top:2px;'>{drugs}</div></div>",
+                        unsafe_allow_html=True)
+    else:
+        st.markdown(f"<div style='color:var(--text2);font-size:.85rem;'>None of the top candidates have curated drugs in this quick lookup. "
+                    f"Search any candidate (e.g. <b>{cands[0]['gene']}</b>) for a real DGIdb query.</div>",
+                    unsafe_allow_html=True)
+
+
 def analyse_csv_standalone(df, csv_type, goal,
                            gene="", scored=None, variants=None,
                            am_scores=None, protein_length=1):
@@ -2432,6 +2756,31 @@ def analyse_csv_standalone(df, csv_type, goal,
     # EXPRESSION (RNA-seq / microarray / qPCR)
     # ════════════════════════════════════════════════════════════════
     elif csv_type == "expression":
+        # ── CSV-first: surface the data's own top candidates BEFORE any cross-ref ──
+        if fc_col and gene_col and df[fc_col].dtype in [float, 'float64', int, 'int64']:
+            try:
+                # Rank by absolute fold-change, optionally filtered by significance
+                _df_rank = df.copy()
+                _df_rank["_abs_fc"] = _df_rank[fc_col].abs()
+                if p_col and df[p_col].dtype in [float, 'float64']:
+                    _df_rank = _df_rank[_df_rank[p_col] < 0.05]
+                _df_rank = _df_rank.sort_values("_abs_fc", ascending=False).head(10)
+                if len(_df_rank) > 0:
+                    _lines = []
+                    for _, _r in _df_rank.iterrows():
+                        _g = str(_r[gene_col])
+                        _f = float(_r[fc_col])
+                        _arrow = "↑" if _f > 0 else "↓"
+                        _p_str = f" · p={float(_r[p_col]):.2g}" if p_col else ""
+                        _lines.append(f"**{_g}** {_arrow} log₂FC = {_f:+.2f}{_p_str}")
+                    findings.append((" Top candidates from your CSV",
+                        "Strongest signals in this dataset, ranked by |log₂FC|" +
+                        (" (filtered to p < 0.05)" if p_col else "") + ":<br>" +
+                        "<br>".join(_lines) +
+                        "<br><br><i>Search any of these in the protein box above to drill into its ClinVar/gnomAD/structural profile.</i>"))
+            except Exception: pass
+
+        # ── Now the standard summary stats ───────────────────────────────────────
         if fc_col and df[fc_col].dtype in [float, 'float64', int, 'int64']:
             up   = (df[fc_col] > 1).sum()
             dn   = (df[fc_col] < -1).sum()
@@ -2445,19 +2794,20 @@ def analyse_csv_standalone(df, csv_type, goal,
             findings.append((" Statistical significance",
                 f"**{sig:,}** significant at p < 0.05 · **{sig01:,}** at p < 0.01 out of {len(df):,} total. "
                 f"Multiple testing correction applied? Check for 'padj' or 'FDR' column."))
+        # ── Only NOW cross-reference with the searched protein, if there is one ───
         if fc_col and p_col and gene_col:
             try:
                 sig_mask = (df[p_col] < 0.05) & (df[fc_col].abs() > 1)
                 sig_genes = df.loc[sig_mask, gene_col].dropna().astype(str).tolist()
                 if sig_genes:
-                    findings.append((" Significant differentially expressed genes",
-                        f"{', '.join(sig_genes[:10])}{'...' if len(sig_genes)>10 else ''} "
-                        f"({len(sig_genes)} total)"))
+                    findings.append((" All significantly changed genes",
+                        f"{', '.join(sig_genes[:20])}{f' … (+{len(sig_genes)-20} more)' if len(sig_genes)>20 else ''} "
+                        f"— {len(sig_genes)} total"))
                 if gene and any(str(gene).upper() == g.upper() for g in sig_genes):
                     fc_val = df.loc[df[gene_col].astype(str).str.upper()==gene.upper(), fc_col].values[0]
-                    findings.append((f" {gene} in this dataset",
-                        f"**{gene} is significantly differentially expressed** — log₂FC = {fc_val:.2f}. "
-                        f"This functional data supports its ClinVar pathogenic variant profile. "
+                    findings.append((f" Cross-reference: {gene} is in this CSV",
+                        f"**{gene}** is significantly differentially expressed — log₂FC = {fc_val:.2f}. "
+                        f"This functional signal aligns with the protein you're analysing. "
                         f"Cross-reference: does expression change in the disease tissue where ClinVar variants are found?"))
             except: pass
         findings.append((" Recommended next experiments",
@@ -7417,8 +7767,12 @@ with st.sidebar:
 
     # Run Triage button for CSV-only analysis
     if st.session_state.get("csv_df") is not None:
-        run_csv_triage = st.button(" Run Wet-Lab Triage", use_container_width=True, key="csv_triage_btn",
-                                    help="Analyse only the uploaded CSV — no protein needed")
+        # Auto-activate on upload — no need for a separate click. The button below
+        # still works as a manual re-trigger.
+        if not st.session_state.get("csv_triage_active"):
+            st.session_state["csv_triage_active"] = True
+        run_csv_triage = st.button(" Re-run Wet-Lab Triage", use_container_width=True, key="csv_triage_btn",
+                                    help="Re-analyse the uploaded CSV")
         if run_csv_triage:
             st.session_state["csv_triage_active"] = True
     
@@ -7551,7 +7905,7 @@ with st.sidebar:
     depth=st.selectbox("Depth",["Standard (150 variants)","Deep (400 variants)"],label_visibility="collapsed")
     max_v=150 if "Standard" in depth else 400
     # Build version — bump on each deploy so you can confirm the live app is current
-    st.markdown("<div style='color:#1e3050;font-size:.62rem;text-align:right;margin-top:.3rem;'>build 2026.05.28-g</div>", unsafe_allow_html=True)
+    st.markdown("<div style='color:#1e3050;font-size:.62rem;text-align:right;margin-top:.3rem;'>build 2026.05.28-k</div>", unsafe_allow_html=True)
 
     # Sidebar protein summary
     if st.session_state["pdata"]:
@@ -10961,6 +11315,45 @@ if st.session_state.get("csv_triage_active") and st.session_state.get("csv_df") 
     _csv_am       = st.session_state.get("am") or {}
     _csv_pdata    = st.session_state.get("pdata") or {}
     _csv_plen     = (_csv_pdata.get("sequence") or {}).get("length", 1) or 1
+
+    # ── CSV ↔ searched-protein overlap check ─────────────────────────────────
+    # If the user has searched a protein and the CSV contains a gene-symbol column,
+    # warn when the searched protein is NOT in the CSV — the data is the experiment,
+    # the search is just a cue. We don't want users to assume the analysis is "about"
+    # their searched protein when the CSV is actually about something else.
+    if _csv_gene and ct_t in ("expression","clinical_variants","vcf_variants","proteomics","stats","cell_assay"):
+        _csv_gene_col = next((c for c in df_t.columns if c.lower() in
+                              ("gene","gene_symbol","symbol","gene(s)","genes","gene_name","gene_id","geneid")), None)
+        if _csv_gene_col is not None:
+            try:
+                _csv_gene_set = set(df_t[_csv_gene_col].dropna().astype(str).str.upper())
+                _searched_in_csv = _csv_gene.upper() in _csv_gene_set
+                if not _searched_in_csv:
+                    # Suggest a couple of candidates from the CSV itself
+                    _sample = sorted(_csv_gene_set)[:6]
+                    st.markdown(
+                        f"<div style='background:rgba(255,140,66,.08);border:1px solid #ff8c4266;"
+                        f"border-left:4px solid #ff8c42;border-radius:10px;padding:.8rem 1.1rem;margin-bottom:1rem;'>"
+                        f"<div style='color:#ff8c42;font-weight:800;font-size:.85rem;margin-bottom:.3rem;'>"
+                        f"⚠ Searched protein not in this CSV</div>"
+                        f"<div style='color:var(--text2);font-size:.82rem;line-height:1.5;'>"
+                        f"You searched <b>{_csv_gene}</b>, but it's not present in the uploaded CSV "
+                        f"({len(_csv_gene_set):,} unique genes). The analysis below is driven by the <b>CSV's own contents</b>, "
+                        f"not your search. To cross-reference a specific protein, search one of the genes in the CSV — "
+                        f"e.g. <i>{', '.join(_sample)}</i>.</div></div>",
+                        unsafe_allow_html=True,
+                    )
+                else:
+                    st.markdown(
+                        f"<div style='background:rgba(34,197,94,.06);border:1px solid #22c55e44;"
+                        f"border-left:4px solid #22c55e;border-radius:10px;padding:.6rem 1rem;margin-bottom:1rem;'>"
+                        f"<span style='color:#22c55e;font-weight:700;font-size:.82rem;'>✓ {_csv_gene} found in this CSV</span> "
+                        f"<span style='color:var(--text3);font-size:.78rem;margin-left:8px;'>— cross-referencing below</span>"
+                        f"</div>",
+                        unsafe_allow_html=True,
+                    )
+            except Exception: pass
+
     for t_t, b_t in analyse_csv_standalone(df_t, ct_t, active_goal,
                                            gene=_csv_gene, scored=_csv_scored,
                                            variants=_csv_variants, am_scores=_csv_am,
@@ -11047,6 +11440,14 @@ if st.session_state["disease_proteins"]:
 
 # ════════════ TAB 0 — SUMMARY ════════════
 with tab0:
+    # ── CSV-driven view (renders when a CSV is loaded) ──────────────────────
+    _csv_df_t, _csv_ct_t, _csv_cands_t = csv_context()
+    if _csv_df_t is not None:
+        try:
+            render_csv_summary_tab(_csv_df_t, _csv_ct_t, _csv_cands_t)
+        except Exception as _csv_tab_e:
+            st.warning(f"CSV view note: {_csv_tab_e}")
+        st.markdown("<hr style='border-color:rgba(255,255,255,0.08);margin:1.2rem 0;'>", unsafe_allow_html=True)
     # ── Load all data from session state ─────────────────────────────────────
     pdata        = st.session_state.get("pdata") or {}
     cv           = st.session_state.get("cv") or {}
@@ -11573,6 +11974,14 @@ with tab0:
 # ════════════ TAB 1 — TRIAGE ════════════
 # ════════════ TAB 1 — TRIAGE ════════════
 with tab1:
+    # ── CSV-driven view (renders when a CSV is loaded) ──────────────────────
+    _csv_df_t, _csv_ct_t, _csv_cands_t = csv_context()
+    if _csv_df_t is not None:
+        try:
+            render_csv_triage_tab(_csv_df_t, _csv_ct_t, _csv_cands_t)
+        except Exception as _csv_tab_e:
+            st.warning(f"CSV view note: {_csv_tab_e}")
+        st.markdown("<hr style='border-color:rgba(255,255,255,0.08);margin:1.2rem 0;'>", unsafe_allow_html=True)
     # ── Load all data from session state ─────────────────────────────────────
     pdata        = st.session_state.get("pdata") or {}
     cv           = st.session_state.get("cv") or {}
@@ -11879,6 +12288,14 @@ with tab1:
 
 # ════════════ TAB 2 — CASE STUDY ════════════
 with tab2:
+    # ── CSV-driven view (renders when a CSV is loaded) ──────────────────────
+    _csv_df_t, _csv_ct_t, _csv_cands_t = csv_context()
+    if _csv_df_t is not None:
+        try:
+            render_csv_case_study_tab(_csv_df_t, _csv_ct_t, _csv_cands_t)
+        except Exception as _csv_tab_e:
+            st.warning(f"CSV view note: {_csv_tab_e}")
+        st.markdown("<hr style='border-color:rgba(255,255,255,0.08);margin:1.2rem 0;'>", unsafe_allow_html=True)
     # ── Load all data from session state ─────────────────────────────────────
     pdata        = st.session_state.get("pdata") or {}
     cv           = st.session_state.get("cv") or {}
@@ -12284,6 +12701,14 @@ with tab2:
 
 # ════════════ TAB 3 — EXPLORER ════════════
 with tab3:
+    # ── CSV-driven view (renders when a CSV is loaded) ──────────────────────
+    _csv_df_t, _csv_ct_t, _csv_cands_t = csv_context()
+    if _csv_df_t is not None:
+        try:
+            render_csv_explorer_tab(_csv_df_t, _csv_ct_t, _csv_cands_t)
+        except Exception as _csv_tab_e:
+            st.warning(f"CSV view note: {_csv_tab_e}")
+        st.markdown("<hr style='border-color:rgba(255,255,255,0.08);margin:1.2rem 0;'>", unsafe_allow_html=True)
     # ── Load all data from session state ─────────────────────────────────────
     pdata        = st.session_state.get("pdata") or {}
     cv           = st.session_state.get("cv") or {}
@@ -12598,6 +13023,14 @@ with tab3:
 
 # ════════════ TAB 4 — EXPERIMENTS ════════════
 with tab4:
+    # ── CSV-driven view (renders when a CSV is loaded) ──────────────────────
+    _csv_df_t, _csv_ct_t, _csv_cands_t = csv_context()
+    if _csv_df_t is not None:
+        try:
+            render_csv_experiments_tab(_csv_df_t, _csv_ct_t, _csv_cands_t)
+        except Exception as _csv_tab_e:
+            st.warning(f"CSV view note: {_csv_tab_e}")
+        st.markdown("<hr style='border-color:rgba(255,255,255,0.08);margin:1.2rem 0;'>", unsafe_allow_html=True)
     # ── Load all data from session state ─────────────────────────────────────
     pdata        = st.session_state.get("pdata") or {}
     cv           = st.session_state.get("cv") or {}
@@ -13065,6 +13498,14 @@ with tab4:
 
 # ════════════ TAB 5 — AI INTELLIGENCE REPORT ════════════
 with tab5:
+    # ── CSV-driven view (renders when a CSV is loaded) ──────────────────────
+    _csv_df_t, _csv_ct_t, _csv_cands_t = csv_context()
+    if _csv_df_t is not None:
+        try:
+            render_csv_ai_report_tab(_csv_df_t, _csv_ct_t, _csv_cands_t)
+        except Exception as _csv_tab_e:
+            st.warning(f"CSV view note: {_csv_tab_e}")
+        st.markdown("<hr style='border-color:rgba(255,255,255,0.08);margin:1.2rem 0;'>", unsafe_allow_html=True)
     # ── Load all data from session state ─────────────────────────────────────
     pdata        = st.session_state.get("pdata") or {}
     cv           = st.session_state.get("cv") or {}
@@ -13599,6 +14040,14 @@ ASSAY_RESOURCES = [
 #  Full protein screening engine with filtering + chatbot workspace modifier
 # ════════════════════════════════════════════════════════════════════════════
 with tab6:
+    # ── CSV-driven view (renders when a CSV is loaded) ──────────────────────
+    _csv_df_t, _csv_ct_t, _csv_cands_t = csv_context()
+    if _csv_df_t is not None:
+        try:
+            render_csv_workspace_tab(_csv_df_t, _csv_ct_t, _csv_cands_t)
+        except Exception as _csv_tab_e:
+            st.warning(f"CSV view note: {_csv_tab_e}")
+        st.markdown("<hr style='border-color:rgba(255,255,255,0.08);margin:1.2rem 0;'>", unsafe_allow_html=True)
     # ── Load all data from session state ─────────────────────────────────────
     pdata        = st.session_state.get("pdata") or {}
     cv           = st.session_state.get("cv") or {}
@@ -14234,6 +14683,14 @@ with tab6:
 
 # ════════════ TAB 7 — DISEASE-PROTEIN LINK ════════════
 with tab7:
+    # ── CSV-driven view (renders when a CSV is loaded) ──────────────────────
+    _csv_df_t, _csv_ct_t, _csv_cands_t = csv_context()
+    if _csv_df_t is not None:
+        try:
+            render_csv_disease_link_tab(_csv_df_t, _csv_ct_t, _csv_cands_t)
+        except Exception as _csv_tab_e:
+            st.warning(f"CSV view note: {_csv_tab_e}")
+        st.markdown("<hr style='border-color:rgba(255,255,255,0.08);margin:1.2rem 0;'>", unsafe_allow_html=True)
     # ── Load all data from session state ─────────────────────────────────────
     pdata        = st.session_state.get("pdata") or {}
     cv           = st.session_state.get("cv") or {}
@@ -14384,6 +14841,14 @@ st.markdown(
 
 # ════════════ TAB 8 — CHEMISTRY & RECEPTOR BIOLOGY ════════════
 with tab8:
+    # ── CSV-driven view (renders when a CSV is loaded) ──────────────────────
+    _csv_df_t, _csv_ct_t, _csv_cands_t = csv_context()
+    if _csv_df_t is not None:
+        try:
+            render_csv_chemistry_tab(_csv_df_t, _csv_ct_t, _csv_cands_t)
+        except Exception as _csv_tab_e:
+            st.warning(f"CSV view note: {_csv_tab_e}")
+        st.markdown("<hr style='border-color:rgba(255,255,255,0.08);margin:1.2rem 0;'>", unsafe_allow_html=True)
     # ── Load all data from session state ─────────────────────────────────────
     pdata        = st.session_state.get("pdata") or {}
     cv           = st.session_state.get("cv") or {}
@@ -15099,6 +15564,14 @@ with tab8:
 #  TAB 9 — PHARMACEUTICALS: DRUGGABILITY ATLAS & DISEASE PREVENTION
 # ════════════════════════════════════════════════════════════════════════════
 with tab9:
+    # ── CSV-driven view (renders when a CSV is loaded) ──────────────────────
+    _csv_df_t, _csv_ct_t, _csv_cands_t = csv_context()
+    if _csv_df_t is not None:
+        try:
+            render_csv_pharma_tab(_csv_df_t, _csv_ct_t, _csv_cands_t)
+        except Exception as _csv_tab_e:
+            st.warning(f"CSV view note: {_csv_tab_e}")
+        st.markdown("<hr style='border-color:rgba(255,255,255,0.08);margin:1.2rem 0;'>", unsafe_allow_html=True)
     # ── Load all data from session state ─────────────────────────────────────
     pdata        = st.session_state.get("pdata") or {}
     cv           = st.session_state.get("cv") or {}
