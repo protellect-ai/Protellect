@@ -163,6 +163,7 @@ def parse_aa(name):
     return (aa3.get(m.group(1),"?"),aa3.get(m.group(2),"?")) if m else ("?","?")
 
 # ── Data-source fetchers ──
+@st.cache_data(show_spinner=False, ttl=86400)
 def fetch_uniprot(query):
     """
     Fetch UniProt entry — STRICTLY human only (organism_id:9606 / Homo sapiens).
@@ -441,6 +442,7 @@ def fetch_uniprot(query):
         f"Try: TP53 · FLNC · BRCA1 · EGFR · ACM2 · ARRB2 · P04637 (TP53 accession)"
     )
 
+@st.cache_data(show_spinner=False, ttl=3600)
 def fetch_clinvar(gene, max_v=150):
     """
     Fetch ClinVar variants for a gene. Handles both old and new ClinVar API formats.
@@ -644,6 +646,7 @@ def fetch_clinvar(gene, max_v=150):
             "top_conds":dict(conds.most_common(10)),"pathogenic":sum(1 for v in variants if v["score"]>=4),
             "vus":sum(1 for v in variants if v["score"]==2)}}
 
+@st.cache_data(show_spinner=False, ttl=86400)
 def fetch_disease_proteins(disease_name, max_genes=15):
     """Search ClinVar for all genes/proteins linked to a disease."""
     try:
@@ -684,6 +687,7 @@ def fetch_disease_proteins(disease_name, max_genes=15):
         return results[:max_genes]
     except: return []
 
+@st.cache_data(show_spinner=False, ttl=604800)
 def fetch_pdb(uid):
     """Fetch AlphaFold PDB — API first, then direct URL fallbacks. ATOM check uses full text."""
     if not uid: return ""
@@ -714,6 +718,7 @@ def fetch_pdb(uid):
             continue
     return ""
 
+@st.cache_data(show_spinner=False, ttl=3600)
 def fetch_papers(gene, n=6):
     try:
         r=requests.get(ESEARCH,params={"db":"pubmed","term":gene,"retmax":n*2,"retmode":"json","sort":"relevance"},timeout=15)
@@ -734,6 +739,7 @@ def fetch_papers(gene, n=6):
         return sorted(papers,key=lambda x:-x["score"])[:n]
     except: return []
 
+@st.cache_data(show_spinner=False, ttl=86400)
 def fetch_omim_inheritance(omim_id: str) -> str:
     """
     Fetch inheritance mode from OMIM API.
@@ -762,6 +768,7 @@ def fetch_omim_inheritance(omim_id: str) -> str:
     except: pass
     return ""
 
+@st.cache_data(show_spinner=False, ttl=86400)
 def fetch_ncbi_gene(symbol):
     """Fetch NCBI Gene data — chromosome, cytoband, exon count, genomic span."""
     if not symbol or symbol in ("?",""):
@@ -819,6 +826,7 @@ def fetch_ncbi_gene(symbol):
     except Exception:
         return {}
 
+@st.cache_data(show_spinner=False, ttl=3600)
 def fetch_pubmed_abstracts(gene: str, n: int = 12) -> list:
     """Fetch full abstracts for literature mining of previously done experiments."""
     try:
@@ -868,6 +876,7 @@ def fetch_pubmed_abstracts(gene: str, n: int = 12) -> list:
     except Exception as e:
         return []
 
+@st.cache_data(show_spinner=False, ttl=3600)
 def fetch_string_interactions(gene: str, species: int = 9606, limit: int = 10) -> list:
     """Fetch protein-protein interactions from STRING database."""
     try:
@@ -891,6 +900,7 @@ def fetch_string_interactions(gene: str, species: int = 9606, limit: int = 10) -
     except:
         return []
 
+@st.cache_data(show_spinner=False, ttl=3600)
 def fetch_gnomad(gene: str) -> dict:
     """Fetch constraint + population-stratified allele frequencies from gnomAD v4."""
     try:
@@ -970,6 +980,7 @@ def fetch_gnomad(gene: str) -> dict:
     except Exception as _e:
         return {}
 
+@st.cache_data(show_spinner=False, ttl=86400)
 def fetch_clingen(gene: str) -> dict:
     """
     Fetch ClinGen gene-disease validity classification.
@@ -1009,6 +1020,7 @@ def fetch_clingen(gene: str) -> dict:
     except Exception:
         return {"classifications": [], "source": "ClinGen"}
 
+@st.cache_data(show_spinner=False, ttl=3600)
 def fetch_clinical_trials(gene: str, condition: str = "") -> list:
     """Fetch active clinical trials related to gene from ClinicalTrials.gov."""
     try:
@@ -1037,6 +1049,7 @@ def fetch_clinical_trials(gene: str, condition: str = "") -> list:
     except:
         return []
 
+@st.cache_data(show_spinner=False, ttl=3600)
 def fetch_dgidb(gene: str) -> list:
     """Fetch drug-gene interactions from DGIdb."""
     try:
@@ -1059,6 +1072,7 @@ def fetch_dgidb(gene: str) -> list:
     except:
         return []
 
+@st.cache_data(show_spinner=False, ttl=86400)
 def fetch_gpcrdb(gene: str) -> dict:
     """
     Query GPCRdb — the definitive GPCR classification database.
@@ -1092,6 +1106,7 @@ def fetch_gpcrdb(gene: str) -> dict:
     except Exception:
         return {}
 
+@st.cache_data(show_spinner=False, ttl=86400)
 def fetch_alphamissense(uniprot_id: str) -> dict:
     """
     Fetch AlphaMissense pathogenicity scores for every amino acid substitution.
@@ -1130,6 +1145,7 @@ def fetch_alphamissense(uniprot_id: str) -> dict:
     except:
         return {}
 
+@st.cache_data(show_spinner=False, ttl=3600)
 def fetch_opentargets(gene_symbol: str) -> dict:
     """
     OpenTargets Platform — genetic associations, known drugs, tissue expression,
@@ -1216,6 +1232,7 @@ def fetch_opentargets(gene_symbol: str) -> dict:
     except Exception:
         return {}
 
+@st.cache_data(show_spinner=False, ttl=86400)
 def fetch_isoforms(uniprot_id: str) -> list:
     """Fetch all isoforms from UniProt and their disease relevance."""
     try:
@@ -1234,6 +1251,7 @@ def fetch_isoforms(uniprot_id: str) -> list:
         return isoforms
     except: return []
 
+@st.cache_data(show_spinner=False, ttl=3600)
 def fetch_scholar_papers(query: str, n: int = 8) -> list:
     """Single-source fetch from Semantic Scholar (kept for backward compatibility).
     For broader coverage use fetch_papers_multi() which queries 4 sources in parallel."""
@@ -1265,6 +1283,7 @@ def fetch_scholar_papers(query: str, n: int = 8) -> list:
         pass
     return []
 
+@st.cache_data(show_spinner=False, ttl=3600)
 def _fetch_openalex(query: str, n: int = 6) -> list:
     """OpenAlex API — open metadata, no key required."""
     try:
@@ -1312,6 +1331,7 @@ def _fetch_openalex(query: str, n: int = 6) -> list:
     except Exception:
         return []
 
+@st.cache_data(show_spinner=False, ttl=3600)
 def _fetch_crossref(query: str, n: int = 6) -> list:
     """CrossRef REST API — publisher metadata, no key required."""
     try:
@@ -1351,6 +1371,7 @@ def _fetch_crossref(query: str, n: int = 6) -> list:
     except Exception:
         return []
 
+@st.cache_data(show_spinner=False, ttl=3600)
 def _fetch_pubmed(query: str, n: int = 6) -> list:
     """NCBI E-utilities PubMed — biomedical literature, no key required (rate-limited to 3 req/s)."""
     try:
@@ -1395,6 +1416,7 @@ def _fetch_pubmed(query: str, n: int = 6) -> list:
     except Exception:
         return []
 
+@st.cache_data(show_spinner=False, ttl=3600)
 def fetch_papers_multi(query: str, per_source: int = 4, on_progress=None) -> list:
     """Fetch papers from 4 sources in parallel, deduplicate by title, sort by citations.
     on_progress(source, n_results) callback fires after each source completes."""

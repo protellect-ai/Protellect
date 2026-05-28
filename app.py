@@ -1183,7 +1183,6 @@ def parse_aa(name):
     return (aa3.get(m.group(1),"?"),aa3.get(m.group(2),"?")) if m else ("?","?")
 
 # ─── API functions ─────────────────────────────────────────────────
-@st.cache_data(show_spinner=False, ttl=3600)
 
 def _is_ambiguous_search(query: str, result_gene: str, result_name: str) -> str | None:
     """
@@ -1231,29 +1230,18 @@ def _is_ambiguous_search(query: str, result_gene: str, result_name: str) -> str 
 
     return None
 
-@st.cache_data(show_spinner=False, ttl=86400)
 
-@st.cache_data(show_spinner=False, ttl=3600)
 
-@st.cache_data(show_spinner=False, ttl=604800)
 
-@st.cache_data(show_spinner=False, ttl=3600)
 
-@st.cache_data(show_spinner=False, ttl=86400)
 
-@st.cache_data(show_spinner=False, ttl=3600)
-@st.cache_data(show_spinner=False, ttl=86400)
 
 
 # ─── Additional data sources ───────────────────────────────────────────────────
 
-@st.cache_data(show_spinner=False, ttl=3600)
 
-@st.cache_data(show_spinner=False, ttl=3600)
 
-@st.cache_data(show_spinner=False, ttl=3600)
 
-@st.cache_data(show_spinner=False, ttl=86400)
 
 def _disease_evidence_tier(source: str, n_clinvar_stars: int = 0,
                             clingen_class: str = "") -> dict:
@@ -1285,7 +1273,6 @@ def _disease_evidence_tier(source: str, n_clinvar_stars: int = 0,
     label, color, desc = tier_labels[tier]
     return {"tier": tier, "label": label, "color": color, "description": desc}
 
-@st.cache_data(show_spinner=False, ttl=3600)
 
 @st.cache_data(show_spinner=False, ttl=3600)
 
@@ -3302,7 +3289,6 @@ def variant_landscape_fig(variants, protein_length, scored):
 #  POWER FEATURES — what no other tool has
 # ═══════════════════════════════════════════════════════════════════
 
-@st.cache_data(show_spinner=False, ttl=86400)
 
 @st.cache_data(show_spinner=False, ttl=3600)
 
