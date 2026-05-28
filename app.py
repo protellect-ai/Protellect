@@ -1532,7 +1532,28 @@ def g_diseases(p):
     """
     out = []
     seen = set()
-    
+
+    # Detect the gene's chromosome so we can infer X/Y-linked inheritance when a
+    # specific disease note doesn't state it. FLNA, for example, is on the X
+    # chromosome, so ALL its diseases are X-linked even if only some notes say so.
+    _gene_chromosome = ""
+    try:
+        for xref in p.get("uniProtKBCrossReferences", []):
+            if xref.get("database") == "Proteomes":
+                for prop in xref.get("properties", []):
+                    if prop.get("key") == "Component":
+                        _comp = prop.get("value", "")
+                        if "chromosome x" in _comp.lower(): _gene_chromosome = "X"
+                        elif "chromosome y" in _comp.lower(): _gene_chromosome = "Y"
+                        elif "mitochond" in _comp.lower(): _gene_chromosome = "MT"
+        # Fallback: scan gene-level keywords/comments for X-linked mentions
+        if not _gene_chromosome:
+            _all_text = json.dumps(p.get("comments", []))[:5000].lower()
+            if "x-linked" in _all_text:
+                _gene_chromosome = "X"
+    except Exception:
+        _gene_chromosome = ""
+
     # 1. Disease comments (primary and most reliable source)
     for c in p.get("comments", []):
         if c.get("commentType") != "DISEASE": continue
@@ -1563,15 +1584,21 @@ def g_diseases(p):
         inh_text = " ".join([note, desc, name])
         inheritance = _extract_inheritance(inh_text)
         
-        # If still empty, try to infer from disease name conventions
+        # If still empty, infer from chromosome first (most reliable), then conventions
         if not inheritance:
             name_lower = name.lower()
-            if any(x in name_lower for x in ["type 1","type i","i,","syndrome 1"]):
-                inheritance = "Autosomal Dominant (AD)"
+            if _gene_chromosome == "X":
+                inheritance = "X-linked"      # gene is on X → disease is X-linked
+            elif _gene_chromosome == "Y":
+                inheritance = "Y-linked"
+            elif _gene_chromosome == "MT":
+                inheritance = "Mitochondrial"
             elif "cardiomyopathy" in name_lower:
-                inheritance = "Autosomal Dominant (AD)"  # Most cardiomyopathies are AD
+                inheritance = "Autosomal Dominant (AD)"  # most cardiomyopathies are AD
             elif "deficiency" in name_lower:
                 inheritance = "Autosomal Recessive (AR)"
+            # Note: removed the unreliable "type 1 / syndrome 1 → AD" guess —
+            # a trailing number says nothing about inheritance mode.
         
         # Extract mutation type from note
         mut_type = _extract_mutation_type(note)
@@ -15223,18 +15250,44 @@ dr();
 
             prevention = ""
             dn_lower = dn9.lower()
-            if _is_gpcr9:
-                prevention = f"GPCR agonist dose reduction (β-blocker/antagonist) prevents receptor hyperactivation. Biased agonist approach separates therapeutic from adverse coupling. Filamin Ser2152-P monitoring as pharmacodynamic biomarker."
+            _desc_lower = (dd9 or "").lower()
+            _combined = dn_lower + " " + _desc_lower
+            if _is_som9:
+                prevention = (f"Early ctDNA liquid biopsy detects somatic {_gene9} mutation before tumour mass exceeds ~1 mm. "
+                              f"Targeted therapy or excision at carcinoma-in-situ stage, before invasion. "
+                              f"Include {_gene9} in multi-cancer early-detection (MCED) panels.")
+            elif "cardiom" in _combined or "cardiac" in _combined or "heart" in _combined:
+                prevention = (f"Cascade genetic screening of first-degree relatives ({inh9 or 'inheritance per OMIM'}). "
+                              f"Serial echocardiography / cardiac MRI from adolescence. "
+                              f"Prophylactic ICD evaluation in high-risk carriers; early ACE-inhibitor/beta-blocker at first sign of LV dysfunction.")
+            elif "myopath" in _combined or "muscular" in _combined or "muscle" in _combined:
+                prevention = (f"Baseline CK and muscle MRI in carriers; physiotherapy to preserve ambulation. "
+                              f"Respiratory function monitoring (FVC) as distal/proximal weakness progresses. "
+                              f"Avoid statins and other myotoxic drugs. Gene/exon-skipping therapy where the specific {_gene9} variant is amenable.")
+            elif "heterotopia" in _combined or "epilep" in _combined or "seizure" in _combined or "neuronal migration" in _combined:
+                prevention = (f"Baseline brain MRI to map nodular heterotopia; EEG monitoring for subclinical epileptiform activity. "
+                              f"Early anti-seizure prophylaxis once epileptiform activity appears. "
+                              f"Predictive testing of female relatives (X-linked carriers may be mildly affected).")
+            elif "dysplasia" in _combined or "skeletal" in _combined or "bone" in _combined or "digit" in _combined:
+                prevention = (f"Skeletal survey and orthopaedic baseline in infancy; monitor for progressive bone deformity and scoliosis. "
+                              f"Audiology screening (conductive hearing loss is common in FLNA skeletal disorders). "
+                              f"Cleft palate / craniofacial surgical planning; genetic counselling on X-linked transmission risk.")
+            elif "thrombasthenia" in _combined or "platelet" in _combined or "bleed" in _combined or "glanzmann" in _combined:
+                prevention = (f"Platelet aggregation studies to confirm functional defect. "
+                              f"Pre-operative platelet transfusion planning; avoid antiplatelet drugs. "
+                              f"Carrier testing and bleeding-risk counselling before surgery or pregnancy.")
+            elif _is_gpcr9:
+                prevention = (f"Receptor-level modulation (antagonist / biased agonist) to prevent hyperactivation. "
+                              f"Pharmacodynamic monitoring of downstream signalling. "
+                              f"Cascade genetic testing of relatives ({inh9 or 'per OMIM'}).")
             elif _is_kin9:
-                prevention = f"Kinase inhibitor prophylaxis in high-risk variant carriers (BRCA2 ATM for cancer, LRRK2 for Parkinson). Monitor phospho-substrates (pSer/pTyr panel) as early biomarkers. Allosteric inhibitor (DFG-out) prevents constitutive activation."
-            elif _is_som9:
-                prevention = f"Early ctDNA liquid biopsy detects somatic {_gene9} mutation before tumour mass >1mm. Surgical excision or targeted therapy at Stage 0 (carcinoma in situ) before invasion. Multi-cancer early detection (MCED) blood test includes {_gene9} methylation signature."
-            elif "cardiom" in dn_lower or "cardiac" in dn_lower:
-                prevention = f"Germline pathogenic variant in {_gene9} = autosomal dominant cardiomyopathy risk. Cascade genetic testing in family. Prophylactic ICD in pLI>{_pLI9:.2f} carriers. ACE inhibitor early in pre-clinical LV dysfunction stage."
-            elif "neuro" in dn_lower or "epilep" in dn_lower:
-                prevention = f"Predictive genetic testing in family members. Early neuroimaging baseline. Anti-seizure medication prophylaxis in SCN1A/KCNQ2 carriers before first seizure. Gene therapy (ASO) trials at preclinical stage."
+                prevention = (f"Phospho-substrate panel (pSer/pTyr) as early activation biomarker. "
+                              f"Allosteric (DFG-out) inhibitor strategy in confirmed gain-of-function carriers. "
+                              f"Predictive testing of relatives.")
             else:
-                prevention = f"Cascade family genetic testing for {_gene9} variant. Annual surveillance of at-risk organs. Gene therapy or protein replacement when LoF confirmed. Avoid environmental triggers that exacerbate the molecular defect."
+                prevention = (f"Cascade genetic testing of relatives ({inh9 or 'inheritance per OMIM'}). "
+                              f"Baseline surveillance of the organ systems named in the phenotype above, then periodic monitoring. "
+                              f"Gene therapy or protein replacement is investigational where loss-of-function is confirmed.")
 
             with st.expander(f"[{inh9 or 'Unknown'}]  {dn9[:55]}"):
                 st.markdown(f"<div style='color:#3a6080;font-size:.78rem;margin-bottom:6px;line-height:1.6;'>{dd9 or 'No description available.'}</div>", unsafe_allow_html=True)
