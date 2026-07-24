@@ -1529,9 +1529,23 @@ Based on the above data AND your knowledge of current biomedical literature, pro
             },
             timeout=60
         )
-        response.raise_for_status()
+response = requests.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={
+                "Content-Type": "application/json",
+                "x-api-key": _api_key,
+                "anthropic-version": "2023-06-01",
+            },
+            json={
+                "model": "claude-sonnet-4-20250514",
+                "max_tokens": 2000,
+                "messages": [{"role": "user", "content": context}],
+                "tools": [{"type": "web_search_20250305", "name": "web_search"}]
+            },
+            timeout=60
         )
         response.raise_for_status()
+        content_blocks = response.json().get("content", [])
         content_blocks = response.json().get("content", [])
         # Collect all text blocks (may include tool_use and tool_result blocks)
         raw_parts = []
