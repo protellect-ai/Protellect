@@ -1507,16 +1507,29 @@ Based on the above data AND your knowledge of current biomedical literature, pro
 """
 
     try:
+        _api_key = _get_anthropic_key()
+        if not _api_key:
+            return {
+                "executive_summary": "AI synthesis unavailable: no Anthropic API key configured (set ANTHROPIC_API_KEY in Streamlit secrets).",
+                "confidence": "N/A", "experiments_done": [], "experiments_to_do": [],
+                "warning_flags": ["No API key configured"],
+            }
         response = requests.post(
             "https://api.anthropic.com/v1/messages",
-            headers={"Content-Type": "application/json"},
+            headers={
+                "Content-Type": "application/json",
+                "x-api-key": _api_key,
+                "anthropic-version": "2023-06-01",
+            },
             json={
                 "model": "claude-sonnet-4-20250514",
                 "max_tokens": 2000,
                 "messages": [{"role": "user", "content": context}],
-            "tools": [{"type": "web_search_20250305", "name": "web_search"}]
+                "tools": [{"type": "web_search_20250305", "name": "web_search"}]
             },
             timeout=60
+        )
+        response.raise_for_status()
         )
         response.raise_for_status()
         content_blocks = response.json().get("content", [])
@@ -5033,7 +5046,8 @@ function selectDis(i,btn){{
   detEl.innerHTML=`
     <div class="det-title">${{d.name}}</div>
     <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;">
-      <span style="background:${{clr}}22;color:${{clr}};border:1px solid ${{clr}}44;padding:2px 9px;border-radius:6px;font-size:.74rem;font-weight:700;">Severity ${{sev}}/100</span>
+    "<div style='color:#5a6070;font-size:.66rem;margin-top:4px;'>* Estimated from ClinVar variant count + disease-name keywords — not a validated clinical severity index.</div>"
+      f"<span style='background:{clr}22;color:{clr};border:1px solid {clr}44;padding:2px 9px;border-radius:6px;font-size:.74rem;font-weight:700;' title='Heuristic estimate, not a validated clinical score'>Est. Severity {sev}/100 *</span>"
       <span style="background:#1e406033;color:#3a8090;border:1px solid #1e406044;padding:2px 9px;border-radius:6px;font-size:.74rem;">${{d.inh||'Unknown inheritance'}}</span>
       <span style="background:#0d254533;color:#3a6080;border:1px solid #0d254544;padding:2px 9px;border-radius:6px;font-size:.74rem;">${{d.cv_count}} ClinVar variants</span>
       ${{omimLink}}
