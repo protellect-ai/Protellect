@@ -1,19 +1,36 @@
 # Protellect
 
-Biomedical research copilot. Enter a protein name and get a complete, paper-cited
-target dossier — integrating genetic, structural, and clinical evidence from 17
-public databases into a single AI-assisted workspace.
+Auditable orphan-GPCR prioritisation for receptor pharmacology teams. Enter a
+receptor or UniProt accession and get a paper-cited target dossier combining
+ligand evidence, structural tractability, receptor-family context, expression,
+and supporting genetic evidence from public databases.
 
 **Live app:** https://protellect-wkyps2qupri6aqhstt48wd.streamlit.app/
 
 ---
+
+## Launch focus
+
+Protellect is initially designed for receptor pharmacology teams evaluating
+orphan GPCRs. The product treats deorphanization as evidence to be audited —
+not a label to infer from a single screen. Its public workflow emphasises:
+
+- ligand and functional-evidence review
+- binding-pocket and structure tractability
+- GPCR-family context and selectivity risk
+- tissue-expression context and follow-up experiments
+
+Legacy therapeutic-area workspaces are retained behind an internal beta switch
+(`PROTELLECT_ENABLE_BETA_DOMAINS=true`) and are not part of the public launch.
+Microbiome relevance belongs as metabolite-ligand evidence, rather than a
+top-level product domain.
 
 ## What it does
 
 Protellect collapses the manual, multi-database workflow researchers use to evaluate
 a protein target into a single search. For any gene or UniProt accession it returns:
 
-- A pursue / proceed / deprioritize verdict grounded in ClinVar, gnomAD, and AlphaMissense
+- A receptor-prioritisation dossier that keeps source evidence visible and separates raw data from derived scores
 - Associated diseases and pathogenic variant burden
 - AlphaFold 3D structure with disease variants overlaid
 - Druggability assessment (OpenTargets tractability, DGIdb drugs, GPCR binding)
