@@ -6,7 +6,7 @@ from __future__ import annotations
 #           plain-language terms · CSV standalone · fixed empty sections
 # ═══════════════════════════════════════════════════════════════════
 
-import re, time, json, math, io
+import os, re, time, json, math, io
 from collections import Counter, defaultdict
 
 import requests
@@ -7049,6 +7049,7 @@ def render_onboarding():
         ]
 
         DOMAIN_DEFAULTS = {
+            "Orphan GPCR":       ["Summary","Explorer","Pharma","Chemistry","Experiments","AI Report","Workspace"],
             "Neuroscience":      ["Summary","Triage","Explorer","Experiments","Chemistry","Pharma"],
             "Oncology":          ["Summary","Triage","Case Study","Experiments","Disease Link"],
             "Pharmaceuticals":   ["Summary","Triage","Explorer","Experiments","Chemistry","Pharma"],
@@ -7584,6 +7585,23 @@ RESEARCH_DOMAINS = {
 
 
 
+# Launch positioning: a deliberately narrow, auditable product for receptor
+# pharmacology teams. Legacy therapeutic-area workspaces remain available only
+# through the internal beta switch below; they are not public product categories.
+RESEARCH_DOMAINS["Orphan GPCR"] = {
+    "icon": "activity", "color": "#38bdf8", "color2": "#7dd3fc",
+    "tagline": "Orphan receptors · ligand evidence · binding pockets · receptor families",
+    "desc": "Evidence-first prioritisation for receptor pharmacology teams. Compare orphan and deorphanized GPCRs using ligand evidence, structural tractability, family context and expression.",
+    "proteins": ["GPR15", "GPR40", "GPR81", "GPR120", "GPR183", "GPR35", "GPR55", "GPR88", "GPR139", "GPR161"],
+    "key_experiments": [
+        ("Orthogonal ligand-response assay", "1–2 weeks", "Confirm activity with a second pathway readout", "#22c55e"),
+        ("Binding / target-engagement assay", "2–4 weeks", "Separate direct receptor engagement from downstream effects", "#22c55e"),
+        ("Receptor-family selectivity panel", "2–3 weeks", "Test closest GPCR paralogues before prioritising", "#ffd60a"),
+        ("Cell-context expression validation", "1–2 weeks", "Confirm receptor and candidate ligand coexist in the relevant tissue", "#ffd60a"),
+    ],
+    "insight": "Prioritise reproducible ligand–receptor evidence and tractable biology; do not promote an orphan claim from a single screen or a derived score alone.",
+}
+
 # ── Onboarding (shown once per session after login) ────────────────────────────
 if not st.session_state.get("ob_complete"):
     _ob_nm = st.session_state.get("auth_name","Researcher")
@@ -7671,6 +7689,13 @@ if not st.session_state.get("research_domain"):
 """, unsafe_allow_html=True)
 
     DOMAIN_STYLES = {
+        "Orphan GPCR": {
+            "icon":"activity","color":"#38bdf8","color2":"#7dd3fc",
+            "grad":"linear-gradient(135deg,rgba(56,189,248,.18),rgba(99,102,241,.06))",
+            "shadow":"0 8px 32px rgba(56,189,248,.28)",
+            "border":"rgba(56,189,248,.62)",
+            "tags":"Ligand evidence · Binding pockets · Family selectivity · Expression"
+        },
         "Neuroscience": {
             "icon":"brain","color":"#6366f1","color2":"#818cf8",
             "grad":"linear-gradient(135deg,rgba(99,102,241,.12),rgba(99,102,241,.04))",
@@ -7715,7 +7740,22 @@ if not st.session_state.get("research_domain"):
         },
     }
 
-    domain_keys = list(DOMAIN_STYLES.keys())
+    _beta_allowed = os.getenv("PROTELLECT_ENABLE_BETA_DOMAINS", "").lower() in {"1", "true", "yes"}
+    _show_beta_domains = False
+    if _beta_allowed:
+        _show_beta_domains = st.toggle(
+            "Enable internal beta domains",
+            value=False,
+            key="show_beta_domains",
+            help="Internal review only. Legacy workspaces remain hidden from the public launch until they meet the same provenance and citation standard.",
+        )
+    domain_keys = ["Orphan GPCR"] + ([d for d in DOMAIN_STYLES if d != "Orphan GPCR"] if _show_beta_domains else [])
+    st.markdown(
+        "<div style='max-width:760px;margin:0 auto 1rem;padding:.75rem 1rem;border:1px solid rgba(56,189,248,.28);border-radius:10px;background:rgba(56,189,248,.05);color:#94a3b8;font-size:.8rem;line-height:1.55;'>"
+        "<b style='color:#7dd3fc;'>Launch focus:</b> evaluate orphan GPCRs with traceable ligand evidence, structural tractability and receptor-family context. "
+        "Therapeutic-area workspaces are internal beta features, not public product categories."
+        "</div>", unsafe_allow_html=True,
+    )
 
     # Top row: 3 cards
     r1 = st.columns(3, gap="medium")
@@ -8175,8 +8215,10 @@ _ob_selected_tabs = st.session_state.get("ob_tabs_selected") or ALL_TAB_NAMES
 # This is the "remodel workspace per research goal" feature.
 GOAL_TAB_PRIORITY = {
     # Therapeutic / drug discovery — Pharma + Experiments first
-    "therapeutic": ["Summary","Pharma","Experiments","Triage","Explorer","Chemistry","AI Report","Disease Link","Case Study","Workspace"],
-    "drug":        ["Summary","Pharma","Chemistry","Experiments","Triage","Explorer","AI Report","Disease Link","Case Study","Workspace"],
+    "therapeutic": ["Summary","Pharma","Explorer","Chemistry","Experiments","AI Report","Workspace","Triage","Disease Link","Case Study"],
+    "drug":        ["Summary","Pharma","Explorer","Chemistry","Experiments","AI Report","Workspace","Triage","Disease Link","Case Study"],
+    "orphan":      ["Summary","Explorer","Pharma","Chemistry","Experiments","AI Report","Workspace","Triage","Disease Link","Case Study"],
+    "ligand":      ["Summary","Explorer","Pharma","Chemistry","Experiments","AI Report","Workspace","Triage","Disease Link","Case Study"],
     # Mechanism / basic research — Explorer + Chemistry first
     "mechanism":   ["Summary","Explorer","Chemistry","Triage","Case Study","AI Report","Experiments","Disease Link","Pharma","Workspace"],
     "basic":       ["Summary","Explorer","Chemistry","Triage","AI Report","Case Study","Experiments","Disease Link","Pharma","Workspace"],
@@ -8196,6 +8238,7 @@ def _resolve_goal_keyword(goal_text: str) -> str:
     for key in GOAL_TAB_PRIORITY:
         if key in t: return key
     # Common keyword fallbacks
+    if any(w in t for w in ["orphan","ligand","deorphan"]):                  return "orphan"
     if any(w in t for w in ["target","therapy","therapeutic","treatment"]): return "therapeutic"
     if any(w in t for w in ["drug","compound","screen","hts"]):              return "drug"
     if any(w in t for w in ["mechanism","how","why","function"]):            return "mechanism"
@@ -8345,7 +8388,7 @@ if _csv_df_top is not None:
 # Logo strip directly above the tabs — keeps the brand visible at the workspace anchor
 _rd_for_strip = st.session_state.get("research_domain","")
 _ag_for_strip = st.session_state.get("active_goal","")
-_subtitle = (f"Workspace · {_rd_for_strip}" if _rd_for_strip else "Biomedical protein triage")
+_subtitle = (f"Workspace · {_rd_for_strip}" if _rd_for_strip else "Auditable orphan GPCR triage")
 if _goal_remodeled and _ag_for_strip:
     _subtitle = f"Workspace remodeled for: {_ag_for_strip[:55]}"
 st.markdown(
