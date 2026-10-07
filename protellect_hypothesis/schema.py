@@ -60,6 +60,9 @@ class Hypothesis:
     test_experiment: str
     flags: Dict[str, str]
     caveats: List[str]
+    counterarguments: List[dict] = field(default_factory=list)
+    verdict: str = "unchecked"          # "holds up" | "weakened" | "contested" | "unchecked"
+    adjusted_support: float = 0.0       # support after critic penalties (display/optional re-rank)
 
     def to_dict(self) -> dict:
         return asdict(self)

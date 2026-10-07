@@ -1,7 +1,7 @@
 """The 'ML layer': a small, transparent learned weighting over precedent-similarity features.
 
 For a (query receptor, precedent case) pair we compute a few similarity features. A logistic
-regression learns, from historical cases only, which features have actually predicted that two
+regression (plain numpy, no extra dependencies) learns, from historical cases only, which features have actually predicted that two
 receptors share a ligand class (or G-protein coupling). It is deliberately simple: the case library
 is small, so a deep model would only memorize it. Weights are inspectable via `weights()`.
 """
@@ -10,7 +10,6 @@ from __future__ import annotations
 from typing import Dict, List, Sequence
 
 import numpy as np
-from sklearn.linear_model import LogisticRegression
 
 from .schema import Case, QueryProfile
 
@@ -40,6 +39,34 @@ def pair_features(q: QueryProfile, p: Case) -> List[float]:
     return [tissue_overlap, neighbor_link, same_cluster]
 
 
+def _sigmoid(z):
+    return 1.0 / (1.0 + np.exp(-np.clip(z, -30, 30)))
+
+
+def fit_logistic(X: np.ndarray, y: np.ndarray, C: float = 1.0, iters: int = 100):
+    """L2-regularized logistic regression with balanced class weights, fit by Newton's method.
+
+    Minimizes 0.5*||w||^2 + C * sum_i sw_i * logloss_i (the same convention scikit-learn uses),
+    with the intercept unpenalized. Returns (weights, intercept). Deterministic.
+    """
+    n, d = X.shape
+    Xb = np.hstack([X, np.ones((n, 1))])
+    n_pos = max(int(y.sum()), 1)
+    n_neg = max(n - int(y.sum()), 1)
+    sw = np.where(y == 1, n / (2.0 * n_pos), n / (2.0 * n_neg))
+    reg = np.diag(np.r_[np.ones(d), 0.0])
+    beta = np.zeros(d + 1)
+    for _ in range(iters):
+        p = _sigmoid(Xb @ beta)
+        grad = reg @ beta + C * (Xb.T @ (sw * (p - y)))
+        hess = reg + C * (Xb.T * (sw * p * (1 - p))) @ Xb + 1e-9 * np.eye(d + 1)
+        step = np.linalg.solve(hess, grad)
+        beta -= step
+        if np.max(np.abs(step)) < 1e-8:
+            break
+    return beta[:d], float(beta[d])
+
+
 class PrecedentRanker:
     def __init__(self, C: float = 1.0):
         self.C = C
@@ -59,14 +86,13 @@ class PrecedentRanker:
         if len(set(y)) < 2 or len(y) < 6:
             self.model = None  # not enough signal to learn from: fall back to an unweighted average
             return self
-        self.model = LogisticRegression(C=self.C, class_weight="balanced", max_iter=1000)
-        self.model.fit(np.array(X), np.array(y))
+        self.model = fit_logistic(np.array(X, dtype=float), np.array(y, dtype=float), C=self.C)
         return self
 
     def weights(self) -> Dict[str, float]:
         if self.model is None:
             return {f: 1.0 / len(FEATURES) for f in FEATURES}
-        return {f: float(w) for f, w in zip(FEATURES, self.model.coef_[0])}
+        return {f: float(w) for f, w in zip(FEATURES, self.model[0])}
 
     def pair_score(self, q: QueryProfile, p: Case) -> float:
         feats = pair_features(q, p)
@@ -74,7 +100,8 @@ class PrecedentRanker:
             return 0.0  # no shared evidence at all -> no support, regardless of the model's intercept
         if self.model is None:
             return float(sum(feats) / len(feats))
-        return float(self.model.predict_proba(np.array([feats]))[0][1])
+        w, b = self.model
+        return float(_sigmoid(np.dot(w, feats) + b))
 
     def scored_precedents(self, q: QueryProfile, library: Sequence[Case]) -> List[dict]:
         out = []

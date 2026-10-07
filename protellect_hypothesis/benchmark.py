@@ -18,6 +18,7 @@ from collections import Counter
 from typing import List, Optional
 
 from .cases import DATA_DIR, all_verified, load_cases, temporal_precedents, usable
+from .critic import critique, penalty, verdict_from
 from .ranker import PrecedentRanker, profile_from_case
 from .schema import Case
 
@@ -67,6 +68,58 @@ def evaluate(cases: List[Case], mode: str = "loo", target: str = "ligand_class")
     }
 
 
+def evaluate_critic(cases: List[Case], target: str = "ligand_class") -> dict:
+    """Does critique help? Leave-one-out; compares plain top-1 with critic-adjusted top-1, and hit rate by verdict.
+
+    The critic checks that need outside data (refuted list, the user's experiment row, the engine's own
+    track record) are switched off here so nothing can leak the answer.
+    """
+    pool = usable(cases)
+    rows = []
+    for q in pool:
+        library = [c for c in pool if c.id != q.id]
+        ranker = PrecedentRanker().fit(library, target)
+        prof = profile_from_case(q)
+        scores = ranker.value_scores(prof, library)
+        if not scores:
+            continue
+        scored = ranker.scored_precedents(prof, library)
+        adj, verdicts = {}, {}
+        for v, s in scores.items():
+            supporting = [d for d in scored if getattr(d["case"], target) == v][:3]
+            counters = critique(category="ligand-class", value=v, gene=q.id, profile=prof, library=library, ranker=ranker,
+                                scores=scores, supporting=supporting, row=None, refuted=(), precision=None, use_history=False)
+            adj[v] = s * penalty(counters)
+            verdicts[v] = verdict_from(counters)
+        plain = max(scores, key=scores.get)
+        crit = max(adj, key=adj.get)
+        truth = getattr(q, target)
+        rows.append({"case": q.id, "truth": truth, "plain": plain, "critic": crit, "plain_hit": plain == truth,
+                     "critic_hit": crit == truth, "plain_verdict": verdicts[plain]})
+    by_verdict = {}
+    for r in rows:
+        d = by_verdict.setdefault(r["plain_verdict"], {"n": 0, "hits": 0})
+        d["n"] += 1
+        d["hits"] += int(r["plain_hit"])
+    return {"n": len(rows), "plain_hits": sum(r["plain_hit"] for r in rows), "critic_hits": sum(r["critic_hit"] for r in rows),
+            "by_verdict": by_verdict, "rows": rows, "data_verified": all_verified(cases)}
+
+
+def critic_report(res: dict) -> str:
+    lines = ["# Does the critic help? (leave-one-out, ligand class)", ""]
+    if not res["data_verified"]:
+        lines += ["> **WARNING: unverified case data. Illustrative only.**", ""]
+    lines += [f"- Cases: {res['n']}", f"- Plain top-1 hits: {res['plain_hits']}/{res['n']}",
+              f"- Critic-adjusted top-1 hits: {res['critic_hits']}/{res['n']}", "", "Hit rate of the plain top pick, grouped by the critic's verdict on it:", "",
+              "| verdict | predictions | hits |", "|---|---|---|"]
+    for v in ("holds up", "weakened", "contested"):
+        d = res["by_verdict"].get(v, {"n": 0, "hits": 0})
+        lines.append(f"| {v} | {d['n']} | {d['hits']} |")
+    lines += ["", "A useful critic should show a higher hit rate for 'holds up' than for 'weakened'/'contested'. "
+              "With this few cases, treat any difference as a hint, not a result.", ""]
+    return "\n".join(lines)
+
+
 def report_markdown(res: dict) -> str:
     n = res["n_evaluable"]
     lines = [f"# Retrospective benchmark ({res['mode']}, target: {res['target']})", ""]
@@ -88,12 +141,16 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--mode", choices=["loo", "temporal"], default="loo")
     ap.add_argument("--target", choices=["ligand_class", "coupling"], default="ligand_class")
+    ap.add_argument("--critic", action="store_true", help="evaluate whether the critic improves leave-one-out results")
     ap.add_argument("--cases", default=None, help="path to a cases.json (defaults to the bundled seed library)")
     ap.add_argument("--out", default=None, help="write the markdown report here")
     ap.add_argument("--save-summary", action="store_true", help="save data/benchmark_summary.json so the app can show it")
     ap.add_argument("--allow-unverified", action="store_true", help="required to save a summary while case data is unverified")
     a = ap.parse_args(argv)
     cases = load_cases(a.cases)
+    if a.critic:
+        print(critic_report(evaluate_critic(cases, a.target)))
+        return 0
     res = evaluate(cases, a.mode, a.target)
     md = report_markdown(res)
     print(md)

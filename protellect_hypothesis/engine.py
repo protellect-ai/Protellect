@@ -18,6 +18,7 @@ import pandas as pd
 
 from . import registry as reg
 from .cases import all_verified, load_cases, usable
+from .critic import class_precision, critique, load_refuted, penalty, verdict_from
 from .ranker import PrecedentRanker, FEATURES
 from .schema import Case, Hypothesis, QueryProfile, ReceptorResult
 
@@ -71,12 +72,18 @@ class HypothesisEngine:
         self.ligand_ranker = PrecedentRanker().fit(self.library, "ligand_class")
         self.coupling_ranker = PrecedentRanker().fit(self.library, "coupling")
         self.library_verified = all_verified(self.cases)
+        self.refuted = load_refuted()
+        self.precision = class_precision(self.library, "ligand_class")
         self.benchmark = self._load_benchmark()
 
     # ---------------------------------------------------------------- helpers
     def _load_benchmark(self) -> Optional[dict]:
-        p = DATA_DIR / "benchmark_summary.json"
-        return json.loads(p.read_text()) if p.exists() else None
+        """Leave-one-out result on the current case library, computed live so it can never be stale or contradict the data."""
+        from .benchmark import evaluate
+        try:
+            return evaluate(self.cases, "loo")
+        except Exception:
+            return None
 
     def calibration_note(self) -> str:
         b = self.benchmark
@@ -159,12 +166,16 @@ class HypothesisEngine:
             tie = [f"Near tie with another candidate (top supports within 0.05): do not over-read the order."]\
                 if (len(scores) > 1 and sorted(scores.values(), reverse=True)[0] - sorted(scores.values(), reverse=True)[1] < 0.05
                     and support >= sorted(scores.values(), reverse=True)[1]) else []
+            counters = critique(category=category, value=value, gene=profile.id, profile=profile, library=self.library,
+                                ranker=ranker, scores=scores, supporting=supporting, row=row, refuted=self.refuted,
+                                precision=self.precision)
             out.append(Hypothesis(
                 category=category, statement=statement, value=value,
                 support=round(float(support), 3), precedent_strength=round(float(supporting[0]["score"]), 3),
                 rationale=[self._explain(d["features"], d["case"], profile) for d in supporting],
                 precedents=precedents, evidence_axes=axes, test_experiment=test, flags=flags,
-                caveats=self._caveats(extra_notes + tie)))
+                caveats=self._caveats(extra_notes + tie), counterarguments=counters, verdict=verdict_from(counters),
+                adjusted_support=round(float(support) * penalty(counters), 3)))
         return out
 
     def _disease_hypothesis(self, profile: QueryProfile, row, context: dict, extra_notes: List[str]) -> List[Hypothesis]:
@@ -175,6 +186,9 @@ class HypothesisEngine:
         for d in self.ligand_ranker.scored_precedents(profile, self.library):
             c = d["case"]
             if set(ctx_t) & set(c.tissues):
+                counters = critique(category="disease-association", value=c.id, gene=profile.id, profile=profile,
+                                    library=self.library, ranker=self.ligand_ranker, scores={}, supporting=[d], row=row,
+                                    refuted=self.refuted, precision=self.precision)
                 return [Hypothesis(
                     category="disease-association",
                     statement=f"May play a role in {label} biology, by analogy to {c.gene} ({c.later_outcome})",
@@ -188,7 +202,8 @@ class HypothesisEngine:
                                    "signal_character": row.signal_character},
                     test_experiment=f"Perturb the receptor (knockdown or knockout) in a {label}-relevant model and test whether the disease-relevant phenotype changes.",
                     flags={"diagnostic_potential": DIAGNOSTIC[row.shape], "druggability": "Not assessed."},
-                    caveats=self._caveats(extra_notes))]
+                    caveats=self._caveats(extra_notes), counterarguments=counters, verdict=verdict_from(counters),
+                    adjusted_support=round(d["score"] * penalty(counters), 3))]
         return []
 
     def run(self, parsed: pd.DataFrame, context: Optional[dict] = None, top_n: int = 3) -> RunSummary:
