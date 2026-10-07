@@ -1,0 +1,3 @@
+# The engine needs only libraries your app already uses (numpy, pandas, streamlit, requests).
+# Nothing to add to requirements.txt. pytest is only for running the tests locally.
+pytest>=7.0

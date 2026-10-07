@@ -14,10 +14,6 @@ SHORT_TEST = {
 }
 
 
-def _signal(r) -> str:
-    return r.effect_type if r.effect != r.effect else f"{r.effect_type} {r.effect:.2f}"
-
-
 def _top(r, category):
     return next((h for h in r.hypotheses if h.category == category), None)
 
@@ -27,7 +23,7 @@ def results_table(summary) -> pd.DataFrame:
     rows = []
     for r in summary.results:
         lig, sig = _top(r, "ligand-class"), _top(r, "signaling")
-        base = {"Receptor": r.gene, "Your signal": _signal(r)}
+        base = {"Receptor": r.gene, "Your signal": f"{r.effect_type} {r.effect:.2f}"}
         if lig is None:
             rows.append({**base, "Top ligand-class hypothesis": "No hypothesis (insufficient evidence)", "Relative support": None,
                          "Critic": "-", "Likely coupling": "-", "First experiment": "Add annotation or tissue context"})

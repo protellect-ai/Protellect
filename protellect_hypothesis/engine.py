@@ -44,13 +44,11 @@ EVIDENCE_TYPE = {
     "expression": "somatic / expression association (germline evidence not assessed)",
     "variant": "genetic association (confirm germline vs somatic from the cohort design)",
     "screen": "functional perturbation (neither an inherited variant nor an expression association)",
-    "lookup": "none: no experiment was supplied, this is a lookup by gene name",
 }
 DIAGNOSTIC = {
     "expression": "Weak: continuous fold-change only. A clean binary signal or an independent cohort would be needed before biomarker use.",
     "variant": "Possible, but requires validation in an independent cohort.",
     "screen": "Not assessed: a perturbation screen does not by itself indicate biomarker potential.",
-    "lookup": "Not assessed: no experiment was supplied.",
 }
 
 
@@ -95,7 +93,7 @@ class HypothesisEngine:
         return (f"Leave-one-out benchmark on {b['n_evaluable']} historical cases: top-1 ligand-class hit "
                 f"{b['top1_hits']}/{b['n_evaluable']} vs {b['random_expected_hits']} expected from random guessing{tag}.")
 
-    def profile_for(self, gene: str, context: dict, extra: Optional[dict] = None) -> (QueryProfile, List[str]):
+    def profile_for(self, gene: str, context: dict) -> (QueryProfile, List[str]):
         notes: List[str] = []
         ann = self.annotations.get(gene)
         if ann is None and self.use_live_annotations:
@@ -104,12 +102,7 @@ class HypothesisEngine:
         if ann:
             for t in ann["tissues"]:
                 tissues.append(t); sources[t] = f"annotation ({ann.get('source', '')})"
-        if extra:                                    # e.g. UniProt tissue data the main app already fetched
-            for t in extra.get("tissues", []):
-                if t not in tissues:
-                    tissues.append(t)
-                sources.setdefault(t, extra.get("source", "supplied annotation"))
-        if not ann and not extra:
+        else:
             notes.append("No receptor annotation (tissues, cluster, neighbors) available; hypotheses rest on your experiment context only.")
         for t in reg.normalize_tissues([context.get("tissue"), context.get("disease")]):
             if t not in tissues:
@@ -213,8 +206,7 @@ class HypothesisEngine:
                     adjusted_support=round(d["score"] * penalty(counters), 3))]
         return []
 
-    def run(self, parsed: pd.DataFrame, context: Optional[dict] = None, top_n: int = 3,
-            extra_annotations: Optional[dict] = None) -> RunSummary:
+    def run(self, parsed: pd.DataFrame, context: Optional[dict] = None, top_n: int = 3) -> RunSummary:
         context = context or {}
         summary = RunSummary(n_input_genes=len(parsed), n_gpcr=0, n_orphan=0)
         for row in parsed.itertuples():
@@ -226,7 +218,7 @@ class HypothesisEngine:
                 summary.characterized.append(row.gene)
                 continue
             summary.n_orphan += 1
-            profile, notes = self.profile_for(row.gene, context, (extra_annotations or {}).get(row.gene))
+            profile, notes = self.profile_for(row.gene, context)
             hyps = (self._make("ligand-class", self.ligand_ranker, profile, row, notes, top_n)
                     + self._make("signaling", self.coupling_ranker, profile, row, notes, 1)
                     + self._disease_hypothesis(profile, row, context, notes))

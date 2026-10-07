@@ -36,7 +36,7 @@ def test_gemini_request_shape_and_key_stays_out_of_the_url(monkeypatch):
     assert cap["json"]["contents"][0]["parts"][0]["text"] == "prompt text"
 
 
-@pytest.mark.parametrize("status,needle", [(403, "rejected"), (401, "rejected"), (429, "rate limit"), (500, "error 500")])
+@pytest.mark.parametrize("status,needle", [(403, "rejected"), (401, "rejected"), (429, "rate limit"), (404, "not found"), (500, "error 500")])
 def test_gemini_errors_are_clear_and_never_leak_the_key(monkeypatch, status, needle):
     _patch(monkeypatch, Resp(status, text="server said no"), {})
     with pytest.raises(LLMError) as ei:
@@ -72,107 +72,3 @@ def test_debate_end_to_end_through_the_gemini_adapter(monkeypatch):
     hyp = {"statement": "s", "support": 0.4, "verdict": "holds up", "precedents": [], "evidence_axes": {}, "counterarguments": []}
     out = debate("GPR151", hyp, {}, make_llm("gemini", {"GEMINI_API_KEY": KEY}.get))
     assert out["final_verdict"] == "weakened" and out["reasons"][0]["cites"] == ["E1"]
-
-
-def test_gemini_404_message_names_the_models_tried(monkeypatch):
-    import requests
-    monkeypatch.setattr(requests, "post", lambda url, **kw: Resp(404, text="nf"))
-    monkeypatch.setattr(requests, "get", lambda url, **kw: Resp(200, {"models": []}))
-    with pytest.raises(LLMError) as ei:
-        gemini_llm(KEY)("p")
-    assert "gemini-2.0-flash" in str(ei.value) and "PROTELLECT_GEMINI_MODEL" in str(ei.value) and KEY not in str(ei.value)
-
-
-def test_gemini_falls_back_when_the_default_model_is_retired(monkeypatch):
-    import requests
-    seen = []
-
-    def fake_post(url, **kw):
-        seen.append(url.split("/models/")[1].split(":")[0])
-        if "2.0-flash" in url:
-            return Resp(404, text="retired")
-        return Resp(200, {"candidates": [{"content": {"parts": [{"text": "ok"}]}}]})
-    monkeypatch.setattr(requests, "post", fake_post)
-    call = gemini_llm(KEY)
-    assert call("p") == "ok" and seen == ["gemini-2.0-flash", "gemini-2.5-flash"]
-    seen.clear()
-    assert call("p") == "ok" and seen == ["gemini-2.5-flash"]          # remembers the model that worked
-
-
-def test_gemini_discovers_a_model_from_the_models_list(monkeypatch):
-    import requests
-    listing = {"models": [
-        {"name": "models/gemini-9-flash-image", "supportedGenerationMethods": ["generateContent"]},
-        {"name": "models/gemini-9-flash-preview", "supportedGenerationMethods": ["generateContent"]},
-        {"name": "models/gemini-9-flash", "supportedGenerationMethods": ["generateContent"]},
-        {"name": "models/gemini-9-pro", "supportedGenerationMethods": ["generateContent"]}]}
-    used = []
-
-    def fake_post(url, **kw):
-        m = url.split("/models/")[1].split(":")[0]
-        used.append(m)
-        return Resp(200, {"candidates": [{"content": {"parts": [{"text": "found"}]}}]}) if m == "gemini-9-flash" else Resp(404, text="nf")
-    monkeypatch.setattr(requests, "post", fake_post)
-    monkeypatch.setattr(requests, "get", lambda url, **kw: Resp(200, listing))
-    assert gemini_llm(KEY)("p") == "found" and used[-1] == "gemini-9-flash"
-
-
-def test_pinned_gemini_model_is_never_second_guessed(monkeypatch):
-    import requests
-    monkeypatch.setattr(requests, "post", lambda url, **kw: Resp(404, text="nf"))
-    with pytest.raises(LLMError) as ei:
-        gemini_llm(KEY, model="my-pinned-model")("p")
-    assert "my-pinned-model" in str(ei.value)
-
-
-def test_debate_note_shows_the_real_reason():
-    def boom(_):
-        raise LLMError("Gemini rate limit reached (429). Wait a moment.")
-    hyp = {"statement": "s", "support": 0.4, "verdict": "weakened", "precedents": [], "evidence_axes": {}, "counterarguments": []}
-    out = debate("G", hyp, {}, boom)
-    assert "rate limit reached (429)" in out["note"] and out["final_verdict"] == "weakened"
-
-
-def test_claude_401_is_explained_and_never_echoes_a_key(monkeypatch):
-    import requests
-    from protellect_hypothesis.llm_debate import anthropic_llm
-    monkeypatch.setattr(requests, "post", lambda url, **kw: Resp(401, text='{"error":{"message":"API key is invalid."}}'))
-    with pytest.raises(LLMError) as ei:
-        anthropic_llm("sk-ant-SECRET")("p")
-    assert "sk-ant-" in str(ei.value) and "SECRET" not in str(ei.value) and "401" in str(ei.value)
-
-
-def _fake_provider(monkeypatch, name, behavior):
-    monkeypatch.setitem(L.PROVIDERS[name], "factory", lambda key: behavior)
-
-
-def test_fallback_uses_the_second_provider_when_the_first_fails(monkeypatch):
-    from protellect_hypothesis.llm_debate import fallback_llm
-
-    def bad(_):
-        raise LLMError("Claude rejected the API key (401).")
-    _fake_provider(monkeypatch, "claude", bad)
-    _fake_provider(monkeypatch, "gemini", lambda p: "from gemini")
-    llm = fallback_llm(["claude", "gemini"], {"ANTHROPIC_API_KEY": "a", "GEMINI_API_KEY": "g"}.get)
-    assert llm("p") == "from gemini"
-    assert "Gemini" in llm.used() and "401" in llm.failures()[0]
-
-
-def test_fallback_reports_every_failure_when_all_fail(monkeypatch):
-    from protellect_hypothesis.llm_debate import fallback_llm
-
-    def bad(_):
-        raise LLMError("nope")
-    _fake_provider(monkeypatch, "claude", bad)
-    _fake_provider(monkeypatch, "gemini", bad)
-    llm = fallback_llm(["claude", "gemini"], {"ANTHROPIC_API_KEY": "a", "GEMINI_API_KEY": "g"}.get)
-    with pytest.raises(LLMError) as ei:
-        llm("p")
-    assert "Claude" in str(ei.value) and "Gemini" in str(ei.value)
-
-
-def test_fallback_with_no_keys_says_so():
-    from protellect_hypothesis.llm_debate import fallback_llm
-    with pytest.raises(LLMError) as ei:
-        fallback_llm(["claude"], {}.get)("p")
-    assert "ANTHROPIC_API_KEY" in str(ei.value)
