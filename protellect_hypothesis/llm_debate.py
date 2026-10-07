@@ -44,37 +44,77 @@ def anthropic_llm(api_key: Optional[str] = None, model: Optional[str] = None, ma
     return call
 
 
+GEMINI_DEFAULTS = ("gemini-2.0-flash", "gemini-2.5-flash", "gemini-flash-latest")
+_GEMINI_SKIP = ("image", "tts", "live", "audio", "embedding", "thinking", "lite", "vision")
+
+
 def gemini_llm(api_key: Optional[str] = None, model: Optional[str] = None, max_tokens: int = 800) -> LLM:
     """Google Gemini adapter. Reads GEMINI_API_KEY or GOOGLE_API_KEY (same names the main Protellect app uses).
 
     The key is sent in a header, not in the URL, so it cannot leak through error messages or logs.
+    If a model name has been retired (404), it tries fallbacks, then asks the API which models this key can
+    use, and remembers whichever one works. Set PROTELLECT_GEMINI_MODEL to pin a model.
     """
     import requests
     key = api_key or os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
     if not key:
         raise LLMError("No GEMINI_API_KEY or GOOGLE_API_KEY available.")
-    mdl = model or os.environ.get("PROTELLECT_GEMINI_MODEL", "gemini-2.0-flash")
+    pinned = model or os.environ.get("PROTELLECT_GEMINI_MODEL")
+    base = "https://generativelanguage.googleapis.com/v1beta"
+    headers = {"x-goog-api-key": key, "content-type": "application/json"}
+    state = {"model": None}
 
-    def call(prompt: str) -> str:
-        r = requests.post(
-            f"https://generativelanguage.googleapis.com/v1beta/models/{mdl}:generateContent", timeout=60,
-            headers={"x-goog-api-key": key, "content-type": "application/json"},
-            json={"contents": [{"role": "user", "parts": [{"text": prompt}]}],
-                  "generationConfig": {"maxOutputTokens": max_tokens, "temperature": 0.2}})
-        if r.status_code in (401, 403):
-            raise LLMError("Gemini rejected the key (401/403). Check the key in Streamlit secrets.")
-        if r.status_code == 429:
-            raise LLMError("Gemini rate limit reached (429). Wait a moment, or you may have hit the free-tier limit.")
-        if r.status_code == 404:
-            raise LLMError(f"Gemini model '{mdl}' not found (404). Set PROTELLECT_GEMINI_MODEL to a model your key can use.")
-        if r.status_code != 200:
-            raise LLMError(f"Gemini API error {r.status_code}: {r.text[:200]}")
+    def _post(mdl: str, prompt: str):
+        return requests.post(f"{base}/models/{mdl}:generateContent", timeout=60, headers=headers,
+                             json={"contents": [{"role": "user", "parts": [{"text": prompt}]}],
+                                   "generationConfig": {"maxOutputTokens": max_tokens, "temperature": 0.2}})
+
+    def _discover() -> List[str]:
+        try:
+            r = requests.get(f"{base}/models?pageSize=100", timeout=30, headers=headers)
+            if r.status_code != 200:
+                return []
+            names = []
+            for m in r.json().get("models", []):
+                n = m.get("name", "").replace("models/", "")
+                if "generateContent" in m.get("supportedGenerationMethods", []) and "flash" in n and not any(x in n for x in _GEMINI_SKIP):
+                    names.append(n)
+            return sorted(names, key=lambda n: ("preview" in n or "exp" in n, n))
+        except Exception:
+            return []
+
+    def _text(r) -> str:
         cands = r.json().get("candidates") or []
         parts = ((cands[0].get("content") or {}).get("parts") or []) if cands else []
-        text = "".join(p.get("text", "") for p in parts)
-        if not text.strip():
+        out = "".join(p.get("text", "") for p in parts)
+        if not out.strip():
             raise LLMError("Gemini returned an empty response.")
-        return text
+        return out
+
+    def call(prompt: str) -> str:
+        candidates = [pinned] if pinned else list(GEMINI_DEFAULTS)
+        order = ([state["model"]] if state["model"] else []) + [m for m in candidates if m != state["model"]]
+        tried, discovered = [], False
+        i = 0
+        while i < len(order):
+            m = order[i]
+            i += 1
+            r = _post(m, prompt)
+            if r.status_code == 404:
+                tried.append(m)
+                if i == len(order) and not discovered and not pinned:
+                    discovered = True
+                    order += [n for n in _discover() if n not in tried]
+                continue
+            if r.status_code in (401, 403):
+                raise LLMError("Gemini rejected the key (401/403). Check the key in Streamlit secrets, and that the Generative Language API is enabled for it.")
+            if r.status_code == 429:
+                raise LLMError("Gemini rate limit reached (429). Wait a moment, or you may have hit the free-tier limit.")
+            if r.status_code != 200:
+                raise LLMError(f"Gemini API error {r.status_code}: {r.text[:200]}")
+            state["model"] = m
+            return _text(r)
+        raise LLMError(f"Gemini model not found (404) for: {', '.join(tried)}. Set PROTELLECT_GEMINI_MODEL to a model your key can use.")
     return call
 
 
@@ -156,7 +196,9 @@ def debate(gene: str, hyp: dict, context: dict, llm: LLM) -> Dict:
     try:
         raw = llm(PROMPT.format(evidence="\n".join(f"{e['id']}: {e['text']}" for e in evidence)))
     except Exception as ex:  # network, key, quota: fail safe to the deterministic verdict
-        base["note"] = f"AI debate unavailable ({type(ex).__name__}); showing the deterministic critic only."
+        # LLMError messages are written to be user-readable and never contain keys (keys travel in headers).
+        reason = str(ex) if isinstance(ex, LLMError) else f"{type(ex).__name__}: {str(ex)[:200]}"
+        base["note"] = f"AI debate unavailable: {reason} Showing the deterministic critic only."
         return base
     parsed = _parse(raw)
     if not parsed:

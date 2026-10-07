@@ -27,6 +27,7 @@ SIGNAL_CHARACTER = {
     "expression": "continuous fold-change (expression association)",
     "variant": "variant association (confirm germline vs somatic from the cohort design)",
     "screen": "functional perturbation phenotype",
+    "lookup": "none (lookup by gene name; no experiment supplied)",
 }
 
 
@@ -100,3 +101,12 @@ def parse_experiment(src: Union[str, pd.DataFrame], shape: Optional[str] = None,
     if out.empty:
         raise InputError("No usable rows after cleaning/filtering.")
     return out
+
+
+def lookup_frame(gene: str) -> pd.DataFrame:
+    """A one-row frame for 'look up this receptor' mode: no experiment, so no signal is invented."""
+    g = str(gene).strip().upper()
+    if not g:
+        raise InputError("No gene given.")
+    return pd.DataFrame({"gene": [g], "shape": ["lookup"], "effect": [np.nan], "effect_type": ["no experiment (lookup)"],
+                         "significance": [np.nan], "signal_character": [SIGNAL_CHARACTER["lookup"]]})

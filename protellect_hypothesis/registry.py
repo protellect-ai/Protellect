@@ -105,3 +105,27 @@ def import_iuphar_csv(src_csv: str, out_csv: str, orphan_keyword: str = "orphan"
     }).drop_duplicates("gene")
     out.to_csv(out_csv, index=False)
     return len(out)
+
+
+def load_registry_text(csv_text: str) -> Dict[str, dict]:
+    """Registry from CSV text (columns: gene, status, note)."""
+    import io
+    df = pd.read_csv(io.StringIO(csv_text), dtype=str).fillna("")
+    if not {"gene", "status"} <= set(df.columns):
+        raise ValueError("Registry CSV needs 'gene' and 'status' columns.")
+    return {g.strip().upper(): {"status": s.strip().lower(), "note": n}
+            for g, s, n in zip(df["gene"], df["status"], df.get("note", [""] * len(df)))}
+
+
+def convert_iuphar_bytes(data: bytes) -> str:
+    """Uploaded IUPHAR targets-and-families file -> registry CSV text. Raises ValueError on an unexpected layout."""
+    import os
+    import tempfile
+    with tempfile.TemporaryDirectory() as d:
+        src, out = os.path.join(d, "in.csv"), os.path.join(d, "out.csv")
+        with open(src, "wb") as fh:
+            fh.write(data)
+        n = import_iuphar_csv(src, out)
+        if n == 0:
+            raise ValueError("No GPCR rows found. Is this the Guide to Pharmacology targets-and-families file?")
+        return open(out, encoding="utf-8").read()

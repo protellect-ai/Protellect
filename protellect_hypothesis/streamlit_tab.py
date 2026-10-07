@@ -7,7 +7,7 @@ import pandas as pd
 import streamlit as st
 
 from .engine import HypothesisEngine
-from .io_parsers import InputError, parse_experiment
+from .io_parsers import InputError, lookup_frame, parse_experiment
 from .llm_debate import PROVIDERS, LLMError, available_providers, debate, make_llm
 from .report import hypotheses_table, markdown_report, results_table
 from .templates import GENERAL_RULES, NOT_SUPPORTED, SHAPES, template_csv
@@ -17,8 +17,14 @@ EXAMPLE_CONTEXT = {"disease": "inflammatory bowel disease", "tissue": "colon bio
 
 
 @st.cache_resource(show_spinner=False)
-def _engine() -> HypothesisEngine:
-    return HypothesisEngine()
+def _engine_cached(registry_csv: str = "") -> HypothesisEngine:
+    from .registry import load_registry_text
+    return HypothesisEngine(registry=load_registry_text(registry_csv) if registry_csv else None)
+
+
+def get_engine() -> HypothesisEngine:
+    """The engine, using the full receptor registry if the user loaded one this session."""
+    return _engine_cached(st.session_state.get("hyp_registry_csv", ""))
 
 
 def _secret(name: str):
@@ -41,7 +47,7 @@ def _guide(eng: HypothesisEngine) -> None:
         with st.container(border=True):
             c1, c2 = st.columns([3, 1])
             c1.markdown(f"**{s['label']}**  \nFrom: {s['from']}  \nRequired: {s['required']}  \nOptional: {s['optional']}")
-            c2.download_button("Download template", template_csv(key), file_name=f"protellect_template_{key}.csv", key=f"tpl_{key}")
+            c2.download_button("Download template", template_csv(key), file_name=f"protellect_template_{key}.csv", key=f"hyp_tpl_{key}")
     st.markdown("**Rules for every file**")
     for rule in GENERAL_RULES:
         st.markdown(f"- {rule}")
@@ -75,35 +81,55 @@ def _guide(eng: HypothesisEngine) -> None:
                 "- A diagnosis or a validated biomarker. Diagnostic flags only say whether the signal could be worth investigating.")
 
 
-def _run(eng: HypothesisEngine) -> None:
+def _run(eng: HypothesisEngine, source=None, source_label: str = "", defaults=None, lookup_gene=None,
+         extra_annotations=None, kp: str = "hyp") -> None:
+    """Context inputs, analysis, results table, downloads and cards.
+
+    source: an already-loaded DataFrame to analyze (hides the uploader). lookup_gene: analyze one receptor by name,
+    with no experiment. kp: prefix that keeps widget keys unique when embedded in a larger app.
+    """
+    d = defaults or {}
     c1, c2 = st.columns(2)
-    disease = c1.text_input("Disease or condition", placeholder="e.g. inflammatory bowel disease")
-    tissue = c2.text_input("Tissue or cell type", placeholder="e.g. colon biopsy")
-    comparison = st.text_input("What was compared", placeholder="e.g. inflamed vs adjacent healthy tissue")
-    shape = st.selectbox("Data shape", ["auto-detect", "expression", "variant", "screen"])
-    max_p = st.number_input("Keep only rows with p/adjusted p up to (0 = no filter)", 0.0, 1.0, 0.05, 0.01)
+    disease = c1.text_input("Disease or condition", value=d.get("disease", ""), key=f"{kp}_disease", placeholder="e.g. inflammatory bowel disease")
+    tissue = c2.text_input("Tissue or cell type", value=d.get("tissue", ""), key=f"{kp}_tissue", placeholder="e.g. colon biopsy")
+    comparison = st.text_input("What was compared", value=d.get("comparison", ""), key=f"{kp}_comparison", placeholder="e.g. inflamed vs adjacent healthy tissue")
 
-    up = st.file_uploader("Upload your processed experiment (CSV or TSV)", type=["csv", "tsv", "txt"])
-    use_example = st.button("Use example data")
-    src = None
-    if up is not None:
-        src = pd.read_csv(up, sep=None, engine="python")
-    elif use_example or st.session_state.get("_hyp_use_example"):
-        st.session_state["_hyp_use_example"] = True
-        src = pd.read_csv(EXAMPLE)
-        st.caption("Showing the bundled example (fictional values).")
-    if src is None:
-        st.info("Upload a file, or click 'Use example data'. See the Guide tab for exactly what to upload.")
-        return
-
-    try:
-        parsed = parse_experiment(src, None if shape == "auto-detect" else shape, max_p or None)
-    except InputError as e:
-        st.error(f"Could not read your file: {e}")
-        return
+    parsed = None
+    if lookup_gene:
+        st.caption(f"Lookup mode for {lookup_gene}: no experiment is supplied, so no experimental signal is used. "
+                   "Hypotheses rest on the receptor's annotation and the tissue/disease context above.")
+        try:
+            parsed = lookup_frame(lookup_gene)
+        except InputError as e:
+            st.error(str(e))
+            return
+    else:
+        shape = st.selectbox("Data shape", ["auto-detect", "expression", "variant", "screen"], key=f"{kp}_shape")
+        max_p = st.number_input("Keep only rows with p/adjusted p up to (0 = no filter)", 0.0, 1.0, 0.05, 0.01, key=f"{kp}_maxp")
+        src = None
+        if source is not None:
+            src = source
+            st.caption(f"Analyzing: {source_label or 'the data you already loaded'}")
+        else:
+            up = st.file_uploader("Upload your processed experiment (CSV or TSV)", type=["csv", "tsv", "txt"], key=f"{kp}_upload")
+            use_example = st.button("Use example data", key=f"{kp}_example")
+            if up is not None:
+                src = pd.read_csv(up, sep=None, engine="python")
+            elif use_example or st.session_state.get(f"{kp}_use_example"):
+                st.session_state[f"{kp}_use_example"] = True
+                src = pd.read_csv(EXAMPLE)
+                st.caption("Showing the bundled example (fictional values).")
+        if src is None:
+            st.info("Upload a file, or click 'Use example data'. See the Guide tab for exactly what to upload.")
+            return
+        try:
+            parsed = parse_experiment(src, None if shape == "auto-detect" else shape, max_p or None)
+        except InputError as e:
+            st.error(f"Could not read your file: {e}")
+            return
 
     ctx = {"disease": disease, "tissue": tissue, "comparison": comparison}
-    summary = eng.run(parsed, ctx)
+    summary = eng.run(parsed, ctx, extra_annotations=extra_annotations)
     m1, m2, m3 = st.columns(3)
     m1.metric("Genes read", summary.n_input_genes)
     m2.metric("GPCRs found", summary.n_gpcr)
@@ -111,23 +137,25 @@ def _run(eng: HypothesisEngine) -> None:
     if summary.characterized:
         st.caption("Already-characterized GPCRs in your data (no hypotheses needed): " + ", ".join(summary.characterized))
     if summary.n_orphan == 0:
-        st.success("No orphan GPCRs from the current registry were found in this data.")
+        n_orph = sum(v["status"] == "orphan" for v in eng.registry.values())
+        st.success(f"No orphan GPCRs were found in this data. (The receptor registry currently recognizes {n_orph} orphan GPCRs"
+                   + ("; load the full list to widen this." if n_orph < 50 else "."))
         return
 
     st.subheader("Results at a glance")
     st.dataframe(results_table(summary), hide_index=True)
     d1, d2 = st.columns(2)
     d1.download_button("Download all hypotheses (CSV)", hypotheses_table(summary).to_csv(index=False),
-                       file_name="protellect_hypotheses.csv", mime="text/csv")
+                       file_name="protellect_hypotheses.csv", mime="text/csv", key=f"{kp}_dl_csv")
     d2.download_button("Download report (Markdown)",
                        markdown_report(summary, ctx, eng.calibration_note(), eng.library_verified),
-                       file_name="protellect_report.md", mime="text/markdown")
+                       file_name="protellect_report.md", mime="text/markdown", key=f"{kp}_dl_md")
 
     providers = available_providers(_secret)
     chosen = None
     if providers:
         chosen = st.selectbox("AI debate provider (optional, runs only when you click a debate button)", providers,
-                              format_func=lambda p: PROVIDERS[p]["label"])
+                              format_func=lambda p: PROVIDERS[p]["label"], key=f"{kp}_provider")
     else:
         st.caption("AI debate is off: add GEMINI_API_KEY (free tier may apply) or ANTHROPIC_API_KEY to Streamlit secrets to enable it. "
                    "Everything else works without a key.")
@@ -135,7 +163,8 @@ def _run(eng: HypothesisEngine) -> None:
     st.subheader("Hypothesis cards")
     for r in summary.results:
         sig = "" if r.significance is None else f", p = {r.significance:.3g}"
-        with st.expander(f"{r.gene}  ({r.effect_type}: {r.effect:.2f}{sig})", expanded=False):
+        sig_txt = r.effect_type if r.effect != r.effect else f"{r.effect_type}: {r.effect:.2f}{sig}"
+        with st.expander(f"{r.gene}  ({sig_txt})", expanded=False):
             if r.status != "hypotheses":
                 st.warning(r.message)
                 continue
@@ -162,7 +191,7 @@ def _run(eng: HypothesisEngine) -> None:
                         st.markdown(f"- _{cv}_")
                 st.divider()
             top = next((h for h in r.hypotheses if h.category == "ligand-class"), None)
-            if top is not None and st.button(f"Run AI debate on the top {r.gene} hypothesis", key=f"debate_{r.gene}"):
+            if top is not None and st.button(f"Run AI debate on the top {r.gene} hypothesis", key=f"{kp}_debate_{r.gene}"):
                 try:
                     if chosen is None:
                         raise LLMError("No key found. Add GEMINI_API_KEY or ANTHROPIC_API_KEY to Streamlit secrets.")
@@ -183,7 +212,7 @@ def render_hypothesis_tab() -> None:
     st.header("Hypothesis Engine (beta)")
     st.info("Hypotheses, not answers. Every card shows its reasoning, and only a wet-lab experiment can confirm it. "
             "Structural similarity is not included in this version.")
-    eng = _engine()
+    eng = get_engine()
     if not eng.library_verified:
         st.warning("The historical case library has not been expert-verified yet. Treat all rankings as illustrative.")
     st.caption(eng.calibration_note())

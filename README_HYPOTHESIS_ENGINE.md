@@ -21,11 +21,26 @@ render_hypothesis_tab()
 
 ## Check it works
 ```bash
-python -m pytest protellect_hypothesis/tests -q          # 43 tests
+python -m pytest protellect_hypothesis/tests -q          # 57 tests
 python -m protellect_hypothesis.benchmark --mode loo      # retrospective benchmark
 python -m protellect_hypothesis.benchmark --mode temporal # strict temporal split
 python -m protellect_hypothesis.benchmark --critic        # does the critic help?
 ```
+
+## Make it part of Protellect (one system, not a side page)
+The engine becomes a **Hypotheses tab inside your app**, using what the app already holds:
+- the **CSV uploaded in the sidebar** is analyzed directly, so there is no second upload;
+- the **protein you searched** can be analyzed in lookup mode, with its UniProt tissue text used as annotation;
+- the sidebar **disease field** prefills the context;
+- a **Receptor registry** panel inside the tab loads the full Guide to Pharmacology list (the seed list recognizes only 4 orphans).
+
+To add the tab, either:
+1. **Send your live `app.py` to whoever maintains this** and get back a patched, compile-checked file to upload; or
+2. Run the patcher yourself from the repo root: `python protellect_hypothesis/patch_app.py app.py --check` (preview), then without `--check` to apply. It writes `app.py.bak`; `--undo` restores it.
+
+The patch is three small, marked edits (look for `protellect_hypothesis integration` in `app.py`): the tab name is added to `ALL_TAB_NAMES`; the tab is forced into the visible set (right after Triage) so users who already finished onboarding or set a research goal still see it; and a `with tabN:` block calls the engine inside try/except, so if the engine ever fails the rest of the app is unaffected. The patcher checks every anchor before writing and refuses, changing nothing, if `app.py` has a different structure. After patching you can delete `pages/` (the standalone page), or keep it.
+
+**Tested:** the patcher and the embedded tab were tested against a stand-in host app with the same tab registry (tab placement, sidebar CSV flow, lookup mode, failure isolation, undo) and the patcher was run on an older copy of your `app.py`. **Not tested:** inside your live app, which I have not seen (its sidebar shows an "Orphan GPCR" domain that my older copy lacks). Check the new tab there after deploying.
 
 ## What the user sees
 The page has two tabs. **Guide** shows exactly what to upload (three accepted shapes, downloadable CSV templates, the rules for every file), what to enter as context, what comes back, how to read the critic column, and what is NOT delivered. The table in the guide is generated live by the engine from the bundled example, so it cannot drift from the code. **Run an analysis** takes the upload and returns a results-at-a-glance table, hypothesis cards, a CSV of every hypothesis, and a readable report. `Protellect_User_Guide.docx` is the same guide as a shareable 2-page document.
