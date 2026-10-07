@@ -38,8 +38,15 @@ def anthropic_llm(api_key: Optional[str] = None, model: Optional[str] = None, ma
         r = requests.post("https://api.anthropic.com/v1/messages", timeout=60,
                           headers={"x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json"},
                           json={"model": mdl, "max_tokens": max_tokens, "messages": [{"role": "user", "content": prompt}]})
+        if r.status_code == 401:
+            raise LLMError("Claude rejected the API key (401). Check ANTHROPIC_API_KEY in Streamlit secrets: it should start with sk-ant-, "
+                           "with no extra spaces or quote marks, and must be active in the Anthropic Console.")
+        if r.status_code == 429:
+            raise LLMError("Claude rate limit or credit problem (429). Check your usage and credits in the Anthropic Console.")
+        if r.status_code == 404:
+            raise LLMError(f"Claude model '{mdl}' not found (404). Set PROTELLECT_MODEL to a model your account can use.")
         if r.status_code != 200:
-            raise LLMError(f"API error {r.status_code}: {r.text[:200]}")
+            raise LLMError(f"Claude API error {r.status_code}: {r.text[:200]}")
         return "".join(b.get("text", "") for b in r.json().get("content", []) if b.get("type") == "text")
     return call
 
@@ -138,6 +145,31 @@ def find_key(provider: str, getter: Callable[[str], Optional[str]] = _env_getter
 
 def available_providers(getter: Callable[[str], Optional[str]] = _env_getter) -> List[str]:
     return [p for p in PROVIDERS if find_key(p, getter)]
+
+
+def fallback_llm(order: List[str], getter: Callable[[str], Optional[str]] = _env_getter) -> LLM:
+    """Try providers in order; on an LLMError (bad key, rate limit, retired model...) move to the next.
+
+    The returned callable has .used() (label of the provider that answered) and .failures (what failed first).
+    """
+    adapters: Dict[str, LLM] = {}
+    state = {"used": None, "failures": []}
+
+    def call(prompt: str) -> str:
+        state["failures"] = []
+        for p in order:
+            try:
+                if p not in adapters:
+                    adapters[p] = make_llm(p, getter)
+                out = adapters[p](prompt)
+                state["used"] = PROVIDERS[p]["label"]
+                return out
+            except LLMError as e:
+                state["failures"].append(f"{PROVIDERS[p]['label']}: {e}")
+        raise LLMError(" | ".join(state["failures"]) or "No AI provider is configured.")
+    call.used = lambda: state["used"]            # type: ignore[attr-defined]
+    call.failures = lambda: list(state["failures"])   # type: ignore[attr-defined]
+    return call
 
 
 def make_llm(provider: str, getter: Callable[[str], Optional[str]] = _env_getter) -> LLM:

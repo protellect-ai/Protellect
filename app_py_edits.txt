@@ -1,0 +1,51 @@
+ADD THE HYPOTHESES TAB TO app.py  (3 small edits, about 2 minutes)
+=====================================================================
+Easiest place to edit: open your repo on GitHub and press the "." key. That opens a web VS Code.
+Open app.py, then use Ctrl+F (Cmd+F on Mac) to find each spot below. Commit when done; Streamlit redeploys on its own.
+Before this: the protellect_hypothesis folder from the latest zip must already be in your repo root.
+If anything goes wrong, undo by reverting that one commit. The block in EDIT 3 catches its own errors,
+so a problem inside the engine shows a small warning in the tab and the rest of your app keeps working.
+
+
+EDIT 1 of 3 -------------------------------------------------------
+Find the line that starts:   ALL_TAB_NAMES = [
+Add  ,"Hypotheses"  just before the closing ]  so it reads, for example:
+
+ALL_TAB_NAMES = ["Summary","Triage","Case Study","Explorer","Experiments","AI Report","Workspace","Disease Link","Chemistry","Pharma","Hypotheses"]
+
+(Keep whatever tab names YOUR line already has. Only add "Hypotheses" at the end.)
+
+
+EDIT 2 of 3 -------------------------------------------------------
+Find the line that starts:   def _tab_visible(
+Paste this block on the lines directly ABOVE it (leave one blank line between):
+
+# >>> protellect_hypothesis integration: always offer the Hypotheses tab (after Triage when present)
+if "Hypotheses" not in _visible_tab_names:
+    _vt = list(_visible_tab_names)
+    _vt.insert(_vt.index("Triage") + 1 if "Triage" in _vt else len(_vt), "Hypotheses")
+    _visible_tab_names = _vt
+# <<< protellect_hypothesis integration
+
+
+EDIT 3 of 3 -------------------------------------------------------
+Find the LAST line that looks like:   tab9 = _tab_by_name.get("Pharma", _SinkTab())
+("Last" means the highest number. If your highest is tab9, the new one is tab10. If yours goes to tab11, the new one is tab12.)
+Paste this block on the lines directly BELOW it, and change tab10 to the next number if needed (in BOTH places):
+
+# >>> protellect_hypothesis integration
+tab10 = _tab_by_name.get("Hypotheses", _SinkTab())
+with tab10:
+    try:
+        from protellect_hypothesis.app_integration import render_hypothesis_workspace
+        render_hypothesis_workspace()
+    except Exception as _hyp_err:  # never let the new tab break the rest of the app
+        st.warning(f"The Hypotheses tab is unavailable: {type(_hyp_err).__name__}: {_hyp_err}")
+# <<< protellect_hypothesis integration
+
+
+AFTER DEPLOYING
+- A "Hypotheses" tab appears right after "Triage" for everyone, even people who already finished onboarding.
+- Upload a CSV in the sidebar: the tab analyzes it directly. Search a protein: use "The protein I searched".
+- Open the "Receptor registry" panel in that tab and load the Guide to Pharmacology file, or only 4 orphan GPCRs are recognized.
+- If the tab shows "The Hypotheses tab is unavailable: ...", send me that message and I will fix it.

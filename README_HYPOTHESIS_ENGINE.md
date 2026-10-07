@@ -21,7 +21,7 @@ render_hypothesis_tab()
 
 ## Check it works
 ```bash
-python -m pytest protellect_hypothesis/tests -q          # 57 tests
+python -m pytest protellect_hypothesis/tests -q          # 61 tests
 python -m protellect_hypothesis.benchmark --mode loo      # retrospective benchmark
 python -m protellect_hypothesis.benchmark --mode temporal # strict temporal split
 python -m protellect_hypothesis.benchmark --critic        # does the critic help?
@@ -36,7 +36,8 @@ The engine becomes a **Hypotheses tab inside your app**, using what the app alre
 
 To add the tab, either:
 1. **Send your live `app.py` to whoever maintains this** and get back a patched, compile-checked file to upload; or
-2. Run the patcher yourself from the repo root: `python protellect_hypothesis/patch_app.py app.py --check` (preview), then without `--check` to apply. It writes `app.py.bak`; `--undo` restores it.
+2. Make the three edits by hand using `app_py_edits.txt` (copy-paste, about 2 minutes), or
+3. Run the patcher yourself from the repo root: `python protellect_hypothesis/patch_app.py app.py --check` (preview), then without `--check` to apply. It writes `app.py.bak`; `--undo` restores it.
 
 The patch is three small, marked edits (look for `protellect_hypothesis integration` in `app.py`): the tab name is added to `ALL_TAB_NAMES`; the tab is forced into the visible set (right after Triage) so users who already finished onboarding or set a research goal still see it; and a `with tabN:` block calls the engine inside try/except, so if the engine ever fails the rest of the app is unaffected. The patcher checks every anchor before writing and refuses, changing nothing, if `app.py` has a different structure. After patching you can delete `pages/` (the standalone page), or keep it.
 
@@ -131,7 +132,8 @@ GEMINI_API_KEY = "your-google-key"        # Google Gemini; a free tier may apply
 ANTHROPIC_API_KEY = "sk-ant-your-key"     # Claude; paid, billed separately from a chat subscription
 ```
 `GOOGLE_API_KEY` also works for Gemini (the same names your main app uses). If both keys are present, a
-selector on the page lets you choose. With no key, the debate button says so and everything else still works.
+selector lets you pick a preferred provider, and if it fails (bad key, rate limit, retired model) the other is tried
+automatically; the page says which one answered and why the first failed. With no key, the debate button says so and everything else still works.
 Gemini keys are sent in a request header, not in the URL, so they cannot leak into error messages.
 Defaults: `gemini-2.0-flash` and `claude-sonnet-4-20250514`. If a model has been retired or your account cannot
 use it you will see a 404 message; set `PROTELLECT_GEMINI_MODEL` or `PROTELLECT_MODEL` to one you can use.

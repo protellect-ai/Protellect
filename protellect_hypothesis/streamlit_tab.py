@@ -8,7 +8,7 @@ import streamlit as st
 
 from .engine import HypothesisEngine
 from .io_parsers import InputError, lookup_frame, parse_experiment
-from .llm_debate import PROVIDERS, LLMError, available_providers, debate, make_llm
+from .llm_debate import PROVIDERS, LLMError, available_providers, debate, fallback_llm
 from .report import hypotheses_table, markdown_report, results_table
 from .templates import GENERAL_RULES, NOT_SUPPORTED, SHAPES, template_csv
 
@@ -154,7 +154,7 @@ def _run(eng: HypothesisEngine, source=None, source_label: str = "", defaults=No
     providers = available_providers(_secret)
     chosen = None
     if providers:
-        chosen = st.selectbox("AI debate provider (optional, runs only when you click a debate button)", providers,
+        chosen = st.selectbox("Preferred AI debate provider (optional; falls back to the other if it fails; runs only when you click a debate button)", providers,
                               format_func=lambda p: PROVIDERS[p]["label"], key=f"{kp}_provider")
     else:
         st.caption("AI debate is off: add GEMINI_API_KEY (free tier may apply) or ANTHROPIC_API_KEY to Streamlit secrets to enable it. "
@@ -192,10 +192,12 @@ def _run(eng: HypothesisEngine, source=None, source_label: str = "", defaults=No
                 st.divider()
             top = next((h for h in r.hypotheses if h.category == "ligand-class"), None)
             if top is not None and st.button(f"Run AI debate on the top {r.gene} hypothesis", key=f"{kp}_debate_{r.gene}"):
+                llm = None
                 try:
                     if chosen is None:
                         raise LLMError("No key found. Add GEMINI_API_KEY or ANTHROPIC_API_KEY to Streamlit secrets.")
-                    out = debate(r.gene, top.to_dict(), {"disease": disease, "tissue": tissue}, make_llm(chosen, _secret))
+                    llm = fallback_llm([chosen] + [p for p in providers if p != chosen], _secret)
+                    out = debate(r.gene, top.to_dict(), {"disease": disease, "tissue": tissue}, llm)
                 except LLMError as e:
                     out = {"note": f"AI debate unavailable: {e}", "reasons": [], "open_questions": [],
                            "final_verdict": top.verdict, "deterministic_verdict": top.verdict, "dropped": 0}
@@ -206,6 +208,8 @@ def _run(eng: HypothesisEngine, source=None, source_label: str = "", defaults=No
                     st.markdown(f"- Open question (unverified, look it up): {q}")
                 if out["note"]:
                     st.caption(out["note"])
+                if llm is not None and llm.used():
+                    st.caption(f"Answered by {llm.used()}." + ("  Earlier attempt failed: " + " | ".join(llm.failures()) if llm.failures() else ""))
 
 
 def render_hypothesis_tab() -> None:
