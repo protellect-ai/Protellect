@@ -104,6 +104,7 @@ def test_iuphar_importer_on_synthetic_file(tmp_path):
 
 def test_random_baseline_is_reported_and_sane():
     res = evaluate(CASES, "loo")
-    # 4 classes in each LOO library -> about 1/4 expected per case
-    assert 2.5 <= res["random_expected_hits"] <= 4.0
+    # k classes in each LOO library -> about 1/k expected per case
+    k = len({c.ligand_class for c in CASES})
+    assert res["n_evaluable"] / (k + 1) <= res["random_expected_hits"] <= res["n_evaluable"] / (k - 1)
     assert res["top1_hits"] >= 0

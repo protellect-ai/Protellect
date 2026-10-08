@@ -10,6 +10,7 @@ import streamlit as st
 from .. import example_case
 from .. import candidates as cand
 from ..alterations import label as alt_label, parse_alterations
+from ..explain import plot_note
 from ..network import bars_svg
 from ..viz import communication_svg, gsea_svg, heatmap_svg
 from ..engine.templates import template_csv
@@ -107,6 +108,7 @@ def _metrics(a: Analysis) -> None:
 
 
 def _candidates(a: Analysis) -> None:
+    plot_note("candidates")
     ss, wb = st.session_state, a.wb
     c1, c2 = st.columns([2, 3])
     direction = c1.radio("Prioritise receptors that are", ["up", "down", "either"], horizontal=True, key="cand_dir", format_func=lambda x: {"up": "higher in the foreground", "down": "lower", "either": "either"}[x])
@@ -136,7 +138,9 @@ def _candidates(a: Analysis) -> None:
         st.dataframe([{"Component": n, "Max points": p, "Rule": r} for n, p, r in cand.WEIGHTS], hide_index=True)
         st.caption("A component that could not be evaluated (for example drugs before the lookup, or alterations without a table) is left out of the denominator, not counted as zero. The score ranks receptors for follow-up; it is not a probability of success.")
     pick = st.selectbox("Open one in every tab", list(df["GPCR"]), key="cand_pick")
-    st.button("Analyse it", key="cand_open", on_click=_open_gene, args=(pick,))
+    if st.button("Analyse it", key="cand_open"):
+        _open_gene(pick)
+        st.rerun()                      # a full rerun: this one changes the whole page, unlike the view switches around it
 
 
 def _signalling(a: Analysis) -> None:
@@ -165,6 +169,7 @@ def _signalling(a: Analysis) -> None:
         c2.button("Analyse it", key="gp_open", on_click=_open_gene, args=(pick,))
     gp = r.all_gpcr
     if len(gp) and a.matrix is not None:
+        plot_note("heatmap")
         svg(heatmap_svg(a.matrix, list(gp["GPCR"]), dict(zip(gp["GPCR"], gp["Status"])), a.wb.coupling, dict(zip(gp["GPCR"], gp["Specificity (tau)"]))))
     st.markdown("**Cell-type specificity of every GPCR**")
     only = st.checkbox("Show only context-specific GPCRs (tau >= 0.8)", value=True, key="gp_only")
@@ -207,10 +212,12 @@ def _enrichment(a: Analysis) -> None:
         return
     st.caption(f"Ranked by {wb.params.get('ranking')} · contrast: {wb.enrich_contrast} · {e.n_ranked} receptors ranked")
     st.dataframe(e.table.drop(columns=["_lead", "Direction"]), hide_index=True)
+    plot_note("enrichment_bars")
     svg(bars_svg(list(e.table["Coupling class"]), [float(x) for x in e.table["NES"]], "Normalised enrichment score by coupling class", "positive: over-represented among receptors higher in the foreground", signed=True, fmt="{:+.2f}",
                  colors=["#34d399" if x >= 0 else "#fb7185" for x in e.table["NES"]]))
     sig_cls = [r_["Coupling class"] for _, r_ in e.table.iterrows() if r_["Significant"] == "yes"] or list(e.table["Coupling class"])
     pick_c = st.selectbox("Enrichment plot for", sig_cls, key="enr_plot_cls")
+    plot_note("enrichment_curve")
     svg(gsea_svg(e, pick_c))
     st.caption("NES above 0: the class is over-represented among receptors higher in the foreground. Below 0: among those lower.")
     shown = render_claims(wb.enrich_claims, a.b, "enr", empty="No coupling class is significantly enriched (FDR <= 0.10) in this contrast.")
@@ -234,6 +241,10 @@ def _programs(a: Analysis) -> None:
     min_r = c2.slider("Minimum r", 0.0, 1.0, 0.5, 0.05, key="pg_r")
     t = wb.programs
     t = t[(t["Pearson r (log)"] >= min_r) & ((t["Program"] == prog) if prog != "All programs" else True)]
+    plot_note("programs")
+    top = t.sort_values("Pearson r (log)", ascending=False).head(12)
+    if len(top):
+        svg(bars_svg([f"{g} · {p}" for g, p in zip(top["GPCR"], top["Program"])], [float(x) for x in top["Pearson r (log)"]], "Receptor-program correlation across contexts", "Pearson r on log2(expression + 1); the table below has FDR", fmt="{:.2f}"))
     st.dataframe(t.head(60), hide_index=True)
     st.caption("Pearson correlation of log2(expression + 1) with the mean z-score of the program's marker genes across contexts. Association, not regulation. Marker lists are short curated sets, not validated signatures.")
     render_claims(wb.program_claims, a.b, "prg", limit=10, empty="No receptor tracks a program strongly enough (r >= 0.7, FDR <= 0.05).")
@@ -244,6 +255,7 @@ def _axes(a: Analysis) -> None:
     if wb.axes.empty:
         st.info("No curated producer and receptor pair has both genes peaking (z >= 1) in some context of this matrix.")
         return
+    plot_note("communication")
     svg(communication_svg(wb.axes, wb.coupling))
     st.dataframe(wb.axes, hide_index=True)
     st.caption("Producer expression stands in for ligand availability; secretion and receptor protein are not measured.")
@@ -259,6 +271,10 @@ def _alterations(a: Analysis) -> None:
     t = alt[alt["gene"].isin(set(status))].copy()
     t["Status"] = t["gene"].map(status)
     t = t[(t[["mut", "amp", "del"]].max(axis=1) >= 0.05)].sort_values("amp", ascending=False)
+    top = t.assign(m=t[["mut", "amp", "del"]].max(axis=1)).sort_values("m", ascending=False).head(12)
+    if len(top):
+        plot_note("alterations")
+        svg(bars_svg([f"{g} · {c}" for g, c in zip(top["gene"], top["cancer"])], [float(x) * 100 for x in top["m"]], "Highest alteration frequency per receptor and cancer type", "% of tumours (mutated, amplified or deleted, whichever is highest)", fmt="{:.0f}%"))
     st.dataframe(t.rename(columns={"gene": "GPCR", "cancer": "Cancer type", "mut": "Mutated", "amp": "Amplified", "del": "Deleted"}), hide_index=True)
     st.caption("From your own table, unchanged. Only receptors in the matrix with a frequency of at least 5% are shown.")
 
@@ -276,6 +292,17 @@ def _methods(a: Analysis) -> None:
     st.download_button("Download methods (markdown)", md, "protellect_methods.md", key="gp_methods")
 
 
+_fragment = getattr(st, "fragment", None) or (lambda f: f)      # older Streamlit: no fragments, everything simply reruns
+
+
+@_fragment
+def _views(a: Analysis) -> None:
+    """Switching views or changing a selector in here re-renders only this block, so the rest of the page (and your scroll position) stays put."""
+    view = st.radio("Analysis", VIEWS, horizontal=True, key="gp_view")
+    {"Candidates: IO targets and orphans": _candidates, "Signalling and specificity": _signalling, "G-protein coupling enrichment": _enrichment, "Programs": _programs, "Oncocrine axes": _axes,
+     "Pan-cancer alterations": _alterations, "Methods and downloads": _methods}[view](a)
+
+
 def render_gpcrome(a: Analysis) -> None:
     ss = st.session_state
     st.markdown("#### GPCRome analysis (ML): where each GPCR is active, what it tracks, and what dominates a cell state")
@@ -290,9 +317,7 @@ def render_gpcrome(a: Analysis) -> None:
         st.warning(a.gpcrome.skipped)
         return
     _metrics(a)
-    view = st.radio("Analysis", VIEWS, horizontal=True, key="gp_view")
-    {"Candidates: IO targets and orphans": _candidates, "Signalling and specificity": _signalling, "G-protein coupling enrichment": _enrichment, "Programs": _programs, "Oncocrine axes": _axes,
-     "Pan-cancer alterations": _alterations, "Methods and downloads": _methods}[view](a)
+    _views(a)
     if ss.get("example_loaded"):
         chk = check_truth(a.gpcrome, example_case.truth(), a.wb)
         ok = sum(c["ok"] for c in chk)

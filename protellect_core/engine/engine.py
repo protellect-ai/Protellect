@@ -33,6 +33,12 @@ TEST_EXPERIMENTS = {
                     "in receptor-expressing cells with empty-vector controls, using Ca2+, cAMP or beta-arrestin readouts.",
     "peptide": "Reverse pharmacology: test fractionated extracts from the tissue where the receptor is expressed, plus candidate peptide "
                "libraries, against receptor-expressing cells; then purify and identify the active peptide.",
+    "nucleotide": "Screen nucleotides, nucleoside diphosphates and nucleotide sugars (ATP, ADP, UTP, UDP, UDP-glucose) and their breakdown products in receptor-expressing cells "
+                  "with empty-vector controls. Treat the medium with apyrase first, because contaminating nucleotides are a common false positive.",
+    "ion / proton": "Vary extracellular pH in small steps (for example 6.4 to 7.8) and test divalent ions (zinc, calcium) in receptor-expressing cells and empty-vector cells in "
+                    "a well-buffered system; endogenous proton-sensing receptors in the host cells are the main confound.",
+    "amine": "Screen biogenic amines and trace amines (for example histamine, tyramine, beta-phenylethylamine, tryptamine) in receptor-expressing cells with "
+             "empty-vector controls, using cAMP or calcium readouts.",
 }
 COUPLING_TEST = ("After stimulating with a candidate ligand (or using a constitutive-activity or BRET G-protein sensor assay), measure "
                  "Ca2+ for Gq, cAMP decrease for Gi, or cAMP increase for Gs.")
@@ -111,10 +117,15 @@ class HypothesisEngine:
                 sources.setdefault(t, extra.get("source", "supplied annotation"))
         if not ann and not extra:
             notes.append("No receptor annotation (tissues, cluster, neighbors) available; hypotheses rest on your experiment context only.")
-        for t in reg.normalize_tissues([context.get("tissue"), context.get("disease")]):
-            if t not in tissues:
-                tissues.append(t)
-            sources.setdefault(t, "your experiment context")
+        own = bool(extra and extra.get("authoritative"))
+        if own:
+            notes.append("Tissue context comes from where THIS receptor is most expressed in your matrix (" + str(extra.get("source", "")) + "), not from the experiment-wide setting."
+                         + ("" if tissues else " That context maps to no tissue in the precedent library, so no precedent can be matched."))
+        else:
+            for t in reg.normalize_tissues([context.get("tissue"), context.get("disease")]):
+                if t not in tissues:
+                    tissues.append(t)
+                sources.setdefault(t, "your experiment context")
         prof = QueryProfile(id=gene, names=[gene], tissues=tissues,
                             neighbors=(ann or {}).get("neighbors", []), cluster=(ann or {}).get("cluster", ""),
                             tissue_sources=sources)
@@ -227,9 +238,21 @@ class HypothesisEngine:
                 continue
             summary.n_orphan += 1
             profile, notes = self.profile_for(row.gene, context, (extra_annotations or {}).get(row.gene))
-            hyps = (self._make("ligand-class", self.ligand_ranker, profile, row, notes, top_n)
-                    + self._make("signaling", self.coupling_ranker, profile, row, notes, 1)
-                    + self._disease_hypothesis(profile, row, context, notes))
+            # a receptor must never be scored against its own documented answer: hide its case while scoring it
+            g = str(row.gene).upper()
+            own = [c for c in self.library if c.gene.upper() == g or c.id.upper() == g]
+            saved = (self.library, self.ligand_ranker, self.coupling_ranker)
+            if own:
+                self.library = [c for c in self.library if c not in own]
+                self.ligand_ranker = PrecedentRanker().fit(self.library, "ligand_class")
+                self.coupling_ranker = PrecedentRanker().fit(self.library, "coupling")
+                notes.append(f"{row.gene} has its own documented case in the library ({', '.join(c.id for c in own)}); that case was hidden while scoring it.")
+            try:
+                hyps = (self._make("ligand-class", self.ligand_ranker, profile, row, notes, top_n)
+                        + self._make("signaling", self.coupling_ranker, profile, row, notes, 1)
+                        + self._disease_hypothesis(profile, row, context, notes))
+            finally:
+                self.library, self.ligand_ranker, self.coupling_ranker = saved
             sig = None if pd.isna(row.significance) else float(row.significance)
             if hyps:
                 summary.results.append(ReceptorResult(row.gene, "hypotheses", float(row.effect), row.effect_type, sig, hyps,

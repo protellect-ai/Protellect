@@ -1,343 +1,673 @@
 {
-  "_comment": "Seed case library. See README. verified=false on every row until an expert signs off.",
-  "cases": [
-    {
-      "id": "GPR40",
-      "gene": "FFAR1",
-      "resolution_year": 2003,
-      "ligand": "medium/long-chain free fatty acids",
-      "ligand_class": "fatty acid",
-      "coupling": "Gq",
-      "cluster": "FFAR-like cluster (chr19q13)",
-      "neighbors": [
-        "GPR41",
-        "GPR42",
-        "GPR43"
-      ],
-      "tissues": [
-        "pancreas",
-        "brain"
-      ],
-      "later_outcome": "Studied as a type 2 diabetes target",
-      "citations": [
-        "Itoh 2003",
-        "Briscoe 2003",
-        "Kotarsky 2003"
-      ],
-      "verified": false,
-      "contested": false,
-      "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
-    },
-    {
-      "id": "GPR41",
-      "gene": "FFAR3",
-      "resolution_year": 2003,
-      "ligand": "short-chain fatty acids",
-      "ligand_class": "fatty acid",
-      "coupling": "Gi",
-      "cluster": "FFAR-like cluster (chr19q13)",
-      "neighbors": [
-        "GPR40",
-        "GPR42",
-        "GPR43"
-      ],
-      "tissues": [
-        "adipose",
-        "immune"
-      ],
-      "later_outcome": "Gut-microbiome metabolite sensing",
-      "citations": [
-        "Brown 2003",
-        "Le Poul 2003"
-      ],
-      "verified": false,
-      "contested": false,
-      "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
-    },
-    {
-      "id": "GPR43",
-      "gene": "FFAR2",
-      "resolution_year": 2003,
-      "ligand": "short-chain fatty acids",
-      "ligand_class": "fatty acid",
-      "coupling": "Gi",
-      "cluster": "FFAR-like cluster (chr19q13)",
-      "neighbors": [
-        "GPR40",
-        "GPR41",
-        "GPR42"
-      ],
-      "tissues": [
-        "immune",
-        "adipose",
-        "gut"
-      ],
-      "later_outcome": "Immune and metabolic signaling by SCFAs",
-      "citations": [
-        "Brown 2003",
-        "Le Poul 2003",
-        "Nilsson 2003"
-      ],
-      "verified": false,
-      "contested": false,
-      "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
-    },
-    {
-      "id": "GPR109A",
-      "gene": "HCAR2",
-      "resolution_year": 2003,
-      "ligand": "niacin / beta-hydroxybutyrate",
-      "ligand_class": "organic acid",
-      "coupling": "Gi",
-      "cluster": "HCA cluster (chr12q24)",
-      "neighbors": [
-        "GPR109B",
-        "GPR81"
-      ],
-      "tissues": [
-        "adipose",
-        "immune"
-      ],
-      "later_outcome": "Target of niacin (lipid-lowering)",
-      "citations": [
-        "Tunaru 2003",
-        "Wise 2003",
-        "Soga 2003"
-      ],
-      "verified": false,
-      "contested": false,
-      "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
-    },
-    {
-      "id": "GPR81",
-      "gene": "HCAR1",
-      "resolution_year": 2008,
-      "ligand": "lactate",
-      "ligand_class": "organic acid",
-      "coupling": "Gi",
-      "cluster": "HCA cluster (chr12q24)",
-      "neighbors": [
-        "GPR109A",
-        "GPR109B"
-      ],
-      "tissues": [
-        "adipose"
-      ],
-      "later_outcome": "Lactate-sensing receptor",
-      "citations": [
-        "Cai 2008",
-        "Liu 2009",
-        "Ge 2008"
-      ],
-      "verified": false,
-      "contested": false,
-      "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
-    },
-    {
-      "id": "GPR120",
-      "gene": "FFAR4",
-      "resolution_year": 2005,
-      "ligand": "long-chain unsaturated fatty acids (e.g. omega-3)",
-      "ligand_class": "fatty acid",
-      "coupling": "Gq",
-      "cluster": "",
-      "neighbors": [],
-      "tissues": [
-        "gut",
-        "adipose",
-        "lung"
-      ],
-      "later_outcome": "Anti-inflammatory and insulin-sensitizing signaling",
-      "citations": [
-        "Hirasawa 2005"
-      ],
-      "verified": false,
-      "contested": false,
-      "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
-    },
-    {
-      "id": "GPR119",
-      "gene": "GPR119",
-      "resolution_year": 2005,
-      "ligand": "oleoylethanolamide / lysophosphatidylcholine",
-      "ligand_class": "lipid mediator",
-      "coupling": "Gs",
-      "cluster": "",
-      "neighbors": [],
-      "tissues": [
-        "pancreas",
-        "gut"
-      ],
-      "later_outcome": "Studied as a type 2 diabetes target",
-      "citations": [
-        "Soga 2005",
-        "Overton 2006"
-      ],
-      "verified": false,
-      "contested": false,
-      "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
-    },
-    {
-      "id": "GPR91",
-      "gene": "SUCNR1",
-      "resolution_year": 2004,
-      "ligand": "succinate",
-      "ligand_class": "organic acid",
-      "coupling": "Gi",
-      "cluster": "P2Y-like cluster",
-      "neighbors": [
-        "GPR99"
-      ],
-      "tissues": [
-        "kidney"
-      ],
-      "later_outcome": "Succinate sensing in kidney and inflammation",
-      "citations": [
-        "He 2004"
-      ],
-      "verified": false,
-      "contested": false,
-      "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
-    },
-    {
-      "id": "GPR99",
-      "gene": "OXGR1",
-      "resolution_year": 2004,
-      "ligand": "alpha-ketoglutarate",
-      "ligand_class": "organic acid",
-      "coupling": "Gq",
-      "cluster": "P2Y-like cluster",
-      "neighbors": [
-        "GPR91"
-      ],
-      "tissues": [
-        "kidney"
-      ],
-      "later_outcome": "Metabolite sensing in kidney",
-      "citations": [
-        "He 2004"
-      ],
-      "verified": false,
-      "contested": false,
-      "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
-    },
-    {
-      "id": "GHSR",
-      "gene": "GHSR",
-      "resolution_year": 1999,
-      "ligand": "ghrelin",
-      "ligand_class": "peptide",
-      "coupling": "Gq",
-      "cluster": "peptide GPCR (motilin/neurotensin-like)",
-      "neighbors": [
-        "motilin receptor",
-        "neurotensin receptor"
-      ],
-      "tissues": [
-        "brain",
-        "endocrine"
-      ],
-      "later_outcome": "Appetite and growth-hormone regulation",
-      "citations": [
-        "Kojima 1999"
-      ],
-      "verified": false,
-      "contested": false,
-      "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
-    },
-    {
-      "id": "GPR15",
-      "gene": "GPR15",
-      "resolution_year": 2017,
-      "ligand": "GPR15L (C10orf99)",
-      "ligand_class": "peptide",
-      "coupling": "Gi",
-      "cluster": "chemokine-like",
-      "neighbors": [
-        "chemokine receptors"
-      ],
-      "tissues": [
-        "immune",
-        "gut"
-      ],
-      "later_outcome": "Linked to colonic inflammation",
-      "citations": [
-        "Suply 2017",
-        "Ocon 2017"
-      ],
-      "verified": false,
-      "contested": false,
-      "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
-    },
-    {
-      "id": "APJ",
-      "gene": "APLNR",
-      "resolution_year": 1998,
-      "ligand": "apelin",
-      "ligand_class": "peptide",
-      "coupling": "Gi",
-      "cluster": "peptide GPCR (angiotensin-like)",
-      "neighbors": [
-        "angiotensin receptor"
-      ],
-      "tissues": [
-        "heart",
-        "brain",
-        "vasculature"
-      ],
-      "later_outcome": "Cardiovascular regulation",
-      "citations": [
-        "Tatemoto 1998"
-      ],
-      "verified": false,
-      "contested": false,
-      "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
-    },
-    {
-      "id": "GPR54",
-      "gene": "KISS1R",
-      "resolution_year": 2001,
-      "ligand": "kisspeptin",
-      "ligand_class": "peptide",
-      "coupling": "Gq",
-      "cluster": "peptide GPCR (galanin-like)",
-      "neighbors": [
-        "galanin receptors"
-      ],
-      "tissues": [
-        "placenta",
-        "brain"
-      ],
-      "later_outcome": "Reproductive axis regulation",
-      "citations": [
-        "Kotani 2001",
-        "Ohtaki 2001",
-        "Muir 2001"
-      ],
-      "verified": false,
-      "contested": false,
-      "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
-    },
-    {
-      "id": "GPR35",
-      "gene": "GPR35",
-      "resolution_year": 2006,
-      "ligand": "kynurenic acid (disputed)",
-      "ligand_class": "organic acid",
-      "coupling": "Gi",
-      "cluster": "",
-      "neighbors": [],
-      "tissues": [
-        "immune",
-        "gut"
-      ],
-      "later_outcome": "Ligand pairing disputed in the literature",
-      "citations": [
-        "Wang 2006"
-      ],
-      "verified": false,
-      "contested": true,
-      "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year. CONTESTED: excluded from training and benchmark."
-    }
-  ]
+ "_comment": "Seed case library. See README. verified=false on every row until an expert signs off.",
+ "cases": [
+  {
+   "id": "GPR40",
+   "gene": "FFAR1",
+   "resolution_year": 2003,
+   "ligand": "medium/long-chain free fatty acids",
+   "ligand_class": "fatty acid",
+   "coupling": "Gq",
+   "cluster": "FFAR-like cluster (chr19q13)",
+   "neighbors": [
+    "GPR41",
+    "GPR42",
+    "GPR43"
+   ],
+   "tissues": [
+    "pancreas",
+    "brain"
+   ],
+   "later_outcome": "Studied as a type 2 diabetes target",
+   "citations": [
+    "Itoh 2003",
+    "Briscoe 2003",
+    "Kotarsky 2003"
+   ],
+   "verified": false,
+   "contested": false,
+   "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
+  },
+  {
+   "id": "GPR41",
+   "gene": "FFAR3",
+   "resolution_year": 2003,
+   "ligand": "short-chain fatty acids",
+   "ligand_class": "fatty acid",
+   "coupling": "Gi",
+   "cluster": "FFAR-like cluster (chr19q13)",
+   "neighbors": [
+    "GPR40",
+    "GPR42",
+    "GPR43"
+   ],
+   "tissues": [
+    "adipose",
+    "immune"
+   ],
+   "later_outcome": "Gut-microbiome metabolite sensing",
+   "citations": [
+    "Brown 2003",
+    "Le Poul 2003"
+   ],
+   "verified": false,
+   "contested": false,
+   "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
+  },
+  {
+   "id": "GPR43",
+   "gene": "FFAR2",
+   "resolution_year": 2003,
+   "ligand": "short-chain fatty acids",
+   "ligand_class": "fatty acid",
+   "coupling": "Gi",
+   "cluster": "FFAR-like cluster (chr19q13)",
+   "neighbors": [
+    "GPR40",
+    "GPR41",
+    "GPR42"
+   ],
+   "tissues": [
+    "immune",
+    "adipose",
+    "gut"
+   ],
+   "later_outcome": "Immune and metabolic signaling by SCFAs",
+   "citations": [
+    "Brown 2003",
+    "Le Poul 2003",
+    "Nilsson 2003"
+   ],
+   "verified": false,
+   "contested": false,
+   "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
+  },
+  {
+   "id": "GPR109A",
+   "gene": "HCAR2",
+   "resolution_year": 2003,
+   "ligand": "niacin / beta-hydroxybutyrate",
+   "ligand_class": "organic acid",
+   "coupling": "Gi",
+   "cluster": "HCA cluster (chr12q24)",
+   "neighbors": [
+    "GPR109B",
+    "GPR81"
+   ],
+   "tissues": [
+    "adipose",
+    "immune"
+   ],
+   "later_outcome": "Target of niacin (lipid-lowering)",
+   "citations": [
+    "Tunaru 2003",
+    "Wise 2003",
+    "Soga 2003"
+   ],
+   "verified": false,
+   "contested": false,
+   "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
+  },
+  {
+   "id": "GPR81",
+   "gene": "HCAR1",
+   "resolution_year": 2008,
+   "ligand": "lactate",
+   "ligand_class": "organic acid",
+   "coupling": "Gi",
+   "cluster": "HCA cluster (chr12q24)",
+   "neighbors": [
+    "GPR109A",
+    "GPR109B"
+   ],
+   "tissues": [
+    "adipose"
+   ],
+   "later_outcome": "Lactate-sensing receptor",
+   "citations": [
+    "Cai 2008",
+    "Liu 2009",
+    "Ge 2008"
+   ],
+   "verified": false,
+   "contested": false,
+   "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
+  },
+  {
+   "id": "GPR120",
+   "gene": "FFAR4",
+   "resolution_year": 2005,
+   "ligand": "long-chain unsaturated fatty acids (e.g. omega-3)",
+   "ligand_class": "fatty acid",
+   "coupling": "Gq",
+   "cluster": "",
+   "neighbors": [],
+   "tissues": [
+    "gut",
+    "adipose",
+    "lung"
+   ],
+   "later_outcome": "Anti-inflammatory and insulin-sensitizing signaling",
+   "citations": [
+    "Hirasawa 2005"
+   ],
+   "verified": false,
+   "contested": false,
+   "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
+  },
+  {
+   "id": "GPR119",
+   "gene": "GPR119",
+   "resolution_year": 2005,
+   "ligand": "oleoylethanolamide / lysophosphatidylcholine",
+   "ligand_class": "lipid mediator",
+   "coupling": "Gs",
+   "cluster": "",
+   "neighbors": [],
+   "tissues": [
+    "pancreas",
+    "gut"
+   ],
+   "later_outcome": "Studied as a type 2 diabetes target",
+   "citations": [
+    "Soga 2005",
+    "Overton 2006"
+   ],
+   "verified": false,
+   "contested": false,
+   "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
+  },
+  {
+   "id": "GPR91",
+   "gene": "SUCNR1",
+   "resolution_year": 2004,
+   "ligand": "succinate",
+   "ligand_class": "organic acid",
+   "coupling": "Gi",
+   "cluster": "P2Y-like cluster",
+   "neighbors": [
+    "GPR99"
+   ],
+   "tissues": [
+    "kidney"
+   ],
+   "later_outcome": "Succinate sensing in kidney and inflammation",
+   "citations": [
+    "He 2004"
+   ],
+   "verified": false,
+   "contested": false,
+   "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
+  },
+  {
+   "id": "GPR99",
+   "gene": "OXGR1",
+   "resolution_year": 2004,
+   "ligand": "alpha-ketoglutarate",
+   "ligand_class": "organic acid",
+   "coupling": "Gq",
+   "cluster": "P2Y-like cluster",
+   "neighbors": [
+    "GPR91"
+   ],
+   "tissues": [
+    "kidney"
+   ],
+   "later_outcome": "Metabolite sensing in kidney",
+   "citations": [
+    "He 2004"
+   ],
+   "verified": false,
+   "contested": false,
+   "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
+  },
+  {
+   "id": "GHSR",
+   "gene": "GHSR",
+   "resolution_year": 1999,
+   "ligand": "ghrelin",
+   "ligand_class": "peptide",
+   "coupling": "Gq",
+   "cluster": "peptide GPCR (motilin/neurotensin-like)",
+   "neighbors": [
+    "motilin receptor",
+    "neurotensin receptor"
+   ],
+   "tissues": [
+    "brain",
+    "endocrine"
+   ],
+   "later_outcome": "Appetite and growth-hormone regulation",
+   "citations": [
+    "Kojima 1999"
+   ],
+   "verified": false,
+   "contested": false,
+   "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
+  },
+  {
+   "id": "GPR15",
+   "gene": "GPR15",
+   "resolution_year": 2017,
+   "ligand": "GPR15L (C10orf99)",
+   "ligand_class": "peptide",
+   "coupling": "Gi",
+   "cluster": "chemokine-like",
+   "neighbors": [
+    "chemokine receptors"
+   ],
+   "tissues": [
+    "immune",
+    "gut"
+   ],
+   "later_outcome": "Linked to colonic inflammation",
+   "citations": [
+    "Suply 2017",
+    "Ocon 2017"
+   ],
+   "verified": false,
+   "contested": false,
+   "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
+  },
+  {
+   "id": "APJ",
+   "gene": "APLNR",
+   "resolution_year": 1998,
+   "ligand": "apelin",
+   "ligand_class": "peptide",
+   "coupling": "Gi",
+   "cluster": "peptide GPCR (angiotensin-like)",
+   "neighbors": [
+    "angiotensin receptor"
+   ],
+   "tissues": [
+    "heart",
+    "brain",
+    "vasculature"
+   ],
+   "later_outcome": "Cardiovascular regulation",
+   "citations": [
+    "Tatemoto 1998"
+   ],
+   "verified": false,
+   "contested": false,
+   "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
+  },
+  {
+   "id": "GPR54",
+   "gene": "KISS1R",
+   "resolution_year": 2001,
+   "ligand": "kisspeptin",
+   "ligand_class": "peptide",
+   "coupling": "Gq",
+   "cluster": "peptide GPCR (galanin-like)",
+   "neighbors": [
+    "galanin receptors"
+   ],
+   "tissues": [
+    "placenta",
+    "brain"
+   ],
+   "later_outcome": "Reproductive axis regulation",
+   "citations": [
+    "Kotani 2001",
+    "Ohtaki 2001",
+    "Muir 2001"
+   ],
+   "verified": false,
+   "contested": false,
+   "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
+  },
+  {
+   "id": "GPR35",
+   "gene": "GPR35",
+   "resolution_year": 2006,
+   "ligand": "kynurenic acid (disputed)",
+   "ligand_class": "organic acid",
+   "coupling": "Gi",
+   "cluster": "",
+   "neighbors": [],
+   "tissues": [
+    "immune",
+    "gut"
+   ],
+   "later_outcome": "Ligand pairing disputed in the literature",
+   "citations": [
+    "Wang 2006"
+   ],
+   "verified": false,
+   "contested": true,
+   "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year. CONTESTED: excluded from training and benchmark."
+  },
+  {
+   "id": "EBI2",
+   "gene": "GPR183",
+   "resolution_year": 2011,
+   "ligand": "7alpha,25-dihydroxycholesterol (an oxysterol)",
+   "ligand_class": "lipid mediator",
+   "coupling": "Gi",
+   "cluster": "",
+   "neighbors": [],
+   "tissues": [
+    "immune"
+   ],
+   "later_outcome": "Guides B-cell, T-cell and dendritic-cell positioning in lymphoid tissue",
+   "citations": [
+    "Hannedouche 2011",
+    "Liu 2011"
+   ],
+   "verified": false,
+   "contested": false,
+   "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
+  },
+  {
+   "id": "GPR174",
+   "gene": "GPR174",
+   "resolution_year": 2012,
+   "ligand": "lysophosphatidylserine",
+   "ligand_class": "lipid mediator",
+   "coupling": "Gs",
+   "cluster": "",
+   "neighbors": [],
+   "tissues": [
+    "immune"
+   ],
+   "later_outcome": "Studied as a regulator of T-cell responses",
+   "citations": [
+    "Inoue 2012"
+   ],
+   "verified": false,
+   "contested": false,
+   "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
+  },
+  {
+   "id": "GPR34",
+   "gene": "GPR34",
+   "resolution_year": 2006,
+   "ligand": "lysophosphatidylserine",
+   "ligand_class": "lipid mediator",
+   "coupling": "Gi",
+   "cluster": "",
+   "neighbors": [],
+   "tissues": [
+    "immune"
+   ],
+   "later_outcome": "Studied on mast cells and microglia",
+   "citations": [
+    "Sugo 2006"
+   ],
+   "verified": false,
+   "contested": false,
+   "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
+  },
+  {
+   "id": "GPR170",
+   "gene": "OXER1",
+   "resolution_year": 2002,
+   "ligand": "5-oxo-eicosatetraenoic acid (5-oxo-ETE)",
+   "ligand_class": "lipid mediator",
+   "coupling": "Gi",
+   "cluster": "",
+   "neighbors": [],
+   "tissues": [
+    "immune"
+   ],
+   "later_outcome": "Studied as a pro-inflammatory receptor of eosinophils and neutrophils",
+   "citations": [
+    "Hosoi 2002",
+    "Jones 2003"
+   ],
+   "verified": false,
+   "contested": false,
+   "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
+  },
+  {
+   "id": "CYSLTR1",
+   "gene": "CYSLTR1",
+   "resolution_year": 1999,
+   "ligand": "cysteinyl leukotrienes (LTD4)",
+   "ligand_class": "lipid mediator",
+   "coupling": "Gq",
+   "cluster": "",
+   "neighbors": [],
+   "tissues": [
+    "immune",
+    "lung"
+   ],
+   "later_outcome": "Became the target of leukotriene-receptor antagonist drugs for asthma",
+   "citations": [
+    "Lynch 1999"
+   ],
+   "verified": false,
+   "contested": false,
+   "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
+  },
+  {
+   "id": "GPR44",
+   "gene": "PTGDR2",
+   "resolution_year": 2001,
+   "ligand": "prostaglandin D2",
+   "ligand_class": "lipid mediator",
+   "coupling": "Gi",
+   "cluster": "",
+   "neighbors": [],
+   "tissues": [
+    "immune"
+   ],
+   "later_outcome": "Studied as an asthma and allergy target (CRTH2 antagonists)",
+   "citations": [
+    "Hirai 2001"
+   ],
+   "verified": false,
+   "contested": false,
+   "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
+  },
+  {
+   "id": "EDG1",
+   "gene": "S1PR1",
+   "resolution_year": 1998,
+   "ligand": "sphingosine-1-phosphate",
+   "ligand_class": "lipid mediator",
+   "coupling": "Gi",
+   "cluster": "",
+   "neighbors": [],
+   "tissues": [
+    "vasculature"
+   ],
+   "later_outcome": "Became the target of S1P-receptor modulator drugs for multiple sclerosis",
+   "citations": [
+    "Lee 1998"
+   ],
+   "verified": false,
+   "contested": false,
+   "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
+  },
+  {
+   "id": "GPR84",
+   "gene": "GPR84",
+   "resolution_year": 2006,
+   "ligand": "medium-chain free fatty acids (about C9 to C14)",
+   "ligand_class": "fatty acid",
+   "coupling": "Gi",
+   "cluster": "",
+   "neighbors": [],
+   "tissues": [
+    "immune"
+   ],
+   "later_outcome": "Studied as a pro-inflammatory receptor of myeloid cells",
+   "citations": [
+    "Wang 2006"
+   ],
+   "verified": false,
+   "contested": false,
+   "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
+  },
+  {
+   "id": "GPR17",
+   "gene": "GPR17",
+   "resolution_year": 2006,
+   "ligand": "uracil nucleotides and cysteinyl leukotrienes",
+   "ligand_class": "nucleotide",
+   "coupling": "Gi",
+   "cluster": "",
+   "neighbors": [],
+   "tissues": [
+    "brain"
+   ],
+   "later_outcome": "Studied in oligodendrocyte maturation and myelin repair",
+   "citations": [
+    "Ciana 2006"
+   ],
+   "verified": false,
+   "contested": false,
+   "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
+  },
+  {
+   "id": "GPR86",
+   "gene": "P2RY13",
+   "resolution_year": 2001,
+   "ligand": "ADP",
+   "ligand_class": "nucleotide",
+   "coupling": "Gi",
+   "cluster": "",
+   "neighbors": [],
+   "tissues": [
+    "immune",
+    "brain"
+   ],
+   "later_outcome": "Characterised as a Gi-coupled ADP receptor",
+   "citations": [
+    "Communi 2001"
+   ],
+   "verified": false,
+   "contested": false,
+   "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
+  },
+  {
+   "id": "GPR65",
+   "gene": "GPR65",
+   "resolution_year": 2003,
+   "ligand": "protons (extracellular acidification)",
+   "ligand_class": "ion / proton",
+   "coupling": "Gs",
+   "cluster": "",
+   "neighbors": [],
+   "tissues": [
+    "immune"
+   ],
+   "later_outcome": "Studied as a sensor of acidic environments by immune cells",
+   "citations": [
+    "Ludwig 2003"
+   ],
+   "verified": false,
+   "contested": false,
+   "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
+  },
+  {
+   "id": "GPR4",
+   "gene": "GPR4",
+   "resolution_year": 2003,
+   "ligand": "protons (extracellular acidification)",
+   "ligand_class": "ion / proton",
+   "coupling": "Gs",
+   "cluster": "",
+   "neighbors": [],
+   "tissues": [
+    "lung",
+    "heart"
+   ],
+   "later_outcome": "Studied as a proton sensor in endothelium and acidic tissues",
+   "citations": [
+    "Ludwig 2003"
+   ],
+   "verified": false,
+   "contested": false,
+   "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
+  },
+  {
+   "id": "GPR39",
+   "gene": "GPR39",
+   "resolution_year": 2007,
+   "ligand": "zinc ions",
+   "ligand_class": "ion / proton",
+   "coupling": "Gq",
+   "cluster": "",
+   "neighbors": [],
+   "tissues": [
+    "gut",
+    "pancreas"
+   ],
+   "later_outcome": "Studied for roles in zinc signalling in gut and pancreas",
+   "citations": [
+    "Holst 2007"
+   ],
+   "verified": false,
+   "contested": false,
+   "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
+  },
+  {
+   "id": "TAAR1",
+   "gene": "TAAR1",
+   "resolution_year": 2001,
+   "ligand": "trace amines (for example beta-phenylethylamine, tyramine)",
+   "ligand_class": "amine",
+   "coupling": "Gs",
+   "cluster": "",
+   "neighbors": [],
+   "tissues": [
+    "brain"
+   ],
+   "later_outcome": "Studied as a target in neuropsychiatric disorders",
+   "citations": [
+    "Bunzow 2001",
+    "Borowsky 2001"
+   ],
+   "verified": false,
+   "contested": false,
+   "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
+  },
+  {
+   "id": "GPRv53",
+   "gene": "HRH4",
+   "resolution_year": 2000,
+   "ligand": "histamine",
+   "ligand_class": "amine",
+   "coupling": "Gi",
+   "cluster": "",
+   "neighbors": [],
+   "tissues": [
+    "immune"
+   ],
+   "later_outcome": "Studied as a target in inflammation and itch",
+   "citations": [
+    "Oda 2000",
+    "Nakamura 2000",
+    "Liu 2001"
+   ],
+   "verified": false,
+   "contested": false,
+   "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
+  },
+  {
+   "id": "ChemR23",
+   "gene": "CMKLR1",
+   "resolution_year": 2003,
+   "ligand": "chemerin",
+   "ligand_class": "peptide",
+   "coupling": "Gi",
+   "cluster": "",
+   "neighbors": [],
+   "tissues": [
+    "immune"
+   ],
+   "later_outcome": "Studied as a regulator of inflammation and its resolution",
+   "citations": [
+    "Wittamer 2003",
+    "Meder 2003"
+   ],
+   "verified": false,
+   "contested": false,
+   "notes": "Curated by an AI assistant from memory. NOT verified. A domain expert must check every field against primary sources, and confirm features list only what was known before resolution_year."
+  }
+ ]
 }

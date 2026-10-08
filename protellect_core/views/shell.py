@@ -9,6 +9,7 @@ from typing import List, Optional
 from ..adapters import Bundle, build_bundle
 from ..analysis import body_systems, defect_claims, possibility, rank_diseases, strategy_options
 from ..context import Context
+from ..contexts import matrix_tissue_annotations
 from ..engine import InputError, parse_experiment
 from ..engine.io_parsers import parse_matrix
 from ..gpcrome import GPCRomeResult, load_couplings
@@ -40,6 +41,7 @@ class Analysis:
     wb: Optional[Workbench] = None
     matrix: Optional[object] = None
     gpcrome_error: str = ""
+    matrix_tissues: dict = field(default_factory=dict)
 
 
 @st.cache_data(show_spinner=False)
@@ -91,6 +93,13 @@ def build_analysis(ss, *, diseases=None, is_gpcr=None, gpcr_class: str = "", cou
             fg = [c for c in (ss.get("gp_fg") or []) if c in matrix.columns]
             a.wb = _workbench_cached(matrix, eng.registry, coupling, csrc, de_eff, de_sig, fg, ss.get("gp_rank_source", "auto"), ss.get("gp_metric", "log2fc"), ctx.comparison, _custom_program(ss))
             a.gpcrome, a.matrix = a.wb.gpcrome, matrix
+            a.matrix_tissues = matrix_tissue_annotations(a.gpcrome, matrix)
+            if a.summary is not None and source == "your experiment" and a.matrix_tissues:
+                try:      # re-run the precedent model so each orphan is matched on where IT is expressed, not on the experiment-wide tissue
+                    a.summary = eng.run(parse_experiment(dfx), ctx.engine_ctx(), extra_annotations=a.matrix_tissues)
+                    a.hyp_claims = hypothesis_claims(eng, a.summary, None)
+                except InputError:
+                    pass
             mine = [c for c in a.wb.claims if (not b.loaded) or source != "the protein you searched" or b.gene.upper() in (str(c.tags.get("gene", "")).upper(), str(c.tags.get("receptor", "")).upper()) or b.gene.upper() in [x.upper() for x in c.tags.get("lead", [])]]
             a.hyp_claims = sorted(a.hyp_claims + mine, key=lambda c: -c.score)
         except InputError as e:

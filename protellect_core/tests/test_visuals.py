@@ -187,7 +187,7 @@ def test_candidate_claims_have_proof_and_disclose_the_weights(wb):
 # ---------------------------------------------------------------- blind retrodiction
 def test_retrodiction_hides_the_receptor_and_still_finds_its_ligand_class():
     r = retrodict(load_cases(), "FFAR1")
-    assert r and r["truth"] == "fatty acid" and r["hit"] and r["ranked"][0][0] == "fatty acid" and r["library"] == 12
+    assert r and r["truth"] == "fatty acid" and r["hit"] and r["ranked"][0][0] == "fatty acid" and r["library"] == len(load_cases()) - 2
     assert retrodict(load_cases(), "TP53") is None
 
 

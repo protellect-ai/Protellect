@@ -12,20 +12,17 @@ from ..context import disease_context_claims, factor_claims, medication_claims
 from ..engine.llm_debate import PROVIDERS, LLMError, available_providers, debate, fallback_llm
 from ..engine.report import hypotheses_table, markdown_report, results_table
 from ..engine.templates import GENERAL_RULES, SHAPES, template_csv
+from ..explain import plot_note
+from ..player import narration, render_player
 from .common import data_audit, render_claims, secret, svg
+from .dossier_view import render_dossiers
+from .mission import render_mission
 from .patterns import render_patterns
 from .gpcrome import example_block, render_gpcrome
 from .shell import Analysis, coupling_info
 
-NICHE = ("**What this does that a standard pipeline does not.** A differential-expression or variant pipeline ends at a ranked gene list and pathway enrichment, "
-         "and treats a receptor nobody has characterised like any other row. Protellect picks out the **orphan GPCRs** inside your own results, ranks what each one "
-         "might bind and couple to by **documented deorphanisation precedent**, ties every claim to its source, **cross-examines it (ML validation)** so you can see "
-         "why it might be wrong, and joins that to the clinical genetics, structure and druggability evidence for the same receptor, ending in a confirmatory assay you can run.")
-
-
 def _guide(a: Analysis) -> None:
-    with st.expander("What to give, what to expect, and what only this app does", expanded=not a.b.loaded and a.summary is None):
-        st.markdown(NICHE)
+    with st.expander("Input formats, templates and what you get back", expanded=False):
         c1, c2 = st.columns(2)
         with c1:
             st.markdown("**What you give it**")
@@ -44,8 +41,9 @@ def _guide(a: Analysis) -> None:
 
 def render_overview(a: Analysis) -> None:
     b, ctx = a.b, a.ctx
-    _guide(a)
+    render_mission(a)
     example_block(a)
+    _guide(a)
     if ctx.tailored:
         st.caption(f"Tailored to your microenvironment: {ctx.summary()}")
     if not b.loaded and a.summary is None and a.gpcrome is None:
@@ -56,9 +54,10 @@ def render_overview(a: Analysis) -> None:
         st.caption(f"UniProt {b.uid} · {b.length} residues" + (" · G-protein-coupled receptor" if b.is_gpcr else "") + (" · orphan (no confirmed ligand on record)" if a.orphan else ""))
 
     _alias_notice(a)
+    render_dossiers(a)
     render_patterns(a)
     if b.loaded:
-        st.markdown("#### What is happening in the experiment")
+        st.markdown("#### Watch what may be happening")
         _animation(a)
 
     if b.loaded:
@@ -90,7 +89,7 @@ def render_overview(a: Analysis) -> None:
     st.markdown("#### What may happen (ranked hypotheses)")
     if a.hyp_claims:
         st.caption("Ranked by support from documented historical precedents. Each is a hypothesis to test, not a result.")
-        shown = render_claims(a.hyp_claims, b, "hyp", limit=10)
+        shown = render_claims(a.hyp_claims, b, "hyp", limit=5)
         _crosscheck(shown[:1], b)
     elif b.loaded and not a.orphan:
         st.info("The precedent library covers orphan GPCRs. For other proteins the ranked statements above (diseases and defects) are the evidence-based expectations.")
@@ -214,8 +213,12 @@ def _animation(a: Analysis) -> None:
     b, ctx = a.b, a.ctx
     segs = tm_topology(b)
     if not (b.is_gpcr or segs):
+        st.info(f"{b.gene} is not a GPCR, so there is no receptor-activation video for it. The signalling video, orphan analysis and deorphanisation hypotheses apply to GPCRs. "
+                f"Showing its protein architecture and interaction partners instead. To see the GPCR analysis, search a receptor (for example FFAR1) or load the example case.")
+        plot_note("architecture")
         svg(architecture_svg(b))
         if b.partners:
+            plot_note("network")
             svg(interaction_svg(b.gene, b.partners, registry=a.engine.registry))
         return
     cls, src = coupling_info(a)
@@ -236,5 +239,9 @@ def _animation(a: Analysis) -> None:
             sig = f"{r.effect_type} {r.effect:+.2f}" + (f", p = {r.significance:.3g}" if r.significance is not None else "")
     hyp = {"statement": top.text.split(": ", 1)[-1], "support": float(top.tags.get("support", 0))} if top is not None and status == "orphan" else None
     fa = (top.how[0] if top is not None and top.how else "")[:150]
-    svg(signalling_svg(b, segs, tm_motifs(b, segs), segment_stats(b, segs), coupling=cls, coupling_source=src, status=status, ligand_lines=lines, hypothesis=hyp, signal=sig,
-                       context=(ctx.tissue or ctx.disease), first_assay=fa))
+    mots = tm_motifs(b, segs)
+    plot_note("signalling")
+    markup = signalling_svg(b, segs, mots, segment_stats(b, segs), coupling=cls, coupling_source=src, status=status, ligand_lines=lines, hypothesis=hyp, signal=sig,
+                            context=(ctx.tissue or ctx.disease), first_assay=fa)
+    caps = narration(b.gene, status=status, coupling=cls, coupling_source=src, hypothesis=hyp, ligand_lines=lines, motifs=mots, signal=sig, context=(ctx.tissue or ctx.disease), first_assay=fa)
+    render_player(markup, caps)

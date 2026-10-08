@@ -82,6 +82,7 @@ def test_anthropic_adapter_needs_a_key(monkeypatch):
 
 
 def test_critic_benchmark_runs_and_is_consistent():
-    res = evaluate_critic(load_cases())
-    assert res["n"] == 13
+    cases = load_cases()
+    res = evaluate_critic(cases)
+    assert res["n"] == len(cases) - 1          # one case cannot be left out and re-scored (see evaluate_critic)
     assert sum(d["n"] for d in res["by_verdict"].values()) == res["n"]

@@ -14,16 +14,16 @@ DATA_DIR = pathlib.Path(__file__).parent / "data"
 _TISSUE_PATTERNS = {
     "pancreas": r"pancrea|islet|beta cell",
     "adipose": r"adipo|fat tissue|\bfat\b",
-    "gut": r"gut|intestin|colon|bowel|ileum|colitis|crohn",
-    "immune": r"immune|t cell|lymph|macrophage|neutrophil|leukocyte|inflamm",
-    "brain": r"brain|neuro|striat|hypothalam|cortex|cns|habenula",
-    "kidney": r"kidney|renal|nephr",
+    "gut": r"gut|intestin|colon|bowel|ileum|colitis|crohn|enterocyt|goblet|paneth|colonocyt",
+    "immune": r"immune|\bt[ -]?cells?\b|\bcd[348]\b|\bnk\b|\bb[ -]?cells?\b|treg|\bth[0-9]+\b|dendritic|monocyt|myeloid|plasma cell|mast cell|\btam\b|microglia|lymph|macrophag|neutrophil|eosinophil|basophil|leukocyte|inflamm",
+    "brain": r"brain|neuron|neural|neuro(?!phil)|striat|hypothalam|cortex|cns|habenula|astrocyt|oligodendro|microglia",
+    "kidney": r"kidney|renal|nephr|podocyt|tubul",
     "liver": r"liver|hepat",
     "heart": r"heart|cardi|myocard",
-    "vasculature": r"vascul|endotheli|artery|blood vessel",
+    "vasculature": r"vascul|endotheli|artery|blood vessel|pericyt",
     "placenta": r"placent",
     "muscle": r"muscle|myo",
-    "lung": r"lung|pulmon|airway",
+    "lung": r"lung|pulmon|airway|alveol|pneumocyt",
     "endocrine": r"pituitar|endocrine|thyroid|adrenal",
 }
 

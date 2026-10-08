@@ -18,6 +18,7 @@ def render_volcano(df: pd.DataFrame, fc_col: str, p_col: str, registry: dict) ->
     d = d.dropna()
     d["y"] = (-np.log10(d["p"].astype(float).clip(lower=1e-300))).clip(0, 60)
     d["status"] = d["gene"].map(lambda g: registry.get(g, {}).get("status", ""))
+    plot_note("volcano")
     fig = go.Figure()
     other = d[d["status"] == ""]
     fig.add_trace(go.Scattergl(x=other["fc"], y=other["y"], mode="markers", name=f"other genes ({len(other)})", marker=dict(color="#2a4060", size=4, opacity=.55), text=other["gene"], hovertemplate="%{text}<br>log2FC %{x:.2f}<br>-log10 p %{y:.2f}<extra></extra>"))

@@ -8,6 +8,9 @@ import streamlit as st
 
 from ..evidence import Claim, truth_gate
 from ..validation import validate
+from .tables import install as _install_tables
+
+_install_tables()
 
 COLOR = {"holds up": "green", "weakened": "orange", "contested": "red", "unchecked": "gray"}
 KIND = {"data": "", "rule": " · rule applied to data", "inference": " · inference"}
@@ -85,6 +88,10 @@ def claim_card(c: Claim, key: str, bundle=None, how_label: str = "How to go abou
         with st.expander(f"{how_label} ({len(c.how)} step{'s' if len(c.how) != 1 else ''})"):
             for i, h in enumerate(c.how, 1):
                 st.markdown(f"{i}. {h}")
+    ak = c.tags.get("assay")
+    if ak:
+        from ..assays import render_assay
+        render_assay(st, ak)
     with st.popover(f"Proof and ML validation ({len(c.proofs)} source{'s' if len(c.proofs) != 1 else ''})", key=f"pf_{key}") if _popover_has_key() else st.popover(f"Proof and ML validation ({len(c.proofs)})"):
         for p in c.proofs:
             line = f"- **{p.source}**: {p.detail}"
@@ -138,6 +145,10 @@ def data_audit(b) -> None:
     with st.expander("Data audit: what each source returned for this protein"):
         st.caption("Empty rows usually mean a failed fetch, not a negative finding. Sections that depend on them say so instead of guessing.")
         st.dataframe([{"Source": a.name, "Records": a.n, "Note": a.note} for a in b.audit], hide_index=True)
+        se = st.session_state.get("_step_errors") or {}
+        if se:
+            st.warning("Analysis steps that failed on this protein (the rest of the analysis still ran):")
+            st.dataframe([{"Step": k, "Error": v} for k, v in se.items()], hide_index=True)
         if errs:
             st.warning("Fetch problems since the app started:")
             st.dataframe([{"Source": k, "Last error": v} for k, v in errs.items()], hide_index=True)

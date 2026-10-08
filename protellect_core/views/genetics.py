@@ -6,6 +6,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 from ..analysis import genetic_thresholds, rank_variants, variant_plan
+from ..explain import plot_note
 from ..cascade import cascade_html
 from ..context import factor_claims
 from ..network import bars_svg, interaction_svg
@@ -32,6 +33,7 @@ def render_genetics(a: Analysis) -> None:
         counts = pd.Series([v.significance for v in b.variants]).value_counts()
         c1, c2 = st.columns(2)
         with c1:
+            plot_note("clinvar")
             svg(bars_svg(list(counts.index), [int(x) for x in counts.values], "ClinVar entries by classification", f"{len(b.variants)} entries", fmt="{:,.0f}", colors=[{"pathogenic": "#ff2d55", "likely pathogenic": "#ff8c42", "uncertain": "#ffd60a", "conflicting": "#fbbf24", "benign": "#34d399", "likely benign": "#34d399"}.get(k, "#94a3b8") for k in counts.index]))
         stars = pd.Series([v.stars for v in b.plp]).value_counts().sort_index() if b.plp else pd.Series(dtype=int)
         with c2:
@@ -49,7 +51,9 @@ def render_genetics(a: Analysis) -> None:
         pick = st.selectbox("Variant", names, index=idx, key="gen_variant")
         v = ranked[names.index(pick)]
         segs = tm_topology(b)
+        plot_note("topology" if segs else "architecture")
         svg(topology_svg(b, segs, tm_motifs(b, segs), segment_stats(b, segs), v) if segs else architecture_svg(b, v))
+        plot_note("cascade")
         components.html(cascade_html(b, v), height=330, scrolling=False)
         st.caption("Each stage is tagged: recorded (a database record), derived (computed from records), predicted (a model score), expected (the usual consequence of this variant type, not measured here) or untested.")
     else:
@@ -58,6 +62,7 @@ def render_genetics(a: Analysis) -> None:
     st.markdown("#### What it interacts with")
     left, right = st.columns([2, 3])
     with left:
+        plot_note("network")
         svg(interaction_svg(b.gene, b.partners, registry=a.engine.registry))
     with right:
         if b.partners:

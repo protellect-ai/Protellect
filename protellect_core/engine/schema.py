@@ -5,7 +5,7 @@ from dataclasses import dataclass, field, asdict
 from typing import Dict, List, Optional
 
 # Coarse vocabularies. Expand these as the case library grows.
-LIGAND_CLASSES = ("fatty acid", "lipid mediator", "organic acid", "peptide")
+LIGAND_CLASSES = ("fatty acid", "lipid mediator", "organic acid", "peptide", "nucleotide", "ion / proton", "amine")
 COUPLINGS = ("Gq", "Gi", "Gs")
 TISSUE_VOCAB = (
     "pancreas", "adipose", "gut", "immune", "brain", "kidney", "liver",

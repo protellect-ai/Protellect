@@ -6,6 +6,7 @@ import streamlit as st
 
 from .. import adme
 from ..analysis import CITE
+from ..explain import plot_note
 from ..context import factor_claims, medication_claims
 from ..network import bars_svg
 from ..viz import architecture_svg
@@ -37,6 +38,7 @@ def render_hotspots(a: Analysis) -> None:
         render_claims(mine, b, "hmine")
 
     st.markdown("#### Hotspots on the protein")
+    plot_note("architecture")
     svg(architecture_svg(b))
     rows = []
     for h in sorted(b.hotspots, key=lambda h: -h.fold)[:8]:
@@ -83,6 +85,7 @@ def render_hotspots(a: Analysis) -> None:
         f = _faers(pick)
         if f:
             st.markdown(f"openFDA FAERS: **{f['total']:,}** spontaneous reports mention {pick}." if f["total"] else f"openFDA FAERS reports for {pick}:")
+            plot_note("faers")
             svg(bars_svg([t for t, _ in f["top"]], [n for _, n in f["top"]], f"Most-reported reactions for {pick}", "openFDA FAERS spontaneous reports (counts of reports, not rates)", color="#fb7185", fmt="{:,.0f}"))
             st.caption("Spontaneous reports. They show what was reported, not how often it occurs or whether the drug caused it. [openFDA](https://open.fda.gov/apis/drug/event/)")
         else:

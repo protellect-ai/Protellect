@@ -6,6 +6,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 from ..analysis import _same_condition, _systems_in, rank_variants, variant_plan
+from ..explain import plot_note
 from ..adapters import plddt_at
 from ..evidence import Claim, Proof
 from ..network import bars_svg, interaction_svg
@@ -69,6 +70,7 @@ def _detail(a: Analysis, v) -> None:
     cands = b.am.get(v.pos or -1, {})
     if cands:
         st.markdown("**AlphaMissense score for every substitution at this residue**")
+        plot_note("am_residue")
         svg(bars_svg([f"{k}" for k in sorted(cands)], [cands[k]["score"] for k in sorted(cands)], f"AlphaMissense score for each substitution at residue {v.pos}", "above 0.564 = likely pathogenic, below 0.34 = likely benign (Cheng 2023)", fmt="{:.2f}",
                      colors=["#ff2d55" if cands[k]["score"] > 0.564 else "#34d399" if cands[k]["score"] < 0.34 else "#fbbf24" for k in sorted(cands)]))
     with st.expander("How to work this variant, step by step", expanded=True):
@@ -103,9 +105,11 @@ def render_triage(a: Analysis, helpers: dict) -> None:
             for x in b.variants:
                 if x.pos:
                     bur[x.pos] = bur.get(x.pos, 0) + 1
+            plot_note("structure3d")
             components.html(structure_viewer_html(b.pdb, b.variants, 520, v.pos if v else None, segs, amr, bur), height=526, scrolling=False)
         with right:
             st.markdown("#### Interactions")
+            plot_note("network")
             svg(interaction_svg(b.gene, b.partners, registry=a.engine.registry))
             if b.partners:
                 st.markdown(" · ".join(f"[{p.name}]({p.url}) {p.score:.2f}" if p.url.startswith("http") else f"{p.name} {p.score:.2f}" for p in sorted(b.partners, key=lambda p: -p.score)[:10]))
@@ -115,6 +119,7 @@ def render_triage(a: Analysis, helpers: dict) -> None:
             _detail(a, v)
         st.markdown("#### Where the variants sit")
         segs2 = tm_topology(b)
+        plot_note("topology" if segs2 else "architecture")
         svg(topology_svg(b, segs2, tm_motifs(b, segs2), segment_stats(b, segs2), v) if segs2 else architecture_svg(b, v))
         if b.hotspots:
             st.dataframe([{"Residues": f"{h.start}-{h.end}", "Variants": h.count, "Enrichment": f"{h.fold:.1f}x", "Domain": b.domain_at((h.start + h.end) // 2)} for h in sorted(b.hotspots, key=lambda h: -h.fold)], hide_index=True)

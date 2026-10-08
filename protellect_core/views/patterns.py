@@ -5,6 +5,7 @@ import streamlit as st
 
 from ..engine.benchmark import retrodict
 from ..network import bars_svg
+from ..explain import plot_note
 from .common import render_claims, svg
 from .shell import Analysis
 
@@ -46,6 +47,7 @@ def render_patterns(a: Analysis) -> None:
                    f"It was resolved in {r['year']}. This is a test of the model, not a prediction about {r['gene']}.")
         if r["ranked"]:
             cols = ["#34d399" if k == r["truth"] else "#38bdf8" for k, _ in r["ranked"]]
+            plot_note("retrodiction")
             svg(bars_svg([k + ("  ← documented ligand class" if k == r["truth"] else "") for k, _ in r["ranked"]], [v for _, v in r["ranked"]], "Model's ranking of ligand classes (blind)", f"{r['gene']} held out", colors=cols, fmt="{:.2f}"))
             (st.success if r["hit"] else st.warning)(f"The model's first choice was **{r['ranked'][0][0]}**; the documented class is **{r['truth']}**. " + ("Correct." if r["hit"] else f"The documented class ranked #{r.get('rank_of_truth') or 'not at all'}."))
         else:

@@ -11,6 +11,9 @@ SHORT_TEST = {
     "lipid mediator": "Lipid-mediator screen (cAMP / beta-arrestin)",
     "organic acid": "Organic-acid metabolite screen",
     "peptide": "Reverse pharmacology with tissue extracts",
+    "nucleotide": "Nucleotide screen (apyrase-treated medium)",
+    "ion / proton": "pH and ion titration screen",
+    "amine": "Biogenic-amine screen",
 }
 
 

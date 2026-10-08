@@ -5,7 +5,9 @@ import streamlit as st
 
 from ..analysis import CITE, rank_variants, variant_plan
 from ..evidence import Claim, Proof
+from ..assays import assays_for
 from .common import data_audit, render_claims
+from .dossier_view import render_plan
 from .shell import Analysis
 
 
@@ -23,6 +25,11 @@ def _experiment_claims(a: Analysis):
         out.append(Claim(text=f"Functional test for {v.name.split('(')[-1].rstrip(')')[:40] or 'variant'} (residue {v.pos})", kind="rule", score=3 + v.stars,
                          proofs=[Proof("ClinVar", f"{v.significance}, {v.stars} star(s), {v.condition or 'no condition listed'}", v.url or ""), CITE["acmg"]],
                          basis=fn["basis"], tags={"n_supporting": 1, "max_stars": v.stars, "domain": "clinvar"}, how=[fn["do"]]))
+    for c in out:
+        cat = str(c.tags.get("category", "") or c.tags.get("domain", ""))
+        ks = assays_for("variant" if cat == "clinvar" else cat)
+        if ks:
+            c.tags["assay"] = ks[0]
     return sorted(out, key=lambda c: -c.score)
 
 
@@ -35,11 +42,16 @@ def render_experiments(a: Analysis, helpers: dict) -> None:
                 helpers["render_csv_experiments"]()
             except Exception as e:
                 st.warning(f"Could not analyse the uploaded file: {type(e).__name__}: {e}")
-    if not b.loaded and a.summary is None:
-        st.info("Search a protein or upload an experiment to get a ranked list of next experiments.")
+    if not b.loaded and a.summary is None and a.gpcrome is None:
+        st.info("Upload an experiment (a differential table, and optionally an expression matrix), or load the example case, to get a plan of next experiments. You do not need to search a protein.")
         return
-    st.markdown("#### Next experiments, ranked by the evidence that calls for them")
-    st.caption("Each entry names what it would settle and carries the proof behind it. Costs and success probabilities are not shown because no source supports them.")
-    render_claims(_experiment_claims(a), b, "exp", limit=10, empty="The data retrieved do not yet call for a specific experiment. See the data audit for what is missing.", how_label="What to do")
+    planned = render_plan(a)
+    claims = _experiment_claims(a)
+    if claims or b.loaded:
+        st.markdown("#### " + ("More experiments for the protein you searched" if planned else "Next experiments, ranked by the evidence that calls for them"))
+        st.caption("Each entry names what it would settle and carries the proof behind it. Costs and success probabilities are not shown because no source supports them.")
+        render_claims(claims, b, "exp", limit=10, empty="The protein you searched does not yet call for a specific experiment. See the data audit for what is missing.", how_label="What to do")
+    elif not planned:
+        st.info("The experiment you uploaded has no orphan GPCRs and no searched protein, so there is nothing specific to plan from. Check that the receptor list is loaded (Overview, Receptor registry).")
     if b.loaded:
         data_audit(b)

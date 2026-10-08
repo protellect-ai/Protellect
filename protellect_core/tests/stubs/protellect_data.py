@@ -59,12 +59,16 @@ def fetch_clinvar(gene, max_v=150, *a, **k):
         for _ in range(n):
             pos = r.randint(100, 290) if score >= 4 else r.randint(1, L); i += 1
             out.append({"variant_name": f"NM_000546.6(GENE):c.{pos*3}C>T (p.Arg{pos}Trp)", "title": f"p.Arg{pos}Trp", "sig": sig, "review": rev,
-                        "condition": "Li-Fraumeni syndrome" if score >= 4 else "not provided", "start": pos, "position": pos, "score": score,
+                        "condition": "Li-Fraumeni syndrome" if score >= 4 else "not provided", "start": str(pos), "position": pos, "score": score,
                         "url": f"https://www.ncbi.nlm.nih.gov/clinvar/variation/{10000+i}/", "somatic": False})
     return {"variants": out[:max_v if isinstance(max_v, int) else 150]}
 
 @_cached
-def fetch_gnomad(*a, **k): return {"pLI": 0.0, "oe_lof": 0.31, "oe_lof_upper": 0.52, "mis_z": 3.4}
+def fetch_gnomad(*a, **k):
+    import os
+    if os.environ.get("STUB_GNOMAD") == "text":     # what a real API can hand back: numbers as text, None, 'NA'
+        return {"pLI": "NA", "oe_lof": "0.31", "oe_lof_upper": "0.52", "mis_z": "3.4", "variants": {}, "pLI_available": False}
+    return {"pLI": 0.0, "oe_lof": 0.31, "oe_lof_upper": 0.52, "mis_z": 3.4}
 @_cached
 def fetch_string_interactions(*a, **k): return [{"partner": p, "score": s, "url": f"https://string-db.org/network/{p}"} for p, s in
                                                   (("MDM2", .999), ("EP300", .99), ("ATM", .98), ("CHEK2", .97), ("BRCA1", .93), ("CDKN1A", .92))]
