@@ -24,6 +24,33 @@ def secret(name: str):
     return os.environ.get(name)
 
 
+IUPHAR_URL = "https://www.guidetopharmacology.org/DATA/targets_and_families.csv"
+
+
+@st.cache_data(ttl=7 * 86400, show_spinner=False)
+def _fetch_iuphar() -> str:
+    """The full receptor list from the IUPHAR/BPS Guide to PHARMACOLOGY, cached for a week. Raises on failure so a failure is never cached."""
+    import requests
+    from ..engine.registry import convert_iuphar_bytes
+    r = requests.get(IUPHAR_URL, timeout=45, headers={"User-Agent": "Protellect/2.0 (research tool)"})
+    r.raise_for_status()
+    return convert_iuphar_bytes(r.content)
+
+
+def registry_text():
+    """(csv text, label). The user's or the example's registry wins; else the full IUPHAR list; else the small built-in seed, with the reason."""
+    ss = st.session_state
+    if ss.get("hyp_registry_csv"):
+        return ss["hyp_registry_csv"], "uploaded or example registry"
+    try:
+        txt = _fetch_iuphar()
+        ss.pop("_registry_error", None)
+        return txt, "IUPHAR/BPS Guide to PHARMACOLOGY (loaded automatically)"
+    except Exception as e:  # noqa: BLE001
+        ss["_registry_error"] = f"{type(e).__name__}: {e}"[:200]
+        return "", "built-in 14-receptor seed (the full list could not be loaded)"
+
+
 @st.cache_resource(show_spinner=False)
 def _engine_cached(registry_csv: str = "", outcomes_json: str = ""):
     import json
@@ -37,7 +64,15 @@ def _engine_cached(registry_csv: str = "", outcomes_json: str = ""):
 
 def get_engine():
     """The engine. The model retrains instantly whenever outcomes are recorded this session (they are part of the cache key)."""
-    return _engine_cached(st.session_state.get("hyp_registry_csv", ""), st.session_state.get("outcomes_json", ""))
+    txt, label = registry_text()
+    st.session_state["_registry_label"] = label
+    return _engine_cached(txt, st.session_state.get("outcomes_json", ""))
+
+
+def svg(markup: str) -> None:
+    """Inline SVG in the page (no iframe, so the page keeps scrolling normally over it)."""
+    if markup:
+        st.markdown(markup, unsafe_allow_html=True)
 
 
 def claim_card(c: Claim, key: str, bundle=None, how_label: str = "How to go about it") -> None:

@@ -3,13 +3,19 @@ from __future__ import annotations
 
 import streamlit as st
 
-from ..anim import experiment_animation
+import re
+
+from ..network import interaction_svg
+from ..topology import motifs as tm_motifs, segment_stats, topology as tm_topology
+from ..viz import architecture_svg, signalling_svg
 from ..context import disease_context_claims, factor_claims, medication_claims
 from ..engine.llm_debate import PROVIDERS, LLMError, available_providers, debate, fallback_llm
 from ..engine.report import hypotheses_table, markdown_report, results_table
 from ..engine.templates import GENERAL_RULES, SHAPES, template_csv
-from .common import data_audit, render_claims, secret
-from .shell import Analysis
+from .common import data_audit, render_claims, secret, svg
+from .patterns import render_patterns
+from .gpcrome import example_block, render_gpcrome
+from .shell import Analysis, coupling_info
 
 NICHE = ("**What this does that a standard pipeline does not.** A differential-expression or variant pipeline ends at a ranked gene list and pathway enrichment, "
          "and treats a receptor nobody has characterised like any other row. Protellect picks out the **orphan GPCRs** inside your own results, ranks what each one "
@@ -23,13 +29,13 @@ def _guide(a: Analysis) -> None:
         c1, c2 = st.columns(2)
         with c1:
             st.markdown("**What you give it**")
-            st.markdown("- A processed experiment table (one of the three shapes below), **or** a gene symbol in the sidebar.\n- The microenvironment: disease, tissue, model, and any patient context.")
+            st.markdown("- **Your experiment:** a processed table (one of the three shapes below), or a gene symbol in the sidebar.\n- **The microenvironment:** disease, tissue, model, and any patient context.\n- **Optional:** a multi-context expression matrix (cell types or conditions) for the GPCRome analysis.")
             for key, s in SHAPES.items():
                 st.download_button(f"Template: {s['label']}", template_csv(key), file_name=f"protellect_template_{key}.csv", key=f"ov_tpl_{key}")
             st.caption(" ".join(GENERAL_RULES[:3]))
         with c2:
             st.markdown("**What you get back**")
-            st.markdown("- The orphan GPCRs in your data, each with ranked hypotheses (ligand class, signalling, disease analogy) and the assay that would test them.\n"
+            st.markdown("- The orphan GPCRs in your data, each with ranked hypotheses (ligand class, signalling, disease analogy) and the assay that would test them.\n- With a matrix: which cell types each GPCR belongs to and what unknown ones probably couple to, after the method has tested itself on your own data.\n"
                         "- Whether to pursue the target and how, from genetics and ClinVar, with the components of the score shown.\n"
                         "- Associated diseases, the defects they involve, and what may happen, all with proof.\n"
                         "- A banner saying what to prioritise or deprioritise and which tab to open next.")
@@ -39,29 +45,21 @@ def _guide(a: Analysis) -> None:
 def render_overview(a: Analysis) -> None:
     b, ctx = a.b, a.ctx
     _guide(a)
+    example_block(a)
     if ctx.tailored:
         st.caption(f"Tailored to your microenvironment: {ctx.summary()}")
-    if not b.loaded and a.summary is None:
-        st.info("Search a protein in the sidebar or upload an experiment to begin. The guide above explains what to provide.")
+    if not b.loaded and a.summary is None and a.gpcrome is None:
+        st.info("Search a protein in the sidebar, upload an experiment, or load the example case above to begin.")
         return
     if b.loaded:
         st.markdown(f"### {b.gene} · {b.name}")
         st.caption(f"UniProt {b.uid} · {b.length} residues" + (" · G-protein-coupled receptor" if b.is_gpcr else "") + (" · orphan (no confirmed ligand on record)" if a.orphan else ""))
 
-    # --- animation, driven by the data and clearly labelling anything predicted
-    top = next((c for c in a.hyp_claims if c.tags.get("category") == "ligand-class"), None)
-    sig = next((c for c in a.hyp_claims if c.tags.get("category") == "signaling"), None)
-    lig = top.text.split("a ")[-1].split("-class")[0] if top and "-class" in top.text else ""
-    rec = next((k for k in a.couplings if isinstance(k, str) and k[:1] == "G"), "")
-    cpl = rec or (sig.text.split("couples to ")[-1].split(" ")[0] if sig and "couples to" in sig.text else "")
-    sigtxt = ""
-    if a.summary is not None and b.loaded:
-        r = next((r for r in a.summary.results if r.gene.upper() == b.gene.upper()), None)
-        if r is not None and r.effect == r.effect:
-            sigtxt = f"{r.effect_type} {r.effect:+.2f}"
-    assay = (top.how[0][:70] if top and top.how else "")
-    st.markdown("#### What is happening in the experiment")
-    st.markdown(experiment_animation(b, ctx, lig, cpl, sigtxt, assay, bool(rec)), unsafe_allow_html=True)
+    _alias_notice(a)
+    render_patterns(a)
+    if b.loaded:
+        st.markdown("#### What is happening in the experiment")
+        _animation(a)
 
     if b.loaded:
         st.markdown("#### Pursue this target?")
@@ -88,6 +86,7 @@ def render_overview(a: Analysis) -> None:
         st.markdown("#### Defects it may cause")
         render_claims(a.defects, b, "def", empty="No pathogenic or likely-pathogenic germline variants were retrieved, so no defect pattern can be stated.")
 
+    render_gpcrome(a)
     st.markdown("#### What may happen (ranked hypotheses)")
     if a.hyp_claims:
         st.caption("Ranked by support from documented historical precedents. Each is a hypothesis to test, not a result.")
@@ -144,9 +143,12 @@ def _crosscheck(claims, b) -> None:
 def _registry(a: Analysis) -> None:
     from ..engine.registry import convert_iuphar_bytes
     n = sum(v["status"] == "orphan" for v in a.engine.registry.values())
-    with st.expander(f"Receptor registry: {n} orphan GPCRs recognised"):
-        if n < 50:
-            st.warning("This is only the small seed list. Load the full list so every orphan GPCR in your data is recognised.")
+    with st.expander(f"Receptor registry: {len(a.engine.registry)} GPCRs, {n} orphan ({st.session_state.get('_registry_label', '')})"):
+        err = st.session_state.get("_registry_error")
+        if err:
+            st.warning(f"The full list could not be loaded automatically ({err}). Upload the file below, or check the data sources panel.")
+        elif len(a.engine.registry) < 100:
+            st.warning("Only a small list is loaded. Upload the Guide to Pharmacology file so every orphan GPCR in your data is recognised.")
         st.markdown("Download the Guide to Pharmacology **targets and families** CSV (guidetopharmacology.org, Downloads) and upload it here.")
         up = st.file_uploader("targets-and-families CSV", type=["csv", "txt"], key="ov_reg_up")
         if up is not None:
@@ -192,3 +194,47 @@ def _outcomes(a: Analysis) -> None:
                 st.rerun()
         if recs:
             st.download_button("Download outcomes.json", json.dumps({"outcomes": recs}, indent=1), "outcomes.json", "application/json", key="out_dl")
+
+
+def _alias_notice(a: Analysis) -> None:
+    b = a.b
+    q = (b.query or "").strip()
+    norm = lambda s: re.sub(r"[^A-Z0-9]", "", str(s).upper())
+    if not b.loaded or not q or norm(q) in (norm(b.gene), norm(b.uid)):
+        return
+    reg_alias = a.engine.registry.get(b.gene.upper(), {}).get("aliases", [])
+    others = [x for x in dict.fromkeys(list(b.aliases) + list(reg_alias)) if norm(x) != norm(q) and len(x) < 40][:6]
+    is_alias = any(norm(x) == norm(q) for x in list(b.aliases) + list(reg_alias))
+    msg = (f"You searched **{q}**. That is a recorded alias of **{b.gene}** ({b.name}), whose official symbol is **{b.gene}**, so everything below is about {b.gene}." if is_alias else
+           f"You searched **{q}**. The closest match is **{b.gene}** ({b.name}). If that is not the receptor you meant, search its exact symbol.")
+    st.info(msg + (f" Other names: {', '.join(others)}." if others else ""))
+
+
+def _animation(a: Analysis) -> None:
+    b, ctx = a.b, a.ctx
+    segs = tm_topology(b)
+    if not (b.is_gpcr or segs):
+        svg(architecture_svg(b))
+        if b.partners:
+            svg(interaction_svg(b.gene, b.partners, registry=a.engine.registry))
+        return
+    cls, src = coupling_info(a)
+    stt = a.engine.registry.get(b.gene.upper(), {}).get("status", "")
+    status = {"orphan": "orphan", "characterized": "characterised"}.get(stt, "unknown")
+    top = next((c for c in a.hyp_claims if c.tags.get("category") == "ligand-class" and c.text.split(":")[0].upper() == b.gene.upper()), None)
+    lines = []
+    if b.drugs:
+        lines.append(f"Recorded drug-gene interactions: {len(b.drugs)} (e.g. " + ", ".join(f"{d.name}{' · ' + d.kind if d.kind else ''}" for d in b.drugs[:3]) + ").")
+    elif status == "characterised":
+        lines.append("No drug or ligand records were returned by the sources queried; that does not mean none exist.")
+    if status == "orphan" and top is not None:
+        lines.append(f"Precedent model: {top.text.split(': ', 1)[-1]} (support {top.tags.get('support', 0):.2f}).")
+    sig = ""
+    if a.summary is not None:
+        r = next((r for r in a.summary.results if r.gene.upper() == b.gene.upper()), None)
+        if r is not None and r.effect == r.effect:
+            sig = f"{r.effect_type} {r.effect:+.2f}" + (f", p = {r.significance:.3g}" if r.significance is not None else "")
+    hyp = {"statement": top.text.split(": ", 1)[-1], "support": float(top.tags.get("support", 0))} if top is not None and status == "orphan" else None
+    fa = (top.how[0] if top is not None and top.how else "")[:150]
+    svg(signalling_svg(b, segs, tm_motifs(b, segs), segment_stats(b, segs), coupling=cls, coupling_source=src, status=status, ligand_lines=lines, hypothesis=hyp, signal=sig,
+                       context=(ctx.tissue or ctx.disease), first_assay=fa))

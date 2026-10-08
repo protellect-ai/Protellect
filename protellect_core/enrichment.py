@@ -84,6 +84,7 @@ class EnrichmentResult:
     coupling_source: str
     ranked: pd.Series
     note: str = ""
+    curves: dict = None
 
 
 def gsea_preranked(scores: pd.Series, coupling: Dict[str, str], coupling_source: str = "", *, metric: str = "log2fc", n_perm: int = 5000, seed: int = 0,
@@ -101,7 +102,7 @@ def gsea_preranked(scores: pd.Series, coupling: Dict[str, str], coupling_source:
         empty.note = "All ranking values are zero."
         return empty
     rng = np.random.default_rng(seed)
-    rows = []
+    rows, curves = [], {}
     for cls in CLASSES:
         members = [g for g in genes if coupling.get(g) == cls]
         k = len(members)
@@ -109,6 +110,8 @@ def gsea_preranked(scores: pd.Series, coupling: Dict[str, str], coupling_source:
             continue
         hit = np.array([coupling.get(g) == cls for g in genes])
         es, peak = _es(hit, w)
+        pos_w = np.where(hit, w, 0.0)
+        curves[cls] = {"run": np.cumsum(pos_w / pos_w.sum() - (~hit) / (n - k)).tolist(), "hits": [int(i) for i in np.where(hit)[0]], "peak": int(peak), "genes": [genes[i] for i in np.where(hit)[0]]}
         idx = np.argsort(rng.random((n_perm, n)), axis=1)[:, :k]
         h = np.zeros((n_perm, n), bool)
         np.put_along_axis(h, idx, True, axis=1)
@@ -130,7 +133,7 @@ def gsea_preranked(scores: pd.Series, coupling: Dict[str, str], coupling_source:
     t["FDR"] = _bh(t["p"].to_numpy(float))
     t["Direction"] = np.where(t["NES"] >= 0, "up in foreground", "down in foreground")
     t["Significant"] = np.where((t["FDR"] <= 0.10) & t["NES"].notna(), "yes", "no")
-    return EnrichmentResult(t.sort_values("p").reset_index(drop=True), n, metric, n_perm, coupling_source, s)
+    return EnrichmentResult(t.sort_values("p").reset_index(drop=True), n, metric, n_perm, coupling_source, s, curves=curves)
 
 
 def enrichment_claims(res: EnrichmentResult, contrast: str, seed_table: bool) -> List[Claim]:

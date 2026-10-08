@@ -8,6 +8,8 @@ STEPS = [
     ("Give it an experiment or a protein", "Upload a processed table (expression, variants or screen hits) or search a gene. Unknown receptors in your data are found automatically."),
     ("Read the banner", "The banner at the top tells you, from your data, what to prioritise, what to deprioritise, what is missing, and which tab to open next."),
     ("Overview", "A technical animation of your experiment, whether to pursue the target and how, its associated diseases, and a ranked list of what may happen, each with proof."),
+    ("GPCRome analysis", "Add an expression matrix (cell types or conditions) to see which cell type each GPCR belongs to, what unknown receptors probably couple to, which G-protein class dominates the receptors that change in a cell state, what each receptor tracks (exhaustion, YAP/TAZ, hypoxia), and which ligand producers and receptors line up. It tests itself on your own data first."),
+    ("Test it", "Press 'Load the example case' in the Overview: a synthetic dataset with known answers planted in it, so you can check the tool before trusting it on your data."),
     ("Triage", "The AlphaFold structure and the interaction network side by side. Pick any variant and it is shown on the structure, linked to disease and tissue, with a step-by-step plan."),
     ("Druggable hotspots", "Where the protein can be drugged, known drugs, pharmacokinetics and ADMET screens from real compound records, adverse-event reports, and ranked what-if scenarios."),
     ("Genetics", "The thresholds the gene meets or misses, the variant cascade (each stage tagged recorded, predicted, expected or untested), and its interactions."),
@@ -21,5 +23,9 @@ def tutorial_dialog() -> None:
     st.markdown("**Evidence-first orphan-GPCR triage.** Nothing is shown as a finding unless it carries proof.")
     for i, (t, body) in enumerate(STEPS, 1):
         st.markdown(f"**{i}. {t}**  \n{body}")
+    from .. import example_case
+    if not st.session_state.get("example_loaded"):
+        if st.button("Load the example case and show me", key="tut_ex", on_click=example_case.load_into_session, args=(st.session_state,)):
+            st.rerun()
     if st.button("Got it", type="primary", key="tut_ok"):
         st.rerun()

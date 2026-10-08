@@ -79,42 +79,47 @@ def fetch_live_annotation(gene: str) -> Optional[dict]:
 
 
 def import_iuphar_csv(src_csv: str, out_csv: str, orphan_keyword: str = "orphan") -> int:
-    """Build a registry from a Guide to Pharmacology targets-and-families CSV you download yourself.
-
-    Assumes the file has columns for target Type, Family name and HGNC symbol (matched
-    case-insensitively). Rows whose Type contains 'gpcr' are kept; a GPCR is 'orphan' when its
-    family name contains `orphan_keyword`. CHECK THE OUTPUT: this was written against the expected
-    file layout and tested only on a synthetic file, not the live download.
-    """
-    with open(src_csv, encoding="utf-8", errors="replace") as fh:
-        skip = 1 if fh.readline().startswith("#") else 0
-    df = pd.read_csv(src_csv, skiprows=skip, dtype=str).fillna("")
+    """Guide to Pharmacology targets-and-families file -> registry CSV (gene, status, family, aliases, source, note). Returns the number of GPCRs.
+    The first line holds the database version (quoted or not), so the header row is found by looking for it, not by position."""
+    import re
+    with open(src_csv, encoding="utf-8-sig", errors="replace") as fh:
+        head = [fh.readline() for _ in range(6)]
+    skip = next((n for n, l in enumerate(head) if "family name" in l.lower() and "hgnc symbol" in l.lower()), None)
+    if skip is None:
+        raise ValueError("Could not find the header row (needs 'Family name' and 'HGNC symbol'). Is this the targets-and-families file?")
+    df = pd.read_csv(src_csv, skiprows=skip, dtype=str, encoding="utf-8-sig", encoding_errors="replace").fillna("")
     lc = {c.strip().lower(): c for c in df.columns}
-    need = {"type": None, "family name": None, "hgnc symbol": None}
-    for k in need:
+    for k in ("type", "family name", "hgnc symbol"):
         if k not in lc:
             raise ValueError(f"Expected a {k!r} column; found {list(df.columns)}")
-        need[k] = lc[k]
-    g = df[df[need["type"]].str.lower().str.contains("gpcr")]
-    g = g[g[need["hgnc symbol"]].str.strip() != ""]
+    g = df[df[lc["type"]].str.lower().str.contains("gpcr")]
+    g = g[g[lc["hgnc symbol"]].str.strip() != ""]
+    strip = lambda x: re.sub(r"<[^>]+>", "", x)
+    syn = g[lc["synonyms"]] if "synonyms" in lc else pd.Series("", index=g.index)
+    abbr = g[lc["target abbreviated name"]] if "target abbreviated name" in lc else pd.Series("", index=g.index)
     out = pd.DataFrame({
-        "gene": g[need["hgnc symbol"]].str.strip().str.upper(),
-        "status": g[need["family name"]].str.lower().str.contains(orphan_keyword).map({True: "orphan", False: "characterized"}),
+        "gene": g[lc["hgnc symbol"]].str.strip().str.upper(),
+        "status": g[lc["family name"]].str.lower().str.contains(orphan_keyword).map({True: "orphan", False: "characterized"}),
+        "family": g[lc["family name"]],
+        "aliases": [strip(f"{a}|{s_}").strip("|") for a, s_ in zip(abbr, syn)],
         "source": "iuphar-import",
-        "note": g[need["family name"]],
-    }).drop_duplicates("gene")
+        "note": g[lc["family name"]],
+    })
+    out = out.sort_values("status").drop_duplicates("gene")        # a target listed in several families: an orphan listing wins only if it is the only one
     out.to_csv(out_csv, index=False)
     return len(out)
 
 
 def load_registry_text(csv_text: str) -> Dict[str, dict]:
-    """Registry from CSV text (columns: gene, status, note)."""
+    """Registry from CSV text (columns: gene, status; optional: family, aliases, note)."""
     import io
     df = pd.read_csv(io.StringIO(csv_text), dtype=str).fillna("")
     if not {"gene", "status"} <= set(df.columns):
         raise ValueError("Registry CSV needs 'gene' and 'status' columns.")
-    return {g.strip().upper(): {"status": s.strip().lower(), "note": n}
-            for g, s, n in zip(df["gene"], df["status"], df.get("note", [""] * len(df)))}
+    n = len(df)
+    col = lambda c: list(df[c]) if c in df.columns else [""] * n
+    return {g.strip().upper(): {"status": s_.strip().lower(), "note": nt, "family": fam, "aliases": [a for a in str(al).split("|") if a.strip()]}
+            for g, s_, nt, fam, al in zip(df["gene"], df["status"], col("note"), col("family"), col("aliases"))}
 
 
 def convert_iuphar_bytes(data: bytes) -> str:

@@ -30,8 +30,13 @@ def _points(variants: Iterable[Variant], limit: int = 150) -> dict:
     return pts
 
 
-def structure_viewer_html(pdb_text: str, variants: Iterable[Variant], height: int = 520, focus: Optional[int] = None) -> str:
+def structure_viewer_html(pdb_text: str, variants: Iterable[Variant], height: int = 520, focus: Optional[int] = None, segments: Optional[list] = None,
+                          am_by_res: Optional[dict] = None, burden: Optional[dict] = None) -> str:
+    variants = list(variants)
     pp = json.dumps(_points(variants))
+    seg_js = json.dumps([{"name": x.name, "kind": x.kind, "start": x.start, "end": x.end} for x in (segments or [])])
+    am_js = json.dumps({str(k): round(float(v), 3) for k, v in (am_by_res or {}).items()})
+    bur_js = json.dumps({str(k): int(v) for k, v in (burden or {}).items()})
     pdb_js = json.dumps(pdb_text or "")
     focus_js = json.dumps(int(focus) if focus else None)
     colors = json.dumps(RANK_COLOR)
@@ -50,14 +55,12 @@ body{{display:flex;flex-direction:column}}
 #leg{{position:absolute;bottom:34px;left:7px;z-index:4;background:rgba(4,8,15,.9);border:1px solid #0c2040;border-radius:8px;padding:6px 9px;font-size:10px;color:#9ab}}
 .ld{{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}}</style></head><body>
 <div id="ctrl"><button class="btn on" data-s="cartoon">Ribbon</button><button class="btn" data-s="surface">Surface</button>
-<button class="btn" id="spin">Spin</button><button class="btn" id="reset">Reset</button><button class="btn on" id="tv">Variants</button></div>
+<span style="color:#6b8aa3;font-size:11px;align-self:center;margin-left:6px">colour by</span><button class="btn on" data-c="plddt">Confidence</button><button class="btn" data-c="topo" id="c_topo">Topology</button><button class="btn" data-c="am" id="c_am">AlphaMissense</button><button class="btn" data-c="bur" id="c_bur">Variant burden</button><button class="btn" id="spin">Spin</button><button class="btn" id="reset">Reset</button><button class="btn on" id="tv">Variants</button></div>
 <div id="wrap"><div id="v"></div><div id="guard"><span>Click to interact. Until then the page scrolls normally.</span></div>
 <div id="panel"><h3 id="pt"></h3><div id="pc"></div></div>
-<div id="leg"><div><i class="ld" style="background:#1565C0"></i>pLDDT &ge; 90</div><div><i class="ld" style="background:#29B6F6"></i>70-90</div>
-<div><i class="ld" style="background:#FDD835"></i>50-70</div><div><i class="ld" style="background:#FF7043"></i>&lt; 50</div>
-<div><i class="ld" style="background:#ff2d55"></i>pathogenic &nbsp;<i class="ld" style="background:#ff8c42"></i>likely &nbsp;<i class="ld" style="background:#ffd60a"></i>VUS</div></div></div>
+<div id="leg"><div id="legtxt"></div><div style="margin-top:4px"><i class="ld" style="background:#ff2d55"></i>pathogenic &nbsp;<i class="ld" style="background:#ff8c42"></i>likely &nbsp;<i class="ld" style="background:#ffd60a"></i>VUS (spheres)</div></div></div>
 <script>
-const PP={pp},PDB={pdb_js},FOCUS={focus_js},COL={colors};
+const PP={pp},PDB={pdb_js},FOCUS={focus_js},COL={colors},SEG={seg_js},AMR={am_js},BUR={bur_js};
 const wrap=document.getElementById('wrap'),guard=document.getElementById('guard'),box=document.getElementById('v');
 function showGuard(){{guard.style.display='flex'}} function hideGuard(){{guard.style.display='none'}}
 guard.addEventListener('click',hideGuard);wrap.addEventListener('mouseleave',showGuard);
@@ -68,20 +71,33 @@ else if(!PDB||PDB.length<100){{fail('No AlphaFold structure is loaded for this p
 else{{
 const v=$3Dmol.createViewer(box,{{backgroundColor:'#020617'}});v.addModel(PDB,'pdb');
 let style='cartoon',showV=true,spinning=false;
-const cf=a=>a.b>=90?'#1565C0':a.b>=70?'#29B6F6':a.b>=50?'#FDD835':'#FF7043';
+let cmode='plddt';
+const TMC=['#38bdf8','#818cf8','#2dd4bf','#c084fc','#60a5fa','#f59e0b','#34d399'];
+const segOf=r=>{{for(const s of SEG){{if(r>=s.start&&r<=s.end)return s}}return null}};
+const mixc=(a,b,t)=>{{t=Math.max(0,Math.min(1,t));const p=x=>[1,3,5].map(i=>parseInt(x.substr(i,2),16));const A=p(a),B=p(b);return '#'+A.map((v,i)=>Math.round(v+(B[i]-v)*t).toString(16).padStart(2,'0')).join('')}};
+const CF={{plddt:a=>a.b>=90?'#1565C0':a.b>=70?'#29B6F6':a.b>=50?'#FDD835':'#FF7043',
+ topo:a=>{{const s=segOf(a.resi);if(!s)return '#475569';return s.kind==='TM'?TMC[(parseInt(s.name.slice(2))-1)%7]:s.kind==='ECL'?'#cbd5e1':s.kind==='ICL'?'#64748b':'#475569'}},
+ am:a=>{{const v=AMR[String(a.resi)];return v===undefined?'#334155':mixc('#1d4e89','#ff2d55',(v-0.2)/0.7)}},
+ bur:a=>{{const n=BUR[String(a.resi)]||0;return n===0?'#16365c':mixc('#fbbf24','#ff2d55',Math.min(1,(n-1)/4))}}}};
+const cf=a=>CF[cmode](a);
+const LEG={{plddt:'pLDDT: &ge;90 dark blue, 70-90 light blue, 50-70 yellow, &lt;50 orange',topo:'TM1-TM7 each a colour; loops grey; termini dark',am:'mean-of-max AlphaMissense per residue: blue (benign) to red (pathogenic)',bur:'ClinVar variants per residue: dark = none, yellow to red = more'}};
+function legend(){{document.getElementById('legtxt').innerHTML=LEG[cmode]}}
 function paint(){{v.removeAllSurfaces();v.removeAllLabels();
  if(style==='surface'){{v.setStyle({{}},{{cartoon:{{colorfunc:cf,opacity:.5}}}});v.addSurface($3Dmol.SurfaceType.VDW,{{colorfunc:cf,opacity:.7}})}}
  else v.setStyle({{}},{{cartoon:{{colorfunc:cf,thickness:.42}}}});
  if(showV)Object.keys(PP).forEach(p=>{{const i=PP[p];v.addStyle({{resi:+p}},{{sphere:{{color:COL[i.rank]||'#fff',radius:.9}}}})}});
+ if(cmode==='topo')SEG.filter(s=>s.kind==='TM').forEach(s=>v.addLabel(s.name,{{fontSize:12,backgroundColor:'#000',backgroundOpacity:.7,fontColor:'#fff'}},{{resi:Math.round((s.start+s.end)/2),atom:'CA'}}));
  if(FOCUS){{v.addStyle({{resi:FOCUS}},{{stick:{{color:'#ffffff',radius:.35}},sphere:{{color:'#ffffff',radius:1.5,opacity:.55}}}});
   v.addLabel('residue '+FOCUS,{{fontSize:12,backgroundColor:'#000',backgroundOpacity:.75,fontColor:'#fff'}},{{resi:FOCUS,atom:'CA'}})}}
- v.render()}}
+ legend();v.render()}}
 paint();if(FOCUS)v.zoomTo({{resi:FOCUS}},600);else v.zoomTo();v.render();
 v.setClickable({{}},true,function(atom){{const i=PP[String(atom.resi)];let h='<div class="r"><span>Residue</span><b>'+(atom.resn||'')+' '+atom.resi+'</b></div><div class="r"><span>pLDDT</span><b>'+(atom.b||0).toFixed(0)+'</b></div>';
  if(i){{h+='<div class="r"><span>Class</span><b>'+i.sig+'</b></div>';if(i.am!==null)h+='<div class="r"><span>AlphaMissense</span><b>'+i.am+'</b></div>';
   if(i.cond)h+='<div style="margin-top:4px;color:#9ab">'+i.cond+'</div>';if(i.url)h+='<a href="'+i.url+'" target="_blank">ClinVar record</a>'}}
  document.getElementById('pt').textContent=(atom.resn||'')+atom.resi;document.getElementById('pc').innerHTML=h;document.getElementById('panel').style.display='block'}});
 document.querySelectorAll('.btn[data-s]').forEach(b=>b.addEventListener('click',()=>{{document.querySelectorAll('.btn[data-s]').forEach(x=>x.classList.remove('on'));b.classList.add('on');style=b.dataset.s;paint()}}));
+document.querySelectorAll('.btn[data-c]').forEach(b=>b.addEventListener('click',()=>{{document.querySelectorAll('.btn[data-c]').forEach(x=>x.classList.remove('on'));b.classList.add('on');cmode=b.dataset.c;paint()}}));
+if(!SEG.length)document.getElementById('c_topo').style.display='none';if(!Object.keys(AMR).length)document.getElementById('c_am').style.display='none';if(!Object.keys(BUR).length)document.getElementById('c_bur').style.display='none';
 document.getElementById('spin').addEventListener('click',()=>{{spinning=!spinning;v.spin(spinning?'y':false,.6)}});
 document.getElementById('reset').addEventListener('click',()=>{{v.zoomTo();v.render()}});
 document.getElementById('tv').addEventListener('click',e=>{{showV=!showV;e.target.classList.toggle('on',showV);paint()}});

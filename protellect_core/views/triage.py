@@ -8,9 +8,11 @@ import streamlit.components.v1 as components
 from ..analysis import _same_condition, _systems_in, rank_variants, variant_plan
 from ..adapters import plddt_at
 from ..evidence import Claim, Proof
-from ..network import interaction_svg, track_svg
+from ..network import bars_svg, interaction_svg
+from ..topology import motifs as tm_motifs, segment_stats, topology as tm_topology
+from ..viz import architecture_svg, topology_svg
 from ..viewer import structure_viewer_html
-from .common import data_audit, render_claims
+from .common import data_audit, render_claims, svg
 from .shell import Analysis
 
 CLASSES = ["pathogenic", "likely pathogenic", "conflicting", "uncertain", "likely benign", "benign", "other"]
@@ -67,7 +69,8 @@ def _detail(a: Analysis, v) -> None:
     cands = b.am.get(v.pos or -1, {})
     if cands:
         st.markdown("**AlphaMissense score for every substitution at this residue**")
-        st.bar_chart(pd.DataFrame({"score": {k: d["score"] for k, d in sorted(cands.items())}}))
+        svg(bars_svg([f"{k}" for k in sorted(cands)], [cands[k]["score"] for k in sorted(cands)], f"AlphaMissense score for each substitution at residue {v.pos}", "above 0.564 = likely pathogenic, below 0.34 = likely benign (Cheng 2023)", fmt="{:.2f}",
+                     colors=["#ff2d55" if cands[k]["score"] > 0.564 else "#34d399" if cands[k]["score"] < 0.34 else "#fbbf24" for k in sorted(cands)]))
     with st.expander("How to work this variant, step by step", expanded=True):
         for i, s in enumerate(variant_plan(v, b), 1):
             st.markdown(f"**{i}. {s['step']}.** {s['do']}  \n_Why:_ {s['basis']}" + (f" [source]({s['url']})" if s["url"].startswith("http") else ""))
@@ -94,18 +97,25 @@ def render_triage(a: Analysis, helpers: dict) -> None:
         left, right = st.columns([3, 2])
         with left:
             st.markdown("#### AlphaFold structure" + (f" · residue {v.pos}" if v else ""))
-            components.html(structure_viewer_html(b.pdb, b.variants, 520, v.pos if v else None), height=526, scrolling=False)
+            segs = tm_topology(b)
+            amr = {p: max(d["score"] for d in dd.values()) for p, dd in b.am.items() if dd}
+            bur = {}
+            for x in b.variants:
+                if x.pos:
+                    bur[x.pos] = bur.get(x.pos, 0) + 1
+            components.html(structure_viewer_html(b.pdb, b.variants, 520, v.pos if v else None, segs, amr, bur), height=526, scrolling=False)
         with right:
             st.markdown("#### Interactions")
-            st.markdown(interaction_svg(b.gene, b.partners), unsafe_allow_html=True)
+            svg(interaction_svg(b.gene, b.partners, registry=a.engine.registry))
             if b.partners:
                 st.markdown(" · ".join(f"[{p.name}]({p.url}) {p.score:.2f}" if p.url.startswith("http") else f"{p.name} {p.score:.2f}" for p in sorted(b.partners, key=lambda p: -p.score)[:10]))
             st.caption("Edge width is the STRING combined score. Hover a node for the exact value.")
     with nav:
         if v:
             _detail(a, v)
-        st.markdown("#### Where the variants sit along the protein")
-        st.markdown(track_svg(b), unsafe_allow_html=True)
+        st.markdown("#### Where the variants sit")
+        segs2 = tm_topology(b)
+        svg(topology_svg(b, segs2, tm_motifs(b, segs2), segment_stats(b, segs2), v) if segs2 else architecture_svg(b, v))
         if b.hotspots:
             st.dataframe([{"Residues": f"{h.start}-{h.end}", "Variants": h.count, "Enrichment": f"{h.fold:.1f}x", "Domain": b.domain_at((h.start + h.end) // 2)} for h in sorted(b.hotspots, key=lambda h: -h.fold)], hide_index=True)
         if helpers.get("landscape"):

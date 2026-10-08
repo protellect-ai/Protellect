@@ -139,11 +139,14 @@ def test_example_feeds_the_hypothesis_engine_in_the_same_window():
 def test_open_in_every_tab_uses_the_apps_own_search_hook():
     at = app_empty()
     next(b for b in at.button if b.key == "ex_load").click().run()
-    pick = next(x for x in at.selectbox if x.key == "gp_pick")
-    pick.set_value("GPR87").run()
+    next(x for x in at.selectbox if x.key == "cand_pick").set_value("GPR87").run()               # the default view is Candidates
+    next(b for b in at.button if b.key == "cand_open").click().run()
+    assert not at.exception and at.session_state["_pending_search_query"] == "GPR87"          # the key app.py pops to fill the search box and run the analysis
+    at.session_state["_pending_search_query"] = ""
+    next(r for r in at.radio if r.key == "gp_view").set_value("Signalling and specificity").run()
+    next(x for x in at.selectbox if x.key == "gp_pick").set_value("GPR65").run()
     next(b for b in at.button if b.key == "gp_open").click().run()
-    assert not at.exception
-    assert at.session_state["_pending_search_query"] == "GPR87"                   # the key app.py pops to fill the search box and run the analysis
+    assert not at.exception and at.session_state["_pending_search_query"] == "GPR65"
 
 
 def test_clearing_the_example_resets_everything():

@@ -5,7 +5,8 @@ import pandas as pd
 import streamlit as st
 
 from ..analysis import _systems_in
-from .common import data_audit, render_claims
+from ..network import bars_svg
+from .common import data_audit, render_claims, svg
 from .shell import Analysis
 
 
@@ -16,7 +17,7 @@ def render_casestudy(a: Analysis, ncbi: dict) -> None:
         return
     st.markdown("#### Body systems involved")
     if a.systems:
-        st.bar_chart(pd.DataFrame({"evidence items": {s.tags["system"]: s.tags["n_supporting"] for s in a.systems}}))
+        svg(bars_svg([s.tags["system"] for s in a.systems], [s.tags["n_supporting"] for s in a.systems], "Evidence items per organ system", "tissue statements plus linked diseases", fmt="{:g}"))
         st.caption("Evidence items = tissue statements plus linked diseases. Systems are assigned by keyword match, and each row shows the rule and its source.")
         render_claims(a.systems, b, "sys")
     else:

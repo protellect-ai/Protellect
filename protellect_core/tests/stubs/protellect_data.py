@@ -19,7 +19,11 @@ _UNI = {
                   tissue="Expressed in pancreatic islets (beta cells) and brain.", diseases=[]),
 }
 
+ALIAS = {"GPR40": "FFAR1", "GPR-40": "FFAR1"}
+
+
 def _entry(gene):
+    gene = ALIAS.get(str(gene).upper(), gene)
     u = _UNI.get(gene.upper())
     if not u: return {}
     comments = [{"commentType": "TISSUE SPECIFICITY", "texts": [{"value": u["tissue"]}]},
@@ -27,11 +31,18 @@ def _entry(gene):
     for n, ac, mim, inh in u["diseases"]:
         comments.append({"commentType": "DISEASE", "disease": {"diseaseId": n, "diseaseAcronym": ac, "description": f"{n}. {inh}".strip(),
                          "diseaseCrossReference": {"database": "MIM", "id": mim}}, "note": {"texts": [{"value": inh}]}})
-    feats = [{"type": "Domain", "description": "Transmembrane helix 6" if u["gpcr"] else "p53 DNA-binding", "location": {"start": {"value": 102}, "end": {"value": 292}}}]
+    feats = [{"type": "Domain", "description": "p53 DNA-binding" if not u["gpcr"] else "7TM domain", "location": {"start": {"value": 102 if not u["gpcr"] else 20}, "end": {"value": 292 if not u["gpcr"] else 277}}}]
+    seq = list("".join(random.Random(1).choice(_AA) for _ in range(u["length"])))
+    if u["gpcr"]:
+        tms = [(20, 42), (55, 77), (90, 113), (135, 156), (175, 198), (220, 243), (255, 277)]
+        for n, (a, b) in enumerate(tms, 1):
+            feats.append({"type": "Transmembrane", "description": f"Helical; Name={n}", "location": {"start": {"value": a}, "end": {"value": b}}})
+        seq[111:114] = list("DRY"); seq[231:235] = list("CWLP"); seq[262:267] = list("NPLVY")      # planted class A motifs (stand-in data only)
+    u["_seq"] = "".join(seq)
     return {"organism": {"scientificName": "Homo sapiens", "commonName": "Human", "taxonId": 9606}, "primaryAccession": u["acc"],
-            "uniProtkbId": f"{gene.upper()}_HUMAN", "genes": [{"geneName": {"value": gene.upper()}}],
+            "uniProtkbId": f"{gene.upper()}_HUMAN", "genes": [{"geneName": {"value": gene.upper()}, "synonyms": ([{"value": "GPR40"}] if gene.upper() == "FFAR1" else [])}],
             "proteinDescription": {"recommendedName": {"fullName": {"value": u["name"]}}},
-            "sequence": {"value": "".join(random.Random(1).choice(_AA) for _ in range(u["length"])), "length": u["length"]},
+            "sequence": {"value": u["_seq"], "length": u["length"]},
             "comments": comments, "features": feats, "keywords": ([{"name": "G-protein coupled receptor"}] if u["gpcr"] else [{"name": "Tumor suppressor"}]),
             "uniProtKBCrossReferences": []}
 
@@ -58,7 +69,7 @@ def fetch_gnomad(*a, **k): return {"pLI": 0.0, "oe_lof": 0.31, "oe_lof_upper": 0
 def fetch_string_interactions(*a, **k): return [{"partner": p, "score": s, "url": f"https://string-db.org/network/{p}"} for p, s in
                                                   (("MDM2", .999), ("EP300", .99), ("ATM", .98), ("CHEK2", .97), ("BRCA1", .93), ("CDKN1A", .92))]
 @_cached
-def fetch_pubmed_abstracts(*a, **k): return [{"pmid": "11111111", "title": "A study of p53", "year": 2023, "abstract": "...", "authors": "Doe J, Roe R", "journal": "Nature", "url": "https://pubmed.ncbi.nlm.nih.gov/11111111/"}]
+def fetch_pubmed_abstracts(*a, **k): return [{"pmid": "11111111", "title": "A study of p53", "year": "2023", "abstract": "...", "authors": "Doe J, Roe R", "journal": "Nature", "url": "https://pubmed.ncbi.nlm.nih.gov/11111111/"}]
 @_cached
 def fetch_pdb(*a, **k): return ""
 @_cached
@@ -87,3 +98,8 @@ def fetch_clingen(*a, **k): return {"classification": "Definitive"}
 def fetch_alphamissense(*a, **k):
     r = random.Random(3)
     return {p: {aa: {"score": round(r.random(), 3), "class": r.choice(["pathogenic", "ambiguous", "benign"])} for aa in r.sample(_AA, 5)} for p in range(1, 394)}
+
+@_cached
+def fetch_dgidb_many(genes, *a, **k):
+    return {str(g).upper(): [{"drug": "GRAPIPRANT" if str(g).upper() == "PTGER4" else "TESTDRUG", "type": "antagonist", "sources": "ChEMBL", "url": "https://dgidb.org/"},
+                             {"drug": "AGONISTX", "type": "agonist", "sources": "x", "url": ""}] for g in genes}

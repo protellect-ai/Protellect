@@ -166,3 +166,23 @@ def main(argv: Optional[List[str]] = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+def retrodict(cases: List[Case], gene: str, target: str = "ligand_class") -> Optional[dict]:
+    """Blind test for ONE receptor: hide its case, train on the rest, and ask the model what it would have predicted.
+    Returns None if the receptor is not in the case library or the remaining library is too small."""
+    pool = usable(cases)
+    q = next((c for c in pool if c.gene.upper() == gene.upper()), None)
+    if q is None:
+        return None
+    library = [c for c in pool if c.id != q.id]
+    if len(library) < MIN_LIBRARY:
+        return None
+    ranker = PrecedentRanker().fit(library, target)
+    scores = ranker.value_scores(profile_from_case(q), library)
+    truth = getattr(q, target)
+    if not scores:
+        return {"gene": q.gene, "target": target, "truth": truth, "ranked": [], "hit": False, "abstained": True, "library": len(library), "year": q.resolution_year, "citations": list(q.citations)}
+    ranked = sorted(scores.items(), key=lambda kv: -kv[1])
+    return {"gene": q.gene, "target": target, "truth": truth, "ranked": [(k, round(float(v), 3)) for k, v in ranked[:4]], "hit": ranked[0][0] == truth,
+            "rank_of_truth": next((i + 1 for i, (k, _) in enumerate(ranked) if k == truth), None), "abstained": False, "library": len(library), "year": q.resolution_year, "citations": list(q.citations)}

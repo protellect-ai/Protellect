@@ -29,3 +29,17 @@ def render_context_sidebar() -> None:
         ss["pt_meds"] = st.text_area("Current medications", value=ss.get("pt_meds", ""), key="pt_med_inp")
         ss["pt_family"] = st.text_input("Family history", value=ss.get("pt_family", ""), key="pt_fam_inp")
         ss["pt_envir"] = st.text_input("Environmental exposures", value=ss.get("pt_envir", ""), key="pt_env_inp")
+
+
+def render_example_sidebar() -> None:
+    """A button that is always visible, so the test case is never hard to find."""
+    from .. import example_case
+    ss = st.session_state
+    st.markdown("<div class='sb-t'>Test case</div>", unsafe_allow_html=True)
+    if not ss.get("example_loaded"):
+        st.button("Load the example case", key="sb_ex_load", use_container_width=True, on_click=example_case.load_into_session, args=(ss,),
+                  help="A synthetic cancer-immune dataset with known answers planted in it, so you can check the tool before trusting it on your data.")
+        st.caption("Synthetic data with known answers, to test the tool.")
+    else:
+        st.caption("Synthetic example loaded. See the Overview.")
+        st.button("Clear the example", key="sb_ex_clear", use_container_width=True, on_click=example_case.clear_session, args=(ss,))

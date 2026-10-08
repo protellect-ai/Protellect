@@ -168,6 +168,9 @@ class Bundle:
     domains: List[dict] = field(default_factory=list)
     pdb: str = ""
     sites: List[dict] = field(default_factory=list)
+    sequence: str = ""
+    aliases: List[str] = field(default_factory=list)
+    query: str = ""
     papers: List[dict] = field(default_factory=list)
     audit: List[DatasetStatus] = field(default_factory=list)
     source_errors: Dict[str, str] = field(default_factory=dict)
@@ -256,6 +259,14 @@ def build_bundle(ss: Mapping, *, diseases=None, is_gpcr: Optional[bool] = None, 
     b.is_gpcr = bool(is_gpcr) if is_gpcr is not None else any("g-protein coupled" in str(k.get("name", "")).lower() for k in _as_list(pdata.get("keywords")))
     b.gpcr_class = gpcr_class
     b.pdb = str(g("pdb", "") or "")
+    b.sequence = str((pdata.get("sequence") or {}).get("value", "") or "")
+    syn = []
+    for gn in _as_list(pdata.get("genes")):
+        syn += [str(x.get("value", "")) for x in _as_list(gn.get("synonyms"))]
+    pd_ = pdata.get("proteinDescription") or {}
+    syn += [str((x.get("fullName") or {}).get("value", "")) for x in _as_list(pd_.get("alternativeNames"))]
+    b.aliases = list(dict.fromkeys(x for x in syn if x and x.upper() != b.gene.upper()))
+    b.query = str(g("last", "") or "")
 
     # ClinVar variants + the app's ML scoring (merged by name)
     cv = g("cv") or {}

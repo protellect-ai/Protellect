@@ -7,9 +7,10 @@ import streamlit as st
 from .. import adme
 from ..analysis import CITE
 from ..context import factor_claims, medication_claims
-from ..network import track_svg
+from ..network import bars_svg
+from ..viz import architecture_svg
 from ..pharma import scenarios
-from .common import data_audit, render_claims
+from .common import data_audit, render_claims, svg
 from .shell import Analysis
 
 
@@ -36,7 +37,7 @@ def render_hotspots(a: Analysis) -> None:
         render_claims(mine, b, "hmine")
 
     st.markdown("#### Hotspots on the protein")
-    st.markdown(track_svg(b), unsafe_allow_html=True)
+    svg(architecture_svg(b))
     rows = []
     for h in sorted(b.hotspots, key=lambda h: -h.fold)[:8]:
         mid = (h.start + h.end) // 2
@@ -82,7 +83,7 @@ def render_hotspots(a: Analysis) -> None:
         f = _faers(pick)
         if f:
             st.markdown(f"openFDA FAERS: **{f['total']:,}** spontaneous reports mention {pick}." if f["total"] else f"openFDA FAERS reports for {pick}:")
-            st.bar_chart(pd.DataFrame({"reports": {t: n for t, n in f["top"]}}))
+            svg(bars_svg([t for t, _ in f["top"]], [n for _, n in f["top"]], f"Most-reported reactions for {pick}", "openFDA FAERS spontaneous reports (counts of reports, not rates)", color="#fb7185", fmt="{:,.0f}"))
             st.caption("Spontaneous reports. They show what was reported, not how often it occurs or whether the drug caused it. [openFDA](https://open.fda.gov/apis/drug/event/)")
         else:
             st.info(f"No FAERS reports were returned for {pick}, or openFDA could not be reached.")
