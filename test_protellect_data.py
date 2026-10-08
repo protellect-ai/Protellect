@@ -211,3 +211,36 @@ def test_diagnostics_reports_success(monkeypatch):
     rows = {r["source"]: r for r in pdm.source_diagnostics("TP53", "P04637")}
     assert rows["DGIdb (v5 GraphQL)"]["ok"] and "3 interactions" in rows["DGIdb (v5 GraphQL)"]["detail"]
     assert rows["Open Targets: tractability"]["ok"] and rows["ClinGen validity download"]["ok"] and rows["UniProt isoforms"]["detail"] == "2 isoforms"
+
+
+# ---------------------------------------------------------------- batched drug lookup and the GPCRdb entry name
+def test_dgidb_many_uses_one_request_for_the_whole_panel(monkeypatch):
+    calls = []
+    body = {"data": {"genes": {"nodes": [
+        {"name": "PTGER4", "interactions": [{"drug": {"name": "GRAPIPRANT"}, "interactionScore": 2, "interactionTypes": [{"type": "antagonist"}], "sources": [{"sourceDbName": "ChEMBL"}]},
+                                            {"drug": {"name": "grapiprant"}, "interactionScore": 1, "interactionTypes": [], "sources": []}]},
+        {"name": "ADORA2A", "interactions": []}]}}}
+    monkeypatch.setattr(requests, "post", lambda url, **k: (calls.append(k["json"]["variables"]["names"]), Resp(200, body))[1])
+    out = pdm.fetch_dgidb_many(("ptger4", "adora2a", "ptger2"))
+    assert len(calls) == 1 and calls[0] == ["PTGER4", "ADORA2A", "PTGER2"]
+    assert [d["drug"] for d in out["PTGER4"]] == ["GRAPIPRANT"] and out["PTGER4"][0]["type"] == "antagonist" and out["ADORA2A"] == [] and "PTGER2" not in out
+
+
+def test_dgidb_many_failure_is_reported_and_not_cached(monkeypatch):
+    calls = []
+    monkeypatch.setattr(requests, "post", lambda url, **k: (calls.append(1), Resp(200, {"errors": [{"message": "boom"}]}))[1])
+    assert pdm.fetch_dgidb_many(("A",)) == {} and "DGIdb" in pdm.FETCH_ERRORS
+    pdm.fetch_dgidb_many(("A",))
+    assert len(calls) == 2
+    assert pdm.fetch_dgidb_many(()) == {}
+
+
+def test_gpcrdb_is_queried_by_entry_name_not_bare_gene_symbol(monkeypatch):
+    seen = []
+    def get(url, **k):
+        seen.append(url)
+        return Resp(200, {"family": "Adrenoceptors", "receptor_class": "Class A"}) if "adrb2_human" in url else Resp(404, {})
+    monkeypatch.setattr(requests, "get", get)
+    pdm.fetch_gpcrdb.clear()
+    out = pdm.fetch_gpcrdb("ADRB2")
+    assert out.get("confirmed_gpcr") and any("/protein/adrb2_human/" in u for u in seen) and not any(u.endswith("/protein/adrb2/") for u in seen)

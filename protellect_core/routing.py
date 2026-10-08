@@ -16,7 +16,7 @@ class Priority:
     action: str = ""
 
 
-def priorities(b: Bundle, poss: Optional[dict], defects: list, hyp_summary=None, csv_top: Optional[list] = None, n_orphans_in_registry: int = 0) -> List[Priority]:
+def priorities(b: Bundle, poss: Optional[dict], defects: list, hyp_summary=None, csv_top: Optional[list] = None, n_orphans_in_registry: int = 0, gpcrome=None, workbench=None) -> List[Priority]:
     out: List[Priority] = []
     if hyp_summary is not None and getattr(hyp_summary, "n_orphan", 0) > 0:
         genes = [r.gene for r in hyp_summary.results][:4]
@@ -28,6 +28,18 @@ def priorities(b: Bundle, poss: Optional[dict], defects: list, hyp_summary=None,
     elif hyp_summary is not None and csv_top is not None:
         out.append(Priority("INFO", "No orphan GPCRs recognised in your data", [f"The registry lists {n_orphans_in_registry} orphan GPCRs. Load the full list in the Overview tab if this is too few."], "Overview",
                             "Search the strongest signals below one by one."))
+    if gpcrome is not None and len(gpcrome.orphans):
+        n_call = int((gpcrome.orphans["Predicted coupling"] != "no supported call").sum())
+        v = gpcrome.validation
+        trusted = bool(v.get("ok") and v.get("beats_baseline"))
+        out.insert(0, Priority("PRIORITIZE" if (n_call and trusted) else "INVESTIGATE", f"GPCRome: {n_call} of {len(gpcrome.orphans)} orphan GPCRs have a supported signalling call",
+                               [v.get("note", ""), "The method beat the baseline on your characterised GPCRs." if trusted else "The method did not clearly beat the baseline on your data: read the calls with caution."],
+                               "Overview", "Open the GPCRome section: test the top call with a G-protein-selective assay."))
+    if workbench is not None and workbench.enrich_claims:
+        c = workbench.enrich_claims[0]
+        lead = c.tags.get("lead", [])
+        out.insert(0, Priority("PRIORITIZE", c.text.split(" (")[0], [c.proofs[0].detail[:140], "Leading edge: " + ", ".join(lead[:6])], "Overview",
+                               "Open the coupling-enrichment section: pick the leading-edge receptors and look up their recorded drugs."))
     if csv_top:
         out.append(Priority("INVESTIGATE", "Strongest signals in your data", [f"{g} ({e:+.2f})" for g, e in csv_top[:5]], "Triage", "Search each in the sidebar to pull its evidence."))
     if not b.loaded:

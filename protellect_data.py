@@ -1325,7 +1325,7 @@ def fetch_gpcrdb(gene: str) -> dict:
     try:
         # GPCRdb protein endpoint
         r = _get(
-            f"https://gpcrdb.org/services/protein/{gene.lower()}/",
+            f"https://gpcrdb.org/services/protein/{gene.lower()}_human/",
             headers={"Accept":"application/json"}, timeout=15,
         )
         if r.status_code != 200:
@@ -1333,7 +1333,7 @@ def fetch_gpcrdb(gene: str) -> dict:
         data = r.json()
         # Also fetch coupling data
         coupling_r = _get(
-            f"https://gpcrdb.org/services/protein/{gene.lower()}/couplings/",
+            f"https://gpcrdb.org/services/protein/{gene.lower()}_human/couplings/",
             headers={"Accept":"application/json"}, timeout=10,
         )
         couplings = coupling_r.json() if coupling_r.status_code == 200 else {}
@@ -1388,6 +1388,35 @@ def fetch_alphamissense(uniprot_id: str) -> dict:
         return scores
     except:
         return {}
+
+@_resilient("DGIdb", {}, 3600)
+def fetch_dgidb_many(genes) -> dict:
+    """Drug-gene interactions for a whole panel of genes in ONE DGIdb v5 request. Returns {GENE: [{drug, type, sources, url}, ...]} (up to 20 per gene)."""
+    names = [str(g).strip().upper() for g in genes if str(g).strip()][:80]
+    if not names:
+        return {}
+    r = _post("https://dgidb.org/api/graphql", json={"query": _DGIDB_Q, "variables": {"names": names}}, headers={"Content-Type": "application/json"})
+    r.raise_for_status()
+    js = r.json()
+    if js.get("errors"):
+        raise RuntimeError("DGIdb GraphQL: " + str(js["errors"][0].get("message", ""))[:160])
+    out = {}
+    for n in ((js.get("data") or {}).get("genes") or {}).get("nodes") or []:
+        gene = str(n.get("name", "")).upper()
+        inter = sorted(n.get("interactions") or [], key=lambda i: -(i.get("interactionScore") or 0))
+        seen, drugs = set(), []
+        for d in inter:
+            nm = str((d.get("drug") or {}).get("name") or "").strip()
+            if nm and nm.upper() not in seen:
+                seen.add(nm.upper())
+                types = [t.get("type") for t in (d.get("interactionTypes") or []) if t.get("type")]
+                srcs = [x.get("sourceDbName") for x in (d.get("sources") or []) if x.get("sourceDbName")]
+                drugs.append({"drug": nm, "type": types[0] if types else "", "sources": ", ".join(srcs[:2]), "url": f"https://dgidb.org/genes/{gene}"})
+            if len(drugs) >= 20:
+                break
+        out[gene] = drugs
+    return out
+
 
 _OT_URL = "https://api.platform.opentargets.org/api/v4/graphql"
 _OT_MOD = {"SM": "Small molecule", "AB": "Antibody", "PR": "PROTAC", "OC": "Other clinical"}

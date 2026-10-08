@@ -62,6 +62,17 @@ def render_genetics(a: Analysis) -> None:
             st.markdown("**Your microenvironment factors**")
             render_claims(fc, b, "gfac")
 
+    alt = st.session_state.get("alterations")
+    if alt is not None:
+        from ..alterations import summary as alt_summary
+        rows = alt_summary(alt, b.gene, 0.01)
+        st.markdown("#### Pan-cancer alterations (from your table)")
+        if rows:
+            st.dataframe([{"Cancer type": r["cancer"], "Alteration frequency": r["text"]} for r in rows], hide_index=True)
+            st.caption("Your own table, unchanged. Frequencies of 1% or more are listed.")
+        else:
+            st.caption(f"Your table has no alteration of {b.gene} at 1% or more in any cancer type.")
+
     st.markdown("#### How to go about it")
     render_claims(a.strategies, b, "gstrat", empty="No strategy rule is triggered by the genetic data retrieved.")
     if ranked:

@@ -1,0 +1,63 @@
+{
+ "coupling": {
+  "GPR87": "Gq",
+  "GPR174": "Gi",
+  "GPR65": "Gs"
+ },
+ "no_call": [
+  "GPR35",
+  "GPR37",
+  "GPR19",
+  "GPR82"
+ ],
+ "top_context": {
+  "GPR87": [
+   "Tumor epithelial (HPV+)",
+   "Tumor epithelial (HPV-)",
+   "CAF fibroblast"
+  ],
+  "GPR160": [
+   "Tumor epithelial (HPV+)",
+   "Tumor epithelial (HPV-)"
+  ],
+  "GPR132": [
+   "Macrophage"
+  ],
+  "GPR174": [
+   "CD8 T effector",
+   "CD4 T cell",
+   "Treg",
+   "NK cell",
+   "B cell"
+  ]
+ },
+ "enrichment": {
+  "Gs": "up",
+  "Gi": "down"
+ },
+ "programs": {
+  "GPR87": "YAP/TAZ targets",
+  "GPR171": "T-cell exhaustion",
+  "GPR20": "Regulatory T cell"
+ },
+ "oncocrine": [
+  {
+   "ligand": "Prostaglandin E2",
+   "receptor": "PTGER4",
+   "target": "CD8 T exhausted"
+  },
+  {
+   "ligand": "CXCL12",
+   "receptor": "CXCR4",
+   "source": "CAF fibroblast"
+  },
+  {
+   "ligand": "Adenosine",
+   "receptor": "ADORA2A",
+   "target": "CD8 T exhausted"
+  }
+ ],
+ "alteration": {
+  "GPR87": "HNSC"
+ }
+}
