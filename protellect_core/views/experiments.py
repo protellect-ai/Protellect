@@ -9,6 +9,8 @@ from ..assays import assays_for
 from .common import render_claims
 from .dossier_view import render_plan
 from .shell import Analysis
+from .fits import render_fits, render_external
+from .common import experiment_protein_list
 from ..kinetics import kinetics, reading, fmt_molar, fmt_time
 
 
@@ -63,7 +65,13 @@ def render_experiments(a: Analysis, helpers: dict) -> None:
     if not b.loaded and a.summary is None and a.gpcrome is None:
         st.info("Upload an experiment (a differential table, and optionally an expression matrix), or load the example case, to get a plan of next experiments. You do not need to search a protein.")
         return
-    planned = render_plan(a)
+    if a.focus_options and not a.focus:
+        st.markdown("#### Proteins in your experiment")
+        experiment_protein_list(a)
+        st.info("Experiments are planned for one protein at a time. Pick one under Show details for (Overview tab) or search it in the sidebar.")
+        planned = True
+    else:
+        planned = render_plan(a, only=a.focus or "")
     claims = _experiment_claims(a)
     if claims or b.loaded:
         st.markdown("#### " + ("More experiments for the protein you searched" if planned else "Next experiments, ranked by the evidence that calls for them"))
@@ -72,3 +80,5 @@ def render_experiments(a: Analysis, helpers: dict) -> None:
     elif not planned:
         st.info("The experiment you uploaded has no orphan GPCRs and no searched protein, so there is nothing specific to plan from. Check that the receptor list is loaded (Overview, Receptor registry).")
     _kinetics_panel()
+    render_fits()
+    render_external()

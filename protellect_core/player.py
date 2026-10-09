@@ -123,5 +123,5 @@ def player_html(svg_markup: str, captions: List[Dict[str, str]]) -> str:
 
 
 def render_player(svg_markup: str, captions: List[Dict[str, str]], height: int = 1010) -> None:
-    import streamlit.components.v1 as components
-    components.html(player_html(svg_markup, captions), height=height, scrolling=False)
+    from .frame import html_frame
+    html_frame(player_html(svg_markup, captions), height)

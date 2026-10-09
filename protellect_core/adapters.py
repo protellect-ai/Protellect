@@ -161,6 +161,7 @@ class Bundle:
     hotspots: List[Hotspot] = field(default_factory=list)
     constraint: Dict[str, Optional[float]] = field(default_factory=dict)
     tractability: Dict[str, bool] = field(default_factory=dict)
+    mouse_phenotypes: List[dict] = field(default_factory=list)
     clingen: str = ""
     am: Dict[int, Dict[str, dict]] = field(default_factory=dict)
     tissue_text: str = ""
@@ -316,6 +317,7 @@ def build_bundle(ss: Mapping, *, diseases=None, is_gpcr: Optional[bool] = None, 
     else:
         b.n_known_drugs = int(kd) if isinstance(kd, (int, float)) else 0
     tr = ot.get("tractability", {}) if isinstance(ot, dict) else {}
+    b.mouse_phenotypes = [m for m in _as_list(ot.get("mouse_phenotypes") if isinstance(ot, dict) else []) if isinstance(m, dict) and m.get("label")]
     if isinstance(ot, dict) and isinstance(ot.get("_errors"), dict):
         b.source_errors = {f"Open Targets / {k}": str(v) for k, v in ot["_errors"].items()}
     # only count tractability as "available" if Open Targets actually returned some (an empty reply is a failed fetch, not "not druggable")
@@ -357,6 +359,7 @@ def build_bundle(ss: Mapping, *, diseases=None, is_gpcr: Optional[bool] = None, 
         DatasetStatus("Disease annotations", len(b.diseases), "" if b.diseases else "none found in UniProt"),
         DatasetStatus("ClinGen validity", int(bool(b.clingen)), "" if b.clingen else "no ClinGen classification"),
         DatasetStatus("Interaction partners (STRING)", len(b.partners), "" if b.partners else "no partners returned"),
+        DatasetStatus("Mouse knockout phenotypes (Open Targets / IMPC)", len(b.mouse_phenotypes), "" if b.mouse_phenotypes else "none returned: no knockout data, or the fetch failed"),
         DatasetStatus("Drug-gene interactions", len(b.drugs), "" if b.drugs else "none returned"),
         DatasetStatus("Open Targets tractability", sum(b.tractability.values()), "" if b.tractability else "no tractability data (fetch may have failed)"),
         DatasetStatus("Clinical trials", len(b.trials), ""),

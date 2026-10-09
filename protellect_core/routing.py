@@ -16,7 +16,7 @@ class Priority:
     action: str = ""
 
 
-def priorities(b: Bundle, poss: Optional[dict], defects: list, hyp_summary=None, csv_top: Optional[list] = None, n_orphans_in_registry: int = 0, gpcrome=None, workbench=None) -> List[Priority]:
+def priorities(b: Bundle, poss: Optional[dict], defects: list, hyp_summary=None, csv_top: Optional[list] = None, n_orphans_in_registry: int = 0, gpcrome=None, workbench=None, bio: Optional[dict] = None, modality: str = "") -> List[Priority]:
     out: List[Priority] = []
     if hyp_summary is not None and getattr(hyp_summary, "n_orphan", 0) > 0:
         genes = [r.gene for r in hyp_summary.results][:4]
@@ -50,12 +50,27 @@ def priorities(b: Bundle, poss: Optional[dict], defects: list, hyp_summary=None,
     weak = [c["name"] for c in (poss or {}).get("components", []) if c["available"] and c["points"] == 0][:3]
     gaps = [a.name.strip() for a in b.audit if a.note and a.n == 0][:4]
     cov = (poss or {}).get("coverage", "")
+    bio_ok = bool(bio and bio.get("level") in ("HIGH", "MODERATE"))
+    if bio:
+        comp = next((c for c in bio["components"] if c["name"] == "Effect in your experiment"), None)
+        lead = [f"Strongest in your table: {comp['value']}." if comp and comp["available"] else "", bio["coverage"], "Scored from your own table, not from druggability or germline variants."]
+        if bio["level"] == "HIGH":
+            out.insert(0, Priority("PRIORITIZE", f"{b.gene}: strong role in your experiment as a biomarker or mechanism ({bio['pct']}/100)", lead, "Overview", "Read the evidence below, then test it directly (for example perturb it and check the phenotype)."))
+        elif bio["level"] == "MODERATE":
+            out.insert(0, Priority("INVESTIGATE", f"{b.gene}: notable in your experiment ({bio['pct']}/100)", lead, "Overview", "Check literature and partners for how it fits your question."))
+        elif bio["level"] == "LOW":
+            out.append(Priority("INFO", f"{b.gene}: weak signal in your experiment ({bio['pct']}/100)", lead, "Overview", "Compare with the strongest signals in your table."))
+    lens = "As a drug target, " if bio else ""
+    extra = [modality] if modality else []
     if lvl == "HIGH":
-        out.append(Priority("PRIORITIZE", f"{b.gene}: strong evidence to pursue ({poss['pct']}/100)", [cov, f"Missing or weak: {', '.join(weak) or 'nothing notable'}"], "Overview", "Read the strategy options and the ranked hypotheses."))
+        out.append(Priority("PRIORITIZE", f"{lens}{b.gene}: strong evidence to pursue ({poss['pct']}/100)", [cov, f"Missing or weak: {', '.join(weak) or 'nothing notable'}"] + extra, "Overview", "Read the strategy options and the ranked hypotheses."))
     elif lvl == "MODERATE":
-        out.append(Priority("INVESTIGATE", f"{b.gene}: promising but incomplete ({poss['pct']}/100)", [cov, f"Weakest evidence: {', '.join(weak) or 'none flagged'}"], "Overview", "Close the evidence gaps before committing."))
+        out.append(Priority("INVESTIGATE", f"{lens}{b.gene}: promising but incomplete ({poss['pct']}/100)", [cov, f"Weakest evidence: {', '.join(weak) or 'none flagged'}"] + extra, "Overview", "Close the evidence gaps before committing."))
     elif lvl == "LOW":
-        out.append(Priority("DEPRIORITIZE", f"{b.gene}: weak evidence on what is available ({poss['pct']}/100)", [cov, "Score reflects the data retrieved; absence from ClinVar is not proof of irrelevance."], "Genetics", "Check the genetic thresholds before dropping it."))
+        # a low druggability score is not a verdict on a gene your own data singles out; say what the score measures instead of deprioritising it
+        out.append(Priority("INFO" if bio_ok else "DEPRIORITIZE", f"{lens}{b.gene}: low as a drug target on current evidence ({poss['pct']}/100)" if bio_ok else f"{b.gene}: weak evidence on what is available ({poss['pct']}/100)",
+                            [cov, "This score measures genetic and druggability evidence for small-molecule or antibody targets; it is not a measure of biological or biomarker importance." if bio_ok else "Score reflects the data retrieved; absence from ClinVar is not proof of irrelevance."] + extra,
+                            "Genetics", "Check the genetic thresholds before dropping it." if not bio_ok else "Use the drug-target view only if you want to drug it directly."))
     else:
         out.append(Priority("DATA GAP", f"{b.gene}: too little data to judge", [cov, "Empty sources: " + (", ".join(gaps) or "several")], "Overview", "See the data audit for what came back empty."))
     if b.plp:

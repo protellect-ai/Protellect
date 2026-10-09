@@ -7,7 +7,7 @@ import pandas as pd
 import streamlit as st
 
 from ..assays import ASSAYS, render_assay, render_assay_inline
-from ..dossier import Dossier, Hyp, Pattern, build_all, experiment_patterns, experiment_plan
+from ..dossier import Dossier, Hyp, Pattern, build_all, build_dossier, experiment_patterns, experiment_plan
 from .shell import Analysis
 
 
@@ -81,21 +81,27 @@ def render_dossiers(a: Analysis, prefix: str = "dos", full: int = 4, limit: int 
                 for p in pats[3:]:
                     st.markdown(f"**{p.title}**: " + "; ".join(e.detail for e in p.present))
                     st.markdown(" | ".join(f"{j}. {h.statement}" for j, h in enumerate(sorted(p.hyps, key=lambda x: -x.score), 1)))
-    st.markdown(f"#### Orphan GPCRs in your experiment, ranked by how much your data says about them ({len(ds)})")
-    st.caption("Ranked by effect size, significance and context specificity from your own data. Each card shows the best-supported answer to each question; open it for the full ranking and how to test it.")
-    for k, d in enumerate(ds[:full]):
-        _pack(d, prefix, False)
-    if len(ds) > full:
-        rows = []
-        for d in ds[full:]:
-            g = lambda t: next((q.hyps[0].statement for q in d.questions if q.title.startswith(t) and q.hyps), "")
-            rows.append({"Orphan": d.gene, "Expressed in": ", ".join(d.contexts[:2]), "Couples to": g("What does").replace("Couples to ", ""), "Might bind": g("What might it bind").replace("May bind a ", "").replace("-type ligand", ""), "Might be doing": g("What might it be")})
-        st.dataframe(pd.DataFrame(rows), hide_index=True)
-        pick = st.selectbox("Open the full evidence for another orphan", [d.gene for d in ds[full:]], key=f"{prefix}_more")
-        _pack(next(d for d in ds if d.gene == pick), prefix + "m", False)
+    st.markdown(f"#### Orphan GPCRs in your experiment ({len(ds)})")
+    st.caption("Ranked by effect size, significance and context specificity from your own data. Details are shown for one protein at a time: search it in the sidebar or pick it below.")
+    sig = {}
+    if a.summary is not None:
+        try:
+            from ..engine.report import results_table
+            sig = {r["Receptor"]: r["Your signal"] for _, r in results_table(a.summary).iterrows()}
+        except Exception:
+            sig = {}
+    st.dataframe(pd.DataFrame([{"Rank": i, "Protein": d.gene, "Your signal": sig.get(d.gene, ""), "Expressed in": ", ".join(d.contexts[:2])} for i, d in enumerate(ds, 1)]), hide_index=True)
+    if a.focus:
+        dd = next((d for d in ds if d.gene == a.focus), None) or build_dossier(a, a.focus, alt)
+        if dd:
+            _pack(dd, prefix, True)
+        else:
+            st.info(f"Your data has too little on {a.focus} to build an evidence summary.")
+    else:
+        st.info("Pick a protein (Show details for, above) or search one in the sidebar to see what your data says about it, what it might mean, and the experiment that tests it.")
 
 
-def render_plan(a: Analysis, prefix: str = "plan") -> bool:
+def render_plan(a: Analysis, prefix: str = "plan", only: str = "") -> bool:
     """The experiment plan, straight from the uploaded experiment. Returns False when there is nothing to plan from."""
     alt = st.session_state.get("alterations")
     ds = build_all(a, alt, 12)
@@ -103,8 +109,13 @@ def render_plan(a: Analysis, prefix: str = "plan") -> bool:
     plan = experiment_plan(a, ds, pats)
     if not plan:
         return False
-    st.markdown("#### Next experiments, in the order to run them")
-    st.caption("Built from the receptors in your own experiment, not from a protein search. Each step says which receptors it covers, why, and how to read the result.")
+    if only:
+        plan = [it for it in plan if only in (it.targets or [])]
+        if not plan:
+            st.info(f"None of the planned experiments from your table is specific to {only}.")
+            return True
+    st.markdown("#### Next experiments, in the order to run them" + (f" ({only})" if only else ""))
+    st.caption("Built from your own experiment" + (f", for {only} only." if only else ".") + " Each step says which receptors it covers, why, and how to read the result.")
     for n, it in enumerate(plan, 1):
         with st.container(border=True):
             st.markdown(f"**{n}. {it.title}**")
@@ -112,8 +123,9 @@ def render_plan(a: Analysis, prefix: str = "plan") -> bool:
                 st.caption("Receptors: " + ", ".join(it.targets))
             for w in it.why[:5]:
                 st.markdown(f"<div style='margin-left:.5rem;font-size:.85rem;color:#b7c9db'>• {html.escape(w)}</div>", unsafe_allow_html=True)
-            if it.expect:
-                st.markdown("<div style='margin-left:.5rem;font-size:.85rem;color:#7dd3fc'>If the prediction is right you expect: " + html.escape("; ".join(f"{g}: {v}" for g, v in it.expect.items())) + "</div>", unsafe_allow_html=True)
-            first = next(iter(it.expect.values()), None) if it.expect else None
+            ex = {g: v for g, v in it.expect.items() if (not only or g == only)} if it.expect else {}
+            if ex:
+                st.markdown("<div style='margin-left:.5rem;font-size:.85rem;color:#7dd3fc'>If the prediction is right you expect: " + html.escape("; ".join(f"{g}: {v}" for g, v in ex.items())) + "</div>", unsafe_allow_html=True)
+            first = next(iter(ex.values()), None) if ex else None
             render_assay(st, it.assay, first)
     return True

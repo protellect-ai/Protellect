@@ -6,6 +6,8 @@ CHOICES (shown in full), not fitted parameters; the score is a prioritisation ai
 from __future__ import annotations
 
 import math
+
+import numpy as np
 import re
 from collections import Counter
 from typing import Dict, List, Optional
@@ -120,6 +122,7 @@ def defect_claims(b: Bundle) -> List[Claim]:
 
 # ------------------------------------------------------------------------------------------------ possibility
 def possibility(b: Bundle) -> dict:
+    """Lens 1: should this protein be pursued as a small-molecule or antibody target? Scored from germline genetics, clinical variants, tractability and existing drugs."""
     comps: List[dict] = []
 
     def add(name, available, points, max_points, value, rule, proof):
@@ -152,8 +155,86 @@ def possibility(b: Bundle) -> dict:
     mx = sum(c["max"] for c in avail)
     pct = round(100 * sum(c["points"] for c in avail) / mx) if mx else 0
     level = "INSUFFICIENT DATA" if len(avail) < 4 else "HIGH" if pct >= 65 else "MODERATE" if pct >= 40 else "LOW"
-    return {"level": level, "pct": pct, "coverage": f"{len(avail)} of {len(comps)} evidence types available", "components": comps,
-            "note": "Evidence-weighted prioritisation aid. The weights are design choices shown above, not fitted parameters, and the score is not a probability of success."}
+    return {"lens": "drug target (small molecule or antibody)", "level": level, "pct": pct, "coverage": f"{len(avail)} of {len(comps)} evidence types available", "components": comps,
+            "note": "Evidence-weighted prioritisation aid for DRUG-TARGET potential. The weights are design choices shown above, not fitted parameters, and the score is not a probability of success."}
+
+
+# ------------------------------------------------------------------------------------------------ second lens: role in YOUR experiment
+def user_signal(parsed, gene: str, aliases=()) -> Optional[dict]:
+    """The searched gene's row in the uploaded experiment table, with its rank by |effect|. None if the gene is not in the table."""
+    if parsed is None or len(parsed) == 0:
+        return None
+    names = {str(gene).upper()} | {str(a).upper() for a in aliases}
+    hit = parsed[parsed["gene"].isin(names)]
+    if hit.empty:
+        return None
+    r = hit.iloc[0]
+    order = parsed["effect"].abs().rank(ascending=False, method="min")
+    rank = int(order[hit.index[0]])
+    eff = float(r["effect"])
+    et = str(r.get("effect_type", ""))
+    log2fc = eff if et == "log2 fold-change" else (float(np.log2(eff)) if et == "fold-change" and eff > 0 else None)
+    sig = r.get("significance")
+    return {"gene": str(r["gene"]), "effect": eff, "effect_type": et, "log2fc": log2fc, "significance": None if sig is None or sig != sig else float(sig),
+            "rank": rank, "n": int(len(parsed)), "shape": str(r.get("shape", ""))}
+
+
+def biomarker_lens(b: Bundle, user: Optional[dict], source_name: str = "your experiment") -> Optional[dict]:
+    """Is this gene important in the experiment the researcher brought? Scored from the researcher's own table plus context that
+    does not depend on germline disease variants or druggability. Returns None when no experiment includes this gene."""
+    if not user:
+        return None
+    comps: List[dict] = []
+
+    def add(name, available, points, max_points, value, rule, proof):
+        comps.append({"name": name, "available": available, "points": points if available else 0, "max": max_points, "value": value, "rule": rule, "proof": proof})
+
+    up = Proof("Your uploaded table", f"{source_name}: {user['gene']} effect {user['effect']:+.2f} ({user['effect_type'] or 'effect'})", kind="data")
+    l2, sg = user.get("log2fc"), user.get("significance")
+    if l2 is not None:
+        big = abs(l2)
+        if sg is not None:
+            pts = 35 if (big >= 2 and sg < 0.05) else 25 if (big >= 1 and sg < 0.05) else 12 if (big >= 0.58 and sg < 0.05) else 0
+            rule = "35 pts if |log2FC| >= 2 and p < 0.05; 25 if >= 1; 12 if >= 0.58"
+            val = f"log2FC {l2:+.2f}, p/FDR {sg:.2g}"
+        else:
+            pts = 20 if big >= 2 else 12 if big >= 1 else 0
+            rule = "No significance column: 20 pts if |log2FC| >= 2; 12 if >= 1"
+            val = f"log2FC {l2:+.2f} (no significance in the table)"
+        add("Effect in your experiment", True, pts, 35, val, rule, up)
+    else:
+        add("Effect in your experiment", False, 0, 35, f"{user['effect_type'] or 'effect'} {user['effect']:+.2f}", "Only log2 fold-change or fold-change tables are scored for effect size", up)
+    pct_rank = 100.0 * user["rank"] / max(user["n"], 1)
+    add("Rank within your table", True, 10 if pct_rank <= 1 else 6 if pct_rank <= 5 else 3 if pct_rank <= 10 else 0, 10, f"#{user['rank']} of {user['n']} by |effect| (top {pct_rank:.1f}%)",
+        "10 pts if top 1%; 6 if top 5%; 3 if top 10%", up)
+    pli, loeuf = b.constraint.get("pLI"), b.constraint.get("oe_lof_upper")
+    have = pli is not None or loeuf is not None
+    add("Genetic constraint", have, 10 if ((pli or 0) >= 0.9 or (loeuf is not None and loeuf < 0.35)) else 5 if (loeuf is not None and loeuf < 0.6) else 0, 10,
+        f"pLI {pli if pli is not None else 'n/a'}, LOEUF {loeuf if loeuf is not None else 'n/a'}", "10 pts if pLI >= 0.9 or LOEUF < 0.35; 5 if LOEUF < 0.6",
+        Proof("gnomAD", "constraint metrics", "https://gnomad.broadinstitute.org/gene/" + b.gene))
+    strong = [p for p in b.partners if p.score >= 0.7]
+    add("Network connectivity", bool(b.partners), 10 if len(strong) >= 10 else 5 if len(strong) >= 3 else 0, 10, f"{len(strong)} STRING partner(s) with score >= 0.7",
+        "10 pts if >= 10 high-confidence partners; 5 if >= 3", Proof("STRING", f"{len(strong)} high-confidence partners", "https://string-db.org/"))
+    add("Literature depth", True, 10 if len(b.papers) >= 10 else 0, 10, f"{len(b.papers)} record(s)", "10 pts if >= 10 literature records", Proof("PubMed / Europe PMC", "retrieved records"))
+    add("Disease annotation", True, 5 if b.diseases else 0, 5, f"{len(b.diseases)} disease(s) annotated", "5 pts if >= 1 UniProt disease annotation", Proof("UniProt", "disease comments", _uniprot_url(b)))
+    avail = [c for c in comps if c["available"]]
+    mx = sum(c["max"] for c in avail)
+    pct = round(100 * sum(c["points"] for c in avail) / mx) if mx else 0
+    level = "INSUFFICIENT DATA" if len(avail) < 3 else "HIGH" if pct >= 60 else "MODERATE" if pct >= 35 else "LOW"
+    return {"lens": "biomarker / mechanism in your experiment", "level": level, "pct": pct, "coverage": f"{len(avail)} of {len(comps)} evidence types available", "components": comps,
+            "note": "Weights are design choices shown above, not fitted parameters. This lens does NOT ask whether the protein is druggable or has germline disease variants; it asks whether your own data and the surrounding evidence make it important to follow up as a biomarker or mechanism."}
+
+
+def modality_note(b: Bundle) -> str:
+    """Plain note when the protein is an intracellular DNA-binding regulator, where antibodies and conventional small-molecule pockets are uncommon.
+    Based on UniProt feature annotations (DNA-binding region, zinc finger, nuclear location), not on a guess."""
+    dna = [d for d in b.domains if d.get("type") in ("DNA binding", "Zinc finger") or any(k in (d.get("desc", "") or "").lower() for k in ("hmg box", "homeobox", "bhlh", "ets", "dna-binding"))]
+    nuc = any("nucle" in str(x).lower() for x in b.subcellular)
+    if dna and nuc:
+        return (f"UniProt annotates {b.gene} as a nuclear protein with a DNA-binding region ({dna[0].get('desc') or dna[0].get('type')}). Antibodies cannot reach it and conventional "
+                "small-molecule pockets are uncommon, so the drug-target score below is expected to be low whatever its biological importance. Routes people use instead: a degrader (see PROTAC "
+                "tractability), targeting an upstream or downstream node, or using it as a biomarker or readout.")
+    return ""
 
 
 # ------------------------------------------------------------------------------------------------ strategy

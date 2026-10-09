@@ -52,7 +52,7 @@ def test_every_view_renders_without_error(view):
 
 def test_overview_content_is_evidence_backed():
     t = text(app_for("overview"))
-    assert "Associated diseases" in t and "Li-Fraumeni" in t and "POSSIBILITY" in t
+    assert "Associated diseases" in t and "Li-Fraumeni" in t and "As a drug target" in t
     at = app_for("overview")
     assert any("<svg" in m.value for m in at.markdown)                      # the animation
     pops = [p.proto.popover.label for p in at.get("popover")]

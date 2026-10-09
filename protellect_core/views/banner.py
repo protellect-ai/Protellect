@@ -5,7 +5,7 @@ import html
 from typing import List
 
 import streamlit as st
-import streamlit.components.v1 as components
+from ..frame import html_frame
 
 from ..routing import Priority
 from .common import LEVEL_COLOR
@@ -37,7 +37,7 @@ def render_priority_banner(items: List[Priority]) -> None:
                              + (f"<div style='color:#6b8aa3;font-size:.72rem;margin-top:2px'>Go to the <b>{html.escape(p.goto)}</b> tab</div>" if p.goto else "") + "</div>", unsafe_allow_html=True)
     want = st.session_state.pop("_goto_tab", None)
     if want:
-        components.html(_goto_script(want), height=0)
+        html_frame(_goto_script(want), 1)
     if main.goto and st.button(f"Take me to {main.goto}", key="banner_goto"):
         st.session_state["_goto_tab"] = main.goto
         st.rerun()

@@ -72,6 +72,49 @@ def get_engine():
     return _engine_cached(txt, st.session_state.get("outcomes_json", ""))
 
 
+@st.cache_data(show_spinner=False, max_entries=8)
+def pockets_cached(pdb_text: str, segs_key: str, segs: tuple):
+    """Candidate pockets for a structure; segs is ((name, kind, start, end), ...) so the cache key is hashable."""
+    try:
+        from ..pockets import find_pockets, annotate
+        pk = find_pockets(pdb_text)
+        class _S:
+            def __init__(self, n, k, a, b): self.name, self.kind, self.start, self.end = n, k, a, b
+        return annotate(pk, [_S(*x) for x in segs], pdb_text)
+    except Exception:
+        return []
+
+
+def get_pockets(b):
+    from ..topology import topology as _topo
+    if not getattr(b, "pdb", None):
+        return []
+    segs = _topo(b) or []
+    key = tuple((s.name, s.kind, s.start, s.end) for s in segs)
+    return pockets_cached(b.pdb, str(hash(key)), key)
+
+
+def focus_picker(a) -> None:
+    """Choose which protein from the experiment to show details for. The list itself is always shown; details follow this one protein."""
+    if not a.focus_options:
+        return
+    opts = ["(none)"] + list(a.focus_options)
+    cur = st.session_state.get("focus_gene")
+    if cur not in a.focus_options:
+        st.session_state["focus_gene"] = "(none)"
+    st.selectbox("Show details for", opts, key="focus_gene",
+                 help="Details (what your data says, what it might mean, the experiments to run) are shown for one protein at a time. Searching a protein in the sidebar selects it here.")
+
+
+def experiment_protein_list(a) -> None:
+    """Just the proteins found in the uploaded experiment, with the signal each one shows. No per-protein analysis."""
+    if a.summary is None or not a.summary.n_orphan:
+        return
+    from ..engine.report import results_table
+    t = results_table(a.summary)[["Receptor", "Your signal"]].rename(columns={"Receptor": "Protein"})
+    st.dataframe(t, hide_index=True)
+
+
 def svg(markup: str) -> None:
     """Inline SVG in the page (no iframe, so the page keeps scrolling normally over it)."""
     if markup:
