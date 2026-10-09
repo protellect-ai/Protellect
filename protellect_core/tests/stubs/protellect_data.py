@@ -83,11 +83,15 @@ def fetch_papers_multi(*a, **k): return []
 @_cached
 def fetch_opentargets(*a, **k):
     return {"tractability": {"Small molecule": "Phase 2 clinical precedence", "Antibody": "Unknown", "PROTAC": "Unknown"},
-            "known_drugs": [{"name": "ADVEXIN", "mechanism": "Gene therapy", "indication": "Head and neck cancer", "phase": 3, "url": "https://platform.opentargets.org/"}]}
+            "known_drugs": [{"name": "ADVEXIN", "mechanism": "Gene therapy", "indication": "Head and neck cancer", "phase": 3, "url": "https://platform.opentargets.org/"}],
+            "mouse_phenotypes": [{"label": "abnormal glucose homeostasis", "id": "MP:0002078", "classes": ["homeostasis/metabolism phenotype"], "models": 3},
+                                 {"label": "decreased circulating insulin level", "id": "MP:0002079", "classes": ["homeostasis/metabolism phenotype", "endocrine/exocrine gland phenotype"], "models": 2}]}
 @_cached
 def fetch_ncbi_gene(*a, **k): return {"summary": "Stand-in gene summary."}
 @_cached
 def fetch_isoforms(*a, **k): return []
+@_cached
+def fetch_gpcr_sequences(*a, **k): return {}
 @_cached
 def fetch_gpcrdb(*a, **k): return {}
 @_cached

@@ -141,3 +141,77 @@ def test_experiments_has_kinetics_calculator_and_viewer_has_motion():
     html = structure_viewer_html(p, [], 520, None, [], {}, {}, normal_modes(p))
     assert 'id="mot"' in html and "NOT an active state" in html
     assert "MOT=null" in structure_viewer_html(p, [], 520)   # no structure motion -> button hidden, no crash
+
+
+def test_fit_table_parsing_and_panel_renders():
+    import pandas as pd
+    from protellect_core.views.fits import parse_dose_table, parse_spr_table, TEMPLATE_DOSE
+    import io
+    g = parse_dose_table(pd.read_csv(io.StringIO(TEMPLATE_DOSE)), "M")
+    assert set(g) == {"alone", "co-expressed"} and len(g["alone"][0]) == 6
+    g2 = parse_dose_table(pd.DataFrame({"Dose (nM)": [1, 10, 100, 0], "Signal": [1, 2, 3, 4]}), "nM")
+    assert len(g2["all"][0]) == 3 and abs(g2["all"][0][0] - 1e-9) < 1e-15   # zero concentration dropped
+    import pytest
+    with pytest.raises(ValueError):
+        parse_dose_table(pd.DataFrame({"a": [1], "b": [2]}), "M")
+    with pytest.raises(ValueError):
+        parse_spr_table(pd.DataFrame({"time": [1], "x": [1]}), "nM")
+    at = app_for("experiments")
+    assert not at.exception and any("Fit your own data" in e.label for e in at.expander)
+
+
+def test_mouse_phenotypes_reach_the_genetics_tab_and_the_audit():
+    at = app_for("genetics")
+    assert "What knocking it out does in mice" in text(at)
+    dfs = " ".join(str(d.value) for d in at.dataframe)
+    assert "homeostasis/metabolism phenotype" in dfs and "abnormal glucose homeostasis" in dfs
+    assert any("Mouse knockout" in str(d.value) for d in app_for("overview").dataframe)
+
+
+def test_score_table_parsing_and_external_panel_renders():
+    import pandas as pd, io
+    from protellect_core.views.fits import parse_score_table, TEMPLATE_SCORES
+    pos, neg, q = parse_score_table(pd.read_csv(io.StringIO(TEMPLATE_SCORES)))
+    assert len(pos) == 2 and len(neg) == 2 and q == [("new_compound_A", -9.4)]
+    with pytest.raises(ValueError):
+        parse_score_table(pd.DataFrame({"a": [1]}))
+    at = app_for("experiments")
+    assert not at.exception and any("docking or structure-prediction" in e.label for e in at.expander)
+
+
+def test_coupling_classifier_panel_declines_on_the_small_unverified_table(monkeypatch):
+    import random
+    from protellect_core.tests.test_coupling_ml import receptor
+    from protellect_core.gpcrome import load_couplings
+    rng = random.Random(2)
+    data = {g: dict(zip(("seq", "tms"), receptor(rng, "Gi"))) for g in load_couplings()}
+    monkeypatch.setattr(s, "fetch_gpcr_sequences", lambda *a, **k: data, raising=False)
+    at = app_for("overview")
+    assert not at.exception
+    btn = next(b for b in at.button if b.label == "Fetch sequences and run the test")
+    btn.click().run()
+    assert not at.exception
+    cap = text(at) + " ".join(w.value for w in at.warning)
+    assert "No prediction is shown" in cap or "noise" in cap
+    assert "predicted primary coupling" not in cap
+
+
+def test_html_frame_falls_back_to_st_iframe_when_components_html_is_gone(monkeypatch):
+    import streamlit as st
+    import streamlit.components.v1 as comp
+    from protellect_core.frame import html_frame
+    calls = []
+    monkeypatch.setattr(comp, "html", lambda *a, **k: (_ for _ in ()).throw(AttributeError("removed")))
+    monkeypatch.setattr(st, "iframe", lambda src, **k: calls.append((src, k)), raising=False)
+    html_frame("<html>x</html>", 0)
+    assert calls and calls[0][0] == "<html>x</html>" and calls[0][1]["height"] >= 1
+    monkeypatch.setattr(comp, "html", lambda m, **k: calls.append(("old", k)))
+    html_frame("<p>y</p>", 200)
+    assert calls[-1][0] == "old"
+
+
+def test_triage_renders_when_components_html_is_removed(monkeypatch):
+    import streamlit.components.v1 as comp
+    monkeypatch.delattr(comp, "html")
+    at = app_for("triage")
+    assert not at.exception
