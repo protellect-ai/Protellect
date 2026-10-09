@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pandas as pd
 import streamlit as st
-import streamlit.components.v1 as components
+from ..frame import html_frame
 
 from ..analysis import genetic_thresholds, rank_variants, variant_plan
 from ..explain import plot_note
@@ -16,6 +16,21 @@ from .common import render_claims, svg
 from .shell import Analysis
 
 ICON = {"meets": "✓ meets", "does not meet": "✗ does not meet", "unavailable": "– no data"}
+
+
+def _mouse_panel(b) -> None:
+    st.markdown("#### What knocking it out does in mice")
+    if not b.mouse_phenotypes:
+        st.caption("Open Targets returned no mouse knockout phenotypes for this gene (none recorded, or the fetch failed; see the data audit on Overview).")
+        return
+    by_class = {}
+    for m in b.mouse_phenotypes:
+        for c in (m["classes"] or ["unclassified"]):
+            by_class.setdefault(c, []).append(m["label"])
+    rows = [{"Phenotype system": c, "Phenotypes": len(v), "Examples": "; ".join(sorted(set(v))[:4])} for c, v in sorted(by_class.items(), key=lambda kv: -len(kv[1]))]
+    st.dataframe(rows, hide_index=True)
+    st.caption("Source: [Open Targets](https://platform.opentargets.org) mouse phenotypes (IMPC and MGI). If the knockout disturbs a system your disease involves, "
+               "that points to the receptor's physiological role there; mouse and human biology differ, so treat it as a hypothesis to test, and a normal knockout does not rule out a role (redundancy, compensation).")
 
 
 def render_genetics(a: Analysis) -> None:
@@ -54,7 +69,7 @@ def render_genetics(a: Analysis) -> None:
         plot_note("topology" if segs else "architecture")
         svg(topology_svg(b, segs, tm_motifs(b, segs), segment_stats(b, segs), v) if segs else architecture_svg(b, v))
         plot_note("cascade")
-        components.html(cascade_html(b, v), height=330, scrolling=False)
+        html_frame(cascade_html(b, v), 330)
         st.caption("Each stage is tagged: recorded (a database record), derived (computed from records), predicted (a model score), expected (the usual consequence of this variant type, not measured here) or untested.")
     else:
         st.info("No variants to build a cascade from.")
@@ -73,6 +88,7 @@ def render_genetics(a: Analysis) -> None:
             st.markdown("**Your microenvironment factors**")
             render_claims(fc, b, "gfac")
 
+    _mouse_panel(b)
     alt = st.session_state.get("alterations")
     if alt is not None:
         from ..alterations import summary as alt_summary

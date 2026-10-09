@@ -11,7 +11,7 @@ from ..context import factor_claims, medication_claims
 from ..network import bars_svg
 from ..viz import architecture_svg
 from ..pharma import scenarios
-from .common import render_claims, svg
+from .common import render_claims, svg, get_pockets
 from .shell import Analysis
 
 
@@ -25,6 +25,35 @@ def _props(name: str):
 def _faers(name: str):
     import requests
     return adme.fetch_faers(name, requests.get)
+
+
+def _pocket_panel(a: Analysis) -> None:
+    b = a.b
+    try:
+        from ..pockets import variants_in_pockets
+    except ImportError:
+        st.markdown("#### Candidate pockets on the structure")
+        st.warning("Pocket analysis needs scipy. Add scipy to requirements.txt and reboot the app.")
+        return
+    st.markdown("#### Candidate pockets on the structure")
+    st.caption("Geometry only (LIGSITE-style buriedness on the AlphaFold model). These are places to look at, not predicted binding sites: the model has no ligand, and pockets lined by low-confidence residues are unreliable. "
+               "Validated here on synthetic shapes only; check against a known ligand-bound structure of a related receptor before relying on it.")
+    pk = get_pockets(b)
+    if not pk:
+        st.info("No pocket candidates were found (no structure loaded, or the model has no enclosed cavities).")
+        return
+    st.dataframe([{"#": p["rank"], "Volume (A^3)": p["volume_A3"], "Lining residues": len(p["residues"]), "Helices": ", ".join(p["helices"]) or "-", "Lipid-exposed lining": f"{p['lipid_exposed_share'] * 100:.0f}%",
+                   "Low-confidence lining": f"{p['low_confidence_share'] * 100:.0f}%", "Where": p["kind"]} for p in pk], hide_index=True)
+    plp = [v.pos for v in b.variants if v.is_plp and v.pos and not v.somatic]
+    res = sorted({r for p in pk[:6] for r in p["residues"]})
+    t = variants_in_pockets(res, plp, b.length)
+    if t["testable"]:
+        msg = (f"{t['plp_in_pockets']} of {t['plp_total']} residues with pathogenic or likely-pathogenic variants line the top pockets "
+               f"(odds ratio {t['odds_ratio']:.1f}, one-sided Fisher p = {t['p_value']:.2g}).")
+        (st.success if t["enriched"] else st.info)(msg + (" Disease variants concentrate where a ligand could sit, which supports testing that pocket." if t["enriched"] else " No enrichment: variants are not concentrated in these pockets."))
+        st.caption("Source: ClinVar positions for this protein; the test treats residues as independent, which overstates significance when variants cluster, so read p as a guide.")
+    else:
+        st.caption(t["note"])
 
 
 def render_hotspots(a: Analysis) -> None:
@@ -50,6 +79,8 @@ def render_hotspots(a: Analysis) -> None:
         st.caption("A hotspot is a stretch where disease variants cluster more than chance; it marks functionally sensitive residues, not by itself a drug pocket.")
     else:
         st.info("No variant hotspots were found (too few pathogenic variants, or no ClinVar data).")
+
+    _pocket_panel(a)
 
     st.markdown("#### Tractability and what already exists")
     chips = [("Small molecule", b.tractability.get("Small molecule")), ("Antibody", b.tractability.get("Antibody")), ("PROTAC", b.tractability.get("PROTAC"))]

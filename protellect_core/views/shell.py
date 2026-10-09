@@ -7,7 +7,7 @@ import streamlit as st
 from typing import List, Optional
 
 from ..adapters import Bundle, build_bundle
-from ..analysis import body_systems, defect_claims, possibility, rank_diseases, strategy_options
+from ..analysis import biomarker_lens, body_systems, defect_claims, modality_note, possibility, rank_diseases, strategy_options, user_signal
 from ..context import Context
 from ..contexts import matrix_tissue_annotations
 from ..engine import InputError, parse_experiment
@@ -29,6 +29,11 @@ class Analysis:
     source: str = ""
     orphan: bool = False
     poss: Optional[dict] = None
+    bio: Optional[dict] = None
+    user_sig: Optional[dict] = None
+    modality: str = ""
+    focus: Optional[str] = None
+    focus_options: List[str] = field(default_factory=list)
     defects: List[Claim] = field(default_factory=list)
     diseases: List[Claim] = field(default_factory=list)
     systems: List[Claim] = field(default_factory=list)
@@ -74,6 +79,13 @@ def build_analysis(ss, *, diseases=None, is_gpcr=None, gpcr_class: str = "", cou
     a.diseases = rank_diseases(b, ctx)
     a.defects = defect_claims(b)
     a.poss = possibility(b) if b.loaded else None
+    a.modality = modality_note(b) if b.loaded else ""
+    if b.loaded and ss.get("csv_df") is not None and ss.get("csv_triage_active"):
+        try:
+            a.user_sig = user_signal(parse_experiment(ss.get("csv_df")), b.gene, b.aliases)
+            a.bio = biomarker_lens(b, a.user_sig, str(ss.get("csv_filename") or "your experiment"))
+        except InputError:
+            pass
     a.systems = body_systems(b, a.diseases)
     a.strategies = strategy_options(b, a.defects, a.orphan) if b.loaded else []
     a.hyp_claims = hypothesis_claims(eng, summary, b.gene if source == "the protein you searched" else None)
@@ -112,8 +124,17 @@ def build_analysis(ss, *, diseases=None, is_gpcr=None, gpcr_class: str = "", cou
             a.csv_top = [(r.gene, float(r.effect)) for r in top.itertuples()]
         except InputError:
             a.csv_top = []
+    # Which protein's details to show. The list of proteins is always shown; detail tables follow ONE protein: the one searched, or the one picked.
+    opts = [r.gene for r in summary.results] if (summary is not None and source == "your experiment") else []
+    a.focus_options = opts
+    if opts:
+        if b.loaded and b.gene in opts and ss.get("_focus_for") != b.gene:
+            ss["focus_gene"] = b.gene
+            ss["_focus_for"] = b.gene
+        cur = ss.get("focus_gene")
+        a.focus = cur if cur in opts else None
     n_orph = sum(v["status"] == "orphan" for v in eng.registry.values())
-    a.priorities = priorities(b, a.poss, a.defects, summary if source == "your experiment" else None, a.csv_top or None, n_orph, a.gpcrome, a.wb)
+    a.priorities = priorities(b, a.poss, a.defects, summary if source == "your experiment" else None, a.csv_top or None, n_orph, a.gpcrome, a.wb, bio=a.bio, modality=a.modality)
     return a
 
 

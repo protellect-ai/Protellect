@@ -14,6 +14,49 @@ def _status(a: Analysis) -> str:
     return a.engine.registry.get(a.b.gene.upper(), {}).get("status", "")
 
 
+def _coupling_ml_panel(a: Analysis) -> None:
+    """Sequence-based coupling classifier. Tests itself on held-out subfamilies and shows predictions only if it passes."""
+    import io
+    import pandas as pd
+    from ..coupling_ml import evaluate, predict_orphans
+    from ..gpcrome import load_couplings
+    b = a.b
+    with st.expander("Sequence-based coupling classifier (it tests itself first)", expanded=False):
+        st.caption("Learns G-protein coupling from loop lengths and composition (ICL2, ICL3, C-tail) and the DRY and NPxxY motifs of GPCR sequences. It is tested by holding out whole receptor "
+                   "subfamilies, and a prediction is shown only if it beats guessing the most common class and shuffled labels. The built-in coupling table is small and unverified, so expect it to decline; "
+                   "give it a larger verified table (CSV: gene, primary) to get a real test.")
+        up = st.file_uploader("Verified coupling table (CSV: gene, primary = Gs / Gi / Gq / G12)", type=["csv"], key="cml_up")
+        if st.button("Fetch sequences and run the test", key="cml_run"):
+            import protellect_data as _pd
+            with st.spinner("Fetching GPCR sequences from UniProt and running leave-subfamily-out testing..."):
+                try:
+                    labels = ({str(r["gene"]).upper(): str(r["primary"]) for _, r in pd.read_csv(io.BytesIO(up.getvalue())).iterrows()} if up is not None else load_couplings())
+                    data = _pd.fetch_gpcr_sequences() if hasattr(_pd, "fetch_gpcr_sequences") else {}
+                    if not data:
+                        st.session_state["_cml"] = {"error": "Could not fetch GPCR sequences from UniProt (see the data audit on Overview for the last error)."}
+                    else:
+                        rep = evaluate(data, labels)
+                        st.session_state["_cml"] = {"report": rep, "preds": predict_orphans(data, labels, [b.gene.upper()] if b.loaded else [], rep), "n_seq": len(data), "n_labels": len(labels)}
+                except Exception as e:
+                    st.session_state["_cml"] = {"error": f"{type(e).__name__}: {e}"}
+        r = st.session_state.get("_cml")
+        if not r:
+            return
+        if r.get("error"):
+            st.warning(r["error"])
+            return
+        rep = r["report"]
+        st.markdown(f"**Self-test:** {rep['n']} labelled receptors usable ({r['n_labels']} labels, {r['n_seq']} sequences fetched); classes: " + ", ".join(f"{k} {v}" for k, v in rep["classes"].items()))
+        if "accuracy" in rep:
+            st.dataframe([{"Held-out accuracy": f"{rep['accuracy'] * 100:.0f}%", "95% interval": f"{rep['ci95'][0] * 100:.0f}% to {rep['ci95'][1] * 100:.0f}%", "Always-guess-most-common": f"{rep['baseline'] * 100:.0f}%",
+                           "Shuffled-label p": f"{rep['p_permutation']:.3f}", "Subfamilies held out": rep["n_groups"]}], hide_index=True)
+            st.dataframe([{"Class": k, "Recall": f"{v * 100:.0f}%"} for k, v in rep["per_class_recall"].items()], hide_index=True)
+        (st.success if rep["trusted"] else st.warning)(rep["reason"])
+        for pr in r.get("preds", []):
+            probs = ", ".join(f"{k} {v:.2f}" for k, v in sorted(pr["probabilities"].items(), key=lambda kv: -kv[1]))
+            st.markdown(f"**{pr['gene']}:** predicted primary coupling **{pr['top']}** ({probs}). This passed its self-test, but it is a sequence-pattern estimate: test it with a G-protein-selective assay.")
+
+
 def own_claims(a: Analysis):
     """Precedent hypotheses about the searched orphan itself; shown once, in the Pattern panel."""
     b = a.b
@@ -36,6 +79,7 @@ def render_patterns(a: Analysis) -> None:
             st.info("Your matrix is analysed below. Search a receptor to see what each model says about it.")
         else:
             st.info("Search a receptor, upload an experiment, or load the example case to see what the learned models predict.")
+        _coupling_ml_panel(a)
         return
     stt = _status(a)
     names = [b.gene] + [x for x in b.aliases if len(x) < 14]
@@ -82,3 +126,4 @@ def render_patterns(a: Analysis) -> None:
             st.info("The pattern models cover GPCRs. For other proteins the evidence-ranked sections below (diseases, defects, variants) are the expectations.")
         else:
             st.info("No pattern-learned hypothesis applies yet. Load a matrix or the example case to add the analyses that learn from your data.")
+    _coupling_ml_panel(a)

@@ -14,7 +14,7 @@ from ..engine.report import hypotheses_table, markdown_report, results_table
 from ..engine.templates import GENERAL_RULES, SHAPES, template_csv
 from ..explain import plot_note
 from ..player import narration, render_player
-from .common import data_audit, render_claims, secret, svg
+from .common import data_audit, experiment_protein_list, focus_picker, render_claims, secret, svg
 from .dossier_view import render_dossiers
 from .mission import render_mission
 from .patterns import render_patterns, own_claims
@@ -40,13 +40,26 @@ def _guide(a: Analysis) -> None:
         st.markdown("**Simulation: what is computed here and what is not**")
         st.dataframe([
             {"Capability": "Collective motion of the fold", "Status": "Computed", "How": "Elastic network on the AlphaFold C-alpha atoms (Triage, 3D viewer, Motion). Resting model only; not an active state."},
-            {"Capability": "Binding kinetics (Kd, residence time, time to equilibrium)", "Status": "Calculator", "How": "From kon and koff that you measured (Experiments). It does not predict them."},
-            {"Capability": "Assay protocol with controls", "Status": "Computed", "How": "Built from the evidence for the receptor (Experiments)."},
-            {"Capability": "Learning from your results", "Status": "Computed", "How": "Enter what the assay showed (Overview, outcomes); the precedent model re-weights."},
-            {"Capability": "Docking, binding free energy, interaction maps", "Status": "Needs external tools", "How": "Use AlphaFold-Multimer or a docking suite on the structure; bring the result back as a hypothesis to test."},
-            {"Capability": "Active-state prediction, lipid raft or membrane simulation, allosteric membrane pockets", "Status": "Needs external tools", "How": "Molecular dynamics in an explicit membrane; not feasible in this app."},
-            {"Capability": "Heterodimer shifts (for example MT1/MT2 with GPR50)", "Status": "Not computed", "How": "Needs BRET/FRET or co-IP data; Protellect can plan the experiment, not predict the shift."},
+            {"Capability": "Inactive-to-active comparison", "Status": "From your structures", "How": "Upload two structures of the receptor (Triage): superposed, per-helix movement measured, straight-line morph. Not a simulated pathway."},
+            {"Capability": "Candidate pockets, variants in pockets", "Status": "Computed (geometry)", "How": "LIGSITE-style buriedness on the AlphaFold model plus an enrichment test of ClinVar variants (Hotspots). Not a binding prediction; validated on synthetic shapes only."},
+            {"Capability": "Binding kinetics", "Status": "Fit / calculator", "How": "kon, koff, Kd from YOUR SPR/BLI curves or from rates you enter (Experiments). It does not predict them."},
+            {"Capability": "Dose-response shifts (co-expression, heterodimer, allosteric)", "Status": "Fit from your data", "How": "EC50 per curve and an F-test for a shift between two conditions (Experiments). Measures a shift; does not predict one."},
+            {"Capability": "Docking, binding free energy, interaction maps", "Status": "Run elsewhere, calibrated here", "How": "Run docking, AlphaFold-Multimer or Boltz externally; bring scores into Experiments and see whether they separate known binders from decoys before trusting any ranking."},
+            {"Capability": "G-protein coupling from sequence", "Status": "Self-tested", "How": "Loop and motif features, tested on held-out receptor subfamilies; shown only if it beats baseline and shuffled labels (Patterns). Declines on the small built-in table."},
+            {"Capability": "Mouse knockout phenotypes", "Status": "From Open Targets", "How": "Phenotype systems affected when the gene is knocked out (Genetics). Not verified against the live API in testing."},
+            {"Capability": "Assay protocol with controls; learning from your results", "Status": "Computed", "How": "Experiments; Overview outcomes re-weight the precedent model."},
+            {"Capability": "Lipid-raft or membrane simulation, kon/koff prediction, active-state prediction", "Status": "Needs external tools", "How": "Molecular dynamics in an explicit membrane; use a computational partner and bring the summary back."},
         ], hide_index=True)
+
+
+def _lens_box(p: dict, title: str) -> None:
+    col = {"HIGH": "#22c55e", "MODERATE": "#38bdf8", "LOW": "#94a3b8", "INSUFFICIENT DATA": "#f59e0b"}[p["level"]]
+    st.markdown(f"<div style='border:1px solid {col}66;border-radius:10px;padding:.8rem 1rem;background:#050d1e;margin-bottom:.4rem'><div style='color:#9ab;font-size:.72rem'>{title}</div>"
+                f"<div style='color:{col};font-weight:800;letter-spacing:.06em'>{p['level']}</div>"
+                f"<div style='color:#e6edf7;font-size:1.6rem;font-weight:800'>{p['pct']}<span style='font-size:.9rem;color:#6b8aa3'> / 100</span></div><div style='color:#6b8aa3;font-size:.8rem'>{p['coverage']}</div></div>", unsafe_allow_html=True)
+    with st.expander(f"How this score is built ({title.split(' (')[0].lower()})"):
+        st.dataframe([{"Evidence": c["name"], "Value": c["value"], "Points": f"{c['points']}/{c['max']}" if c["available"] else "not available", "Rule": c["rule"]} for c in p["components"]], hide_index=True)
+        st.caption(p["note"])
 
 
 def _status_orphan(a: Analysis) -> bool:
@@ -68,6 +81,7 @@ def render_overview(a: Analysis) -> None:
         st.caption(f"UniProt {b.uid} · {b.length} residues" + (" · G-protein-coupled receptor" if b.is_gpcr else "") + (" · orphan (no confirmed ligand on record)" if a.orphan else ""))
 
     _alias_notice(a)
+    focus_picker(a)
     render_dossiers(a)
     render_patterns(a)
     if b.loaded:
@@ -76,15 +90,17 @@ def render_overview(a: Analysis) -> None:
 
     if b.loaded:
         st.markdown("#### Pursue this target?")
+        if a.bio:
+            st.caption("Two different questions, scored separately: how important is it in the experiment you brought, and does it look like a drug target. A gene can be high on one and low on the other.")
+        if a.modality:
+            st.info(a.modality)
         left, right = st.columns([2, 3])
         with left:
-            p = a.poss
-            col = {"HIGH": "#22c55e", "MODERATE": "#38bdf8", "LOW": "#94a3b8", "INSUFFICIENT DATA": "#f59e0b"}[p["level"]]
-            st.markdown(f"<div style='border:1px solid {col}66;border-radius:10px;padding:.8rem 1rem;background:#050d1e'><div style='color:{col};font-weight:800;letter-spacing:.06em'>POSSIBILITY: {p['level']}</div>"
-                        f"<div style='color:#e6edf7;font-size:1.6rem;font-weight:800'>{p['pct']}<span style='font-size:.9rem;color:#6b8aa3'> / 100</span></div><div style='color:#6b8aa3;font-size:.8rem'>{p['coverage']}</div></div>", unsafe_allow_html=True)
-            with st.expander("How this score is built"):
-                st.dataframe([{"Evidence": c["name"], "Value": c["value"], "Points": f"{c['points']}/{c['max']}" if c["available"] else "not available", "Rule": c["rule"]} for c in p["components"]], hide_index=True)
-                st.caption(p["note"])
+            _lens_box(a.poss, "As a drug target (small molecule or antibody)")
+            if a.bio:
+                _lens_box(a.bio, "Role in your experiment (biomarker or mechanism)")
+            elif a.user_sig is None and st.session_state.get("csv_df") is not None and st.session_state.get("csv_triage_active"):
+                st.caption(f"{b.gene} is not in the table you uploaded, so there is no experiment-based score for it.")
         with right:
             st.markdown("**Strategy options**")
             render_claims(a.strategies, b, "strat", empty="No strategy rule is triggered by the data retrieved.")
@@ -127,7 +143,16 @@ def _experiment_table(a: Analysis) -> None:
     c1, c2, c3 = st.columns(3)
     c1.metric("Genes read", s.n_input_genes); c2.metric("GPCRs found", s.n_gpcr); c3.metric("Orphan GPCRs", s.n_orphan)
     if s.n_orphan:
-        st.dataframe(results_table(s), hide_index=True)
+        experiment_protein_list(a)
+        if a.focus:
+            from ..engine.report import results_table
+            t = results_table(s)
+            row = t[t["Receptor"] == a.focus]
+            if len(row):
+                st.markdown(f"**{a.focus}**")
+                st.dataframe(row.drop(columns=["Receptor"]), hide_index=True)
+        elif a.focus_options:
+            st.caption("Hypotheses, critic verdicts and the first experiment are shown for one protein at a time: pick one under Show details for, or search it in the sidebar.")
         d1, d2 = st.columns(2)
         d1.download_button("Download all hypotheses (CSV)", hypotheses_table(s).to_csv(index=False), "protellect_hypotheses.csv", "text/csv", key="ov_dl_csv")
         d2.download_button("Download report", markdown_report(s, a.ctx.engine_ctx(), a.engine.calibration_note(), a.engine.library_verified), "protellect_report.md", key="ov_dl_md")

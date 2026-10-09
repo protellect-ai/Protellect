@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pandas as pd
 import streamlit as st
-import streamlit.components.v1 as components
+from ..frame import html_frame
 
 from ..analysis import _same_condition, _systems_in, rank_variants, variant_plan
 from ..explain import plot_note
@@ -14,7 +14,8 @@ from ..topology import motifs as tm_motifs, segment_stats, topology as tm_topolo
 from ..viz import architecture_svg, topology_svg
 from ..viewer import structure_viewer_html
 from ..motion import normal_modes
-from .common import render_claims, svg
+from ..states import compare_states, per_segment, add_state_mode, rotation_into, rotate_comparison
+from .common import render_claims, svg, get_pockets
 from .shell import Analysis
 
 CLASSES = ["pathogenic", "likely pathogenic", "conflicting", "uncertain", "likely benign", "benign", "other"]
@@ -30,6 +31,44 @@ def _modes_cached(pdb_text: str):
         return normal_modes(pdb_text)
     except Exception:
         return None
+
+
+def _state_panel(b, segs, motion):
+    """Optional: upload two conformations (e.g. inactive and active) to measure and animate the difference. Returns the viewer motion payload."""
+    with st.expander("Compare two states (upload an inactive and an active structure)", expanded=False):
+        st.caption("Bring structures from RCSB, GPCRdb models, or your own predictions of the SAME receptor. Protellect superposes them, measures what moved, and animates a straight-line "
+                   "interpolation. It does not predict the active state, and the frames between the two end states are not a simulated pathway.")
+        c1, c2 = st.columns(2)
+        fa = c1.file_uploader("State A (e.g. inactive), PDB", type=["pdb", "ent"], key="st_a")
+        fb = c2.file_uploader("State B (e.g. active), PDB", type=["pdb", "ent"], key="st_b")
+        off = st.number_input("Residue offset for B (added to B's numbering to match A)", value=0, step=1, key="st_off")
+        la = st.text_input("Label for the animation", value="state A to state B", key="st_lbl")
+        if not (fa and fb):
+            return motion
+        try:
+            cmp = compare_states(fa.getvalue().decode("utf-8", "ignore"), fb.getvalue().decode("utf-8", "ignore"), offset_b=int(off))
+        except ValueError as e:
+            st.warning(str(e))
+            return motion
+        m = st.columns(3)
+        m[0].metric("Residues compared", cmp["n_shared"]); m[1].metric("RMSD, all (A)", f"{cmp['rmsd_all']:.1f}"); m[2].metric("RMSD, stable core (A)", f"{cmp['rmsd_core']:.1f}")
+        for w in cmp["warnings"]:
+            st.warning(w)
+        rows = per_segment(cmp, segs or [])
+        if rows:
+            st.dataframe(rows, hide_index=True)
+            tm6 = next((r for r in rows if r["segment"] in ("TM6", "TM 6")), None)
+            if tm6:
+                st.caption(f"TM6 moved by {tm6['mean_A']} A on average (maximum {tm6['max_A']} A). Class A GPCR activation typically swings the cytoplasmic end of TM6 outward by several angstroms to about 10 A, "
+                           "so a much smaller value suggests the two structures are in the same state, or that the model is not a true active state.")
+        else:
+            top = sorted(zip(cmp["resi"], cmp["magnitude"]), key=lambda x: -x[1])[:5]
+            st.caption("Largest movers (residue, A): " + ", ".join(f"{r} ({d})" for r, d in top))
+        R = rotation_into(b.pdb, fa.getvalue().decode("utf-8", "ignore"))
+        if R is None:
+            st.warning("State A shares too few residues with the AlphaFold model shown, so the animation direction cannot be placed on it. The measurements above still hold. Use a state-A structure numbered like the searched protein.")
+            return motion
+        return add_state_mode(motion, rotate_comparison(cmp, R), la or "state A to state B")
 
 
 def _select(a: Analysis):
@@ -114,8 +153,10 @@ def render_triage(a: Analysis, helpers: dict) -> None:
             for x in b.variants:
                 if x.pos:
                     bur[x.pos] = bur.get(x.pos, 0) + 1
+            motion = _modes_cached(b.pdb)
+            motion = _state_panel(b, segs, motion)
             plot_note("structure3d")
-            components.html(structure_viewer_html(b.pdb, b.variants, 520, v.pos if v else None, segs, amr, bur, _modes_cached(b.pdb)), height=526, scrolling=False)
+            html_frame(structure_viewer_html(b.pdb, b.variants, 520, v.pos if v else None, segs, amr, bur, motion, {r: p['rank'] for p in get_pockets(b)[:6] for r in p['residues']}), 526)
         with right:
             st.markdown("#### Interactions")
             plot_note("network")
