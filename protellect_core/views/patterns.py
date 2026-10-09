@@ -14,6 +14,14 @@ def _status(a: Analysis) -> str:
     return a.engine.registry.get(a.b.gene.upper(), {}).get("status", "")
 
 
+def own_claims(a: Analysis):
+    """Precedent hypotheses about the searched orphan itself; shown once, in the Pattern panel."""
+    b = a.b
+    if not b.loaded:
+        return []
+    return [c for c in a.hyp_claims if c.tags.get("category") in ("ligand-class", "signaling", "disease-analogy") and c.text.split(":")[0].upper() == b.gene.upper()]
+
+
 def render_patterns(a: Analysis) -> None:
     b, eng = a.b, a.engine
     st.markdown("#### Pattern-learned hypotheses")
@@ -34,7 +42,7 @@ def render_patterns(a: Analysis) -> None:
     label = {"orphan": "orphan GPCR", "characterized": "characterised GPCR", "": "not in the receptor registry"}[stt if stt in ("orphan", "characterized") else ""]
     st.markdown(f"**{b.gene}** is a **{label}** per {st.session_state.get('_registry_label', 'the registry')}.")
     shown_any = False
-    own = [c for c in a.hyp_claims if c.tags.get("category") in ("ligand-class", "signaling", "disease-analogy") and c.text.split(":")[0].upper() == b.gene.upper()]
+    own = own_claims(a)
     if stt == "orphan" and own:
         shown_any = True
         st.markdown("**Precedent model: what this orphan may bind and couple to**")

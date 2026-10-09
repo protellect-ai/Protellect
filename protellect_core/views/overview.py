@@ -17,7 +17,7 @@ from ..player import narration, render_player
 from .common import data_audit, render_claims, secret, svg
 from .dossier_view import render_dossiers
 from .mission import render_mission
-from .patterns import render_patterns
+from .patterns import render_patterns, own_claims
 from .gpcrome import example_block, render_gpcrome
 from .shell import Analysis, coupling_info
 
@@ -37,6 +37,20 @@ def _guide(a: Analysis) -> None:
                         "- Associated diseases, the defects they involve, and what may happen, all with proof.\n"
                         "- A banner saying what to prioritise or deprioritise and which tab to open next.")
             st.markdown("**What it will not do:** confirm a ligand or function (only a wet-lab experiment does), give a probability of success, or show a statement that has no source.")
+        st.markdown("**Simulation: what is computed here and what is not**")
+        st.dataframe([
+            {"Capability": "Collective motion of the fold", "Status": "Computed", "How": "Elastic network on the AlphaFold C-alpha atoms (Triage, 3D viewer, Motion). Resting model only; not an active state."},
+            {"Capability": "Binding kinetics (Kd, residence time, time to equilibrium)", "Status": "Calculator", "How": "From kon and koff that you measured (Experiments). It does not predict them."},
+            {"Capability": "Assay protocol with controls", "Status": "Computed", "How": "Built from the evidence for the receptor (Experiments)."},
+            {"Capability": "Learning from your results", "Status": "Computed", "How": "Enter what the assay showed (Overview, outcomes); the precedent model re-weights."},
+            {"Capability": "Docking, binding free energy, interaction maps", "Status": "Needs external tools", "How": "Use AlphaFold-Multimer or a docking suite on the structure; bring the result back as a hypothesis to test."},
+            {"Capability": "Active-state prediction, lipid raft or membrane simulation, allosteric membrane pockets", "Status": "Needs external tools", "How": "Molecular dynamics in an explicit membrane; not feasible in this app."},
+            {"Capability": "Heterodimer shifts (for example MT1/MT2 with GPR50)", "Status": "Not computed", "How": "Needs BRET/FRET or co-IP data; Protellect can plan the experiment, not predict the shift."},
+        ], hide_index=True)
+
+
+def _status_orphan(a: Analysis) -> bool:
+    return bool(a.b.loaded and a.orphan)
 
 
 def render_overview(a: Analysis) -> None:
@@ -75,7 +89,7 @@ def render_overview(a: Analysis) -> None:
             st.markdown("**Strategy options**")
             render_claims(a.strategies, b, "strat", empty="No strategy rule is triggered by the data retrieved.")
 
-        mine = medication_claims(ctx, b) + factor_claims(ctx, b) + disease_context_claims(ctx, a.diseases)
+        mine = disease_context_claims(ctx, a.diseases)
         if mine:
             st.markdown("#### Relevance to your setup")
             render_claims(mine, b, "mine")
@@ -87,10 +101,16 @@ def render_overview(a: Analysis) -> None:
 
     render_gpcrome(a)
     st.markdown("#### What may happen (ranked hypotheses)")
-    if a.hyp_claims:
+    _own = {id(c) for c in own_claims(a)} if _status_orphan(a) else set()
+    _rest = [c for c in a.hyp_claims if id(c) not in _own]
+    if _own and _rest != a.hyp_claims:
+        st.caption(f"The {len(_own)} precedent hypotheses for {b.gene} itself are in the Pattern-learned panel above; they are not repeated here.")
+    if _rest:
         st.caption("Ranked by support from documented historical precedents. Each is a hypothesis to test, not a result.")
-        shown = render_claims(a.hyp_claims, b, "hyp", limit=5)
+        shown = render_claims(_rest, b, "hyp", limit=5)
         _crosscheck(shown[:1], b)
+    elif _own:
+        _crosscheck([c for c in a.hyp_claims if id(c) in _own][:1], b)
     elif b.loaded and not a.orphan:
         st.info("The precedent library covers orphan GPCRs. For other proteins the ranked statements above (diseases and defects) are the evidence-based expectations.")
     if a.summary is not None:

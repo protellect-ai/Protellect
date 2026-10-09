@@ -7,7 +7,7 @@ import streamlit as st
 from ..analysis import _systems_in
 from ..explain import plot_note
 from ..network import bars_svg
-from .common import data_audit, render_claims, svg
+from .common import render_claims, svg
 from .shell import Analysis
 
 
@@ -49,4 +49,3 @@ def render_casestudy(a: Analysis, ncbi: dict) -> None:
     if ncbi:
         st.markdown("#### Where it is in the genome")
         st.markdown(f"Chromosome **{ncbi.get('chr', '?')}** · band **{ncbi.get('map', '?')}** · exons **{ncbi.get('exons', '?')}** · [NCBI Gene](https://www.ncbi.nlm.nih.gov/gene/?term={b.gene}%5Bsym%5D+AND+human%5Borgn%5D)")
-    data_audit(b)

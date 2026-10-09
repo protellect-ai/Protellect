@@ -12,7 +12,7 @@ from ..context import factor_claims
 from ..network import bars_svg, interaction_svg
 from ..topology import motifs as tm_motifs, segment_stats, topology as tm_topology
 from ..viz import architecture_svg, topology_svg
-from .common import data_audit, render_claims, svg
+from .common import render_claims, svg
 from .shell import Analysis
 
 ICON = {"meets": "✓ meets", "does not meet": "✗ does not meet", "unavailable": "– no data"}
@@ -90,4 +90,3 @@ def render_genetics(a: Analysis) -> None:
         with st.expander(f"Step-by-step plan for the top variant ({ranked[0].pos})"):
             for i, s in enumerate(variant_plan(ranked[0], b), 1):
                 st.markdown(f"**{i}. {s['step']}.** {s['do']}  \n_Why:_ {s['basis']}")
-    data_audit(b)

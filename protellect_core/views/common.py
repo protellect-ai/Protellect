@@ -78,6 +78,9 @@ def svg(markup: str) -> None:
         st.markdown(markup, unsafe_allow_html=True)
 
 
+_RULE_NOTE = "This follows from a rule applied to data"
+
+
 def claim_card(c: Claim, key: str, bundle=None, how_label: str = "How to go about it") -> None:
     chip = f":{COLOR.get(c.verdict, 'gray')}[ML validation: {c.verdict}]"
     st.markdown(f"**{c.text}**  \n{chip}{KIND.get(c.kind, '')}")
@@ -100,8 +103,11 @@ def claim_card(c: Claim, key: str, bundle=None, how_label: str = "How to go abou
             st.markdown(f"**Basis ({c.kind}):** {c.basis}")
         if c.counters:
             st.markdown("**Counter-arguments from ML validation**")
-            for x in c.counters:
+            shown_c = [x for x in c.counters if not x["text"].startswith(_RULE_NOTE)]
+            for x in shown_c:
                 st.markdown(f"- [{x['severity']}] {x['text']}")
+            if not shown_c:
+                st.markdown("No counter-arguments were raised.")
         else:
             st.markdown("No counter-arguments were raised.")
 
@@ -123,6 +129,8 @@ def render_claims(claims: Iterable[Claim], b, prefix: str, limit: Optional[int] 
     shown, withheld = truth_gate(claims)
     if not shown:
         st.info(empty)
+    if any(c.kind == "rule" for c in shown):
+        st.caption("Statements marked 'rule' follow from a rule applied to data and were not measured directly for this protein; each one names its basis in the proof box.")
     for i, c in enumerate(shown[:limit] if limit else shown):
         claim_card(c, f"{prefix}_{i}", b, how_label)
         st.divider()

@@ -11,7 +11,7 @@ from ..context import factor_claims, medication_claims
 from ..network import bars_svg
 from ..viz import architecture_svg
 from ..pharma import scenarios
-from .common import data_audit, render_claims, svg
+from .common import render_claims, svg
 from .shell import Analysis
 
 
@@ -32,7 +32,7 @@ def render_hotspots(a: Analysis) -> None:
     if not b.loaded:
         st.info("Search a protein in the sidebar to see where it can be drugged.")
         return
-    mine = medication_claims(ctx, b) + factor_claims(ctx, b)
+    mine = medication_claims(ctx, b)
     if mine:
         st.markdown("#### Relevance to your setup")
         render_claims(mine, b, "hmine")
@@ -100,4 +100,3 @@ def render_hotspots(a: Analysis) -> None:
     for c in shown[:3]:
         t = c.tags
         st.caption(f"{c.text.split(':')[0]} · on-target safety risk tier: {t['risk']}" + (f" · organs: {', '.join(t['organs'])}" if t["organs"] else "") + (f" · could phenocopy: {', '.join(t['phenocopy'])}" if t["phenocopy"] else ""))
-    data_audit(b)

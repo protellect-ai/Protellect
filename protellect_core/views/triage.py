@@ -13,7 +13,8 @@ from ..network import bars_svg, interaction_svg
 from ..topology import motifs as tm_motifs, segment_stats, topology as tm_topology
 from ..viz import architecture_svg, topology_svg
 from ..viewer import structure_viewer_html
-from .common import data_audit, render_claims, svg
+from ..motion import normal_modes
+from .common import render_claims, svg
 from .shell import Analysis
 
 CLASSES = ["pathogenic", "likely pathogenic", "conflicting", "uncertain", "likely benign", "benign", "other"]
@@ -21,6 +22,14 @@ CLASSES = ["pathogenic", "likely pathogenic", "conflicting", "uncertain", "likel
 
 def _label(v) -> str:
     return f"{v.pos if v.pos else '?'} · {(v.name.split('(')[-1].rstrip(')') or v.name)[:34]} · {v.significance} · {v.stars}★"
+
+
+@st.cache_data(show_spinner=False, max_entries=8)
+def _modes_cached(pdb_text: str):
+    try:
+        return normal_modes(pdb_text)
+    except Exception:
+        return None
 
 
 def _select(a: Analysis):
@@ -106,7 +115,7 @@ def render_triage(a: Analysis, helpers: dict) -> None:
                 if x.pos:
                     bur[x.pos] = bur.get(x.pos, 0) + 1
             plot_note("structure3d")
-            components.html(structure_viewer_html(b.pdb, b.variants, 520, v.pos if v else None, segs, amr, bur), height=526, scrolling=False)
+            components.html(structure_viewer_html(b.pdb, b.variants, 520, v.pos if v else None, segs, amr, bur, _modes_cached(b.pdb)), height=526, scrolling=False)
         with right:
             st.markdown("#### Interactions")
             plot_note("network")
@@ -129,4 +138,3 @@ def render_triage(a: Analysis, helpers: dict) -> None:
                     st.plotly_chart(helpers["landscape"](), use_container_width=True)
                 except Exception as e:
                     st.caption(f"Plot unavailable: {type(e).__name__}")
-    data_audit(b)

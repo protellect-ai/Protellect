@@ -30,10 +30,10 @@ def app_for(view: str, gene="TP53", uid="P04637", extra=None):
     def script():
         import streamlit as st
         from protellect_core.views.shell import build_analysis
-        from protellect_core.views import overview, triage, hotspots, genetics, casestudy
+        from protellect_core.views import overview, triage, hotspots, genetics, casestudy, experiments
         a = build_analysis(st.session_state, couplings=st.session_state.get("_couplings"))
         {"overview": lambda: overview.render_overview(a), "triage": lambda: triage.render_triage(a, {}), "hotspots": lambda: hotspots.render_hotspots(a),
-         "genetics": lambda: genetics.render_genetics(a), "casestudy": lambda: casestudy.render_casestudy(a, {"chr": "17", "map": "17p13.1", "exons": 11})}[st.session_state["_view"]]()
+         "genetics": lambda: genetics.render_genetics(a), "experiments": lambda: experiments.render_experiments(a, {}), "casestudy": lambda: casestudy.render_casestudy(a, {"chr": "17", "map": "17p13.1", "exons": 11})}[st.session_state["_view"]]()
     at = AppTest.from_function(script, default_timeout=120)
     for k, v in ss.items(): at.session_state[k] = v
     at.session_state["_view"] = view
@@ -105,8 +105,10 @@ def test_context_changes_what_is_shown():
     plain = text(app_for("overview"))
     at = app_for("overview", extra={"ctx_disease": "hepatocellular carcinoma", "pt_meds": "nutlin-3", "ctx_factors": ["DNA damage"]})
     t = text(at)
-    assert "Relevance to your setup" in t and "Tailored to your microenvironment" in t and "Relevance to your setup" not in plain
-    assert "nutlin-3" in t.lower() and "DNA damage" in t
+    assert "Tailored to your microenvironment" in t and "Tailored to your microenvironment" not in plain
+    # each context fact has ONE home tab: medications on Hotspots, factors on Genetics (not repeated on Overview)
+    assert "nutlin-3" in text(app_for("hotspots", extra={"pt_meds": "nutlin-3"})).lower()
+    assert "DNA damage" in text(app_for("genetics", extra={"ctx_factors": ["DNA damage"]}))
 
 
 def test_data_audit_shows_fetch_errors_and_a_diagnostics_button(monkeypatch):
@@ -115,9 +117,27 @@ def test_data_audit_shows_fetch_errors_and_a_diagnostics_button(monkeypatch):
     fake.FETCH_ERRORS = {"DGIdb": "RuntimeError: DGIdb GraphQL: boom"}
     fake.source_diagnostics = lambda g, u: [{"source": "DGIdb (v5 GraphQL)", "ok": False, "http": 500, "ms": 12, "detail": "ERROR x"}]
     monkeypatch.setitem(sys.modules, "protellect_data", fake)
-    at = app_for("casestudy")
+    for other in ("casestudy", "genetics", "hotspots", "triage", "experiments"):
+        at_o = app_for(other)
+        assert not at_o.exception, other
+        assert "Data audit" not in text(at_o), f"data audit repeated on {other}"
+    at = app_for("overview")
     assert not at.exception
     assert "Fetch problems" in text(at) or any("DGIdb" in str(d.value) for d in at.dataframe)
     btn = next(b for b in at.button if b.label == "Check data sources now")
     btn.click().run()
     assert not at.exception and any("DGIdb (v5 GraphQL)" in str(d.value) for d in at.dataframe)
+
+
+def test_experiments_has_kinetics_calculator_and_viewer_has_motion():
+    at = app_for("experiments")
+    assert not at.exception
+    ex = [e for e in at.expander if "kinetics calculator" in e.label.lower()]
+    assert ex
+    from protellect_core.viewer import structure_viewer_html
+    from protellect_core.motion import normal_modes
+    from protellect_core.tests.test_motion import helix_pdb
+    p = helix_pdb(80)
+    html = structure_viewer_html(p, [], 520, None, [], {}, {}, normal_modes(p))
+    assert 'id="mot"' in html and "NOT an active state" in html
+    assert "MOT=null" in structure_viewer_html(p, [], 520)   # no structure motion -> button hidden, no crash

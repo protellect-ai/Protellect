@@ -31,7 +31,7 @@ def _points(variants: Iterable[Variant], limit: int = 150) -> dict:
 
 
 def structure_viewer_html(pdb_text: str, variants: Iterable[Variant], height: int = 520, focus: Optional[int] = None, segments: Optional[list] = None,
-                          am_by_res: Optional[dict] = None, burden: Optional[dict] = None) -> str:
+                          am_by_res: Optional[dict] = None, burden: Optional[dict] = None, motion: Optional[dict] = None) -> str:
     variants = list(variants)
     pp = json.dumps(_points(variants))
     seg_js = json.dumps([{"name": x.name, "kind": x.kind, "start": x.start, "end": x.end} for x in (segments or [])])
@@ -40,6 +40,7 @@ def structure_viewer_html(pdb_text: str, variants: Iterable[Variant], height: in
     pdb_js = json.dumps(pdb_text or "")
     focus_js = json.dumps(int(focus) if focus else None)
     colors = json.dumps(RANK_COLOR)
+    mot_js = json.dumps(motion if motion else None)
     return f"""<!DOCTYPE html><html><head><meta charset="utf-8">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.1.0/3Dmol-min.js"></script>
 <style>*{{margin:0;padding:0;box-sizing:border-box}}html,body{{height:100%;background:#020617;font-family:Inter,system-ui,sans-serif;overflow:hidden}}
@@ -52,15 +53,17 @@ body{{display:flex;flex-direction:column}}
 #guard span{{background:rgba(2,6,23,.85);border:1px solid #0c2040;border-radius:10px;padding:3px 10px}}
 #panel{{position:absolute;top:8px;right:8px;width:230px;z-index:6;background:rgba(4,8,15,.95);border:1px solid #0c2040;border-radius:10px;padding:10px;display:none;color:#c8dcea;font-size:11px}}
 #panel h3{{color:#38bdf8;font-size:12px;margin-bottom:6px}}#panel .r{{display:flex;justify-content:space-between;margin:3px 0}}#panel a{{color:#5cc3ec}}
+#mnote{{position:absolute;top:8px;left:8px;z-index:4;max-width:290px;background:rgba(4,8,15,.92);border:1px solid #0c2040;border-radius:8px;padding:6px 9px;font-size:10px;color:#9ab;display:none}}
 #leg{{position:absolute;bottom:34px;left:7px;z-index:4;background:rgba(4,8,15,.9);border:1px solid #0c2040;border-radius:8px;padding:6px 9px;font-size:10px;color:#9ab}}
 .ld{{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}}</style></head><body>
 <div id="ctrl"><button class="btn on" data-s="cartoon">Ribbon</button><button class="btn" data-s="surface">Surface</button>
-<span style="color:#6b8aa3;font-size:11px;align-self:center;margin-left:6px">colour by</span><button class="btn on" data-c="plddt">Confidence</button><button class="btn" data-c="topo" id="c_topo">Topology</button><button class="btn" data-c="am" id="c_am">AlphaMissense</button><button class="btn" data-c="bur" id="c_bur">Variant burden</button><button class="btn" id="spin">Spin</button><button class="btn" id="reset">Reset</button><button class="btn on" id="tv">Variants</button></div>
+<span style="color:#6b8aa3;font-size:11px;align-self:center;margin-left:6px">colour by</span><button class="btn on" data-c="plddt">Confidence</button><button class="btn" data-c="topo" id="c_topo">Topology</button><button class="btn" data-c="am" id="c_am">AlphaMissense</button><button class="btn" data-c="bur" id="c_bur">Variant burden</button><button class="btn" data-c="mob" id="c_mob">Mobility</button><button class="btn" id="spin">Spin</button><button class="btn" id="mot">&#9654; Motion</button><select id="mode" class="btn" style="display:none"></select><button class="btn" id="reset">Reset</button><button class="btn on" id="tv">Variants</button></div>
 <div id="wrap"><div id="v"></div><div id="guard"><span>Click to interact. Until then the page scrolls normally.</span></div>
 <div id="panel"><h3 id="pt"></h3><div id="pc"></div></div>
+<div id="mnote">Low-frequency motion of the resting AlphaFold model (elastic network). It shows what is mechanically free to move. It is NOT an active state and has no ligand, lipid or G protein in it.</div>
 <div id="leg"><div id="legtxt"></div><div style="margin-top:4px"><i class="ld" style="background:#ff2d55"></i>pathogenic &nbsp;<i class="ld" style="background:#ff8c42"></i>likely &nbsp;<i class="ld" style="background:#ffd60a"></i>VUS (spheres)</div></div></div>
 <script>
-const PP={pp},PDB={pdb_js},FOCUS={focus_js},COL={colors},SEG={seg_js},AMR={am_js},BUR={bur_js};
+const PP={pp},PDB={pdb_js},FOCUS={focus_js},COL={colors},SEG={seg_js},AMR={am_js},BUR={bur_js},MOT={mot_js};
 const wrap=document.getElementById('wrap'),guard=document.getElementById('guard'),box=document.getElementById('v');
 function showGuard(){{guard.style.display='flex'}} function hideGuard(){{guard.style.display='none'}}
 guard.addEventListener('click',hideGuard);wrap.addEventListener('mouseleave',showGuard);
@@ -78,9 +81,11 @@ const mixc=(a,b,t)=>{{t=Math.max(0,Math.min(1,t));const p=x=>[1,3,5].map(i=>pars
 const CF={{plddt:a=>a.b>=90?'#1565C0':a.b>=70?'#29B6F6':a.b>=50?'#FDD835':'#FF7043',
  topo:a=>{{const s=segOf(a.resi);if(!s)return '#475569';return s.kind==='TM'?TMC[(parseInt(s.name.slice(2))-1)%7]:s.kind==='ECL'?'#cbd5e1':s.kind==='ICL'?'#64748b':'#475569'}},
  am:a=>{{const v=AMR[String(a.resi)];return v===undefined?'#334155':mixc('#1d4e89','#ff2d55',(v-0.2)/0.7)}},
+ mob:a=>{{const m=MOBI[String(a.resi)];return m===undefined?'#334155':mixc('#1d4e89','#ff8c42',m)}},
  bur:a=>{{const n=BUR[String(a.resi)]||0;return n===0?'#16365c':mixc('#fbbf24','#ff2d55',Math.min(1,(n-1)/4))}}}};
+const MOBI={{}};if(MOT)MOT.resi.forEach((r,i)=>{{MOBI[String(r)]=MOT.mobility[i]}});
 const cf=a=>CF[cmode](a);
-const LEG={{plddt:'pLDDT: &ge;90 dark blue, 70-90 light blue, 50-70 yellow, &lt;50 orange',topo:'TM1-TM7 each a colour; loops grey; termini dark',am:'mean-of-max AlphaMissense per residue: blue (benign) to red (pathogenic)',bur:'ClinVar variants per residue: dark = none, yellow to red = more'}};
+const LEG={{plddt:'pLDDT: &ge;90 dark blue, 70-90 light blue, 50-70 yellow, &lt;50 orange',topo:'TM1-TM7 each a colour; loops grey; termini dark',am:'mean-of-max AlphaMissense per residue: blue (benign) to red (pathogenic)',bur:'ClinVar variants per residue: dark = none, yellow to red = more',mob:'Mechanical mobility from the elastic network: blue = rigid core, orange = free to move'}};
 function legend(){{document.getElementById('legtxt').innerHTML=LEG[cmode]}}
 function paint(){{v.removeAllSurfaces();v.removeAllLabels();
  if(style==='surface'){{v.setStyle({{}},{{cartoon:{{colorfunc:cf,opacity:.5}}}});v.addSurface($3Dmol.SurfaceType.VDW,{{colorfunc:cf,opacity:.7}})}}
@@ -100,6 +105,22 @@ document.querySelectorAll('.btn[data-c]').forEach(b=>b.addEventListener('click',
 if(!SEG.length)document.getElementById('c_topo').style.display='none';if(!Object.keys(AMR).length)document.getElementById('c_am').style.display='none';if(!Object.keys(BUR).length)document.getElementById('c_bur').style.display='none';
 document.getElementById('spin').addEventListener('click',()=>{{spinning=!spinning;v.spin(spinning?'y':false,.6)}});
 document.getElementById('reset').addEventListener('click',()=>{{v.zoomTo();v.render()}});
+
+let moving=false,curMode=0;
+const NF=24,AMP=3.5;
+function frameModel(k){{const f=Math.sin(2*Math.PI*k/NF)*AMP,vec=MOT.modes[curMode].vec,ix={{}};MOT.resi.forEach((r,i)=>ix[r]=i);
+ return PDB.split('\\n').filter(l=>l.startsWith('ATOM')).map(l=>{{const r=parseInt(l.substr(22,4)),i=ix[r];if(i===undefined)return l;const d=vec[i];
+  const x=(parseFloat(l.substr(30,8))+f*d[0]).toFixed(3).padStart(8),y=(parseFloat(l.substr(38,8))+f*d[1]).toFixed(3).padStart(8),z=(parseFloat(l.substr(46,8))+f*d[2]).toFixed(3).padStart(8);
+  return l.substr(0,30)+x+y+z+l.substr(54)}}).join('\\n')+'\\nENDMDL'}}
+function startMotion(){{v.removeAllModels();let all='';for(let k=0;k<NF;k++)all+='MODEL '+(k+1)+'\\n'+frameModel(k)+'\\n';
+ v.addModelsAsFrames(all,'pdb');paint();v.animate({{interval:70,loop:'forward',reps:0}})}}
+function stopMotion(){{v.stopAnimate();v.removeAllModels();v.addModel(PDB,'pdb');paint()}}
+if(!MOT){{document.getElementById('mot').style.display='none';document.getElementById('c_mob').style.display='none'}}
+else{{const sel=document.getElementById('mode');MOT.modes.forEach((m,i)=>{{const o=document.createElement('option');o.value=i;o.textContent='mode '+m.mode;sel.appendChild(o)}});
+ document.getElementById('mot').addEventListener('click',e=>{{moving=!moving;e.target.classList.toggle('on',moving);sel.style.display=moving?'inline-block':'none';document.getElementById('mnote').style.display=moving?'block':'none';
+  if(moving){{if(spinning){{spinning=false;v.spin(false)}};startMotion()}}else stopMotion()}});
+ sel.addEventListener('change',()=>{{curMode=+sel.value;if(moving){{v.stopAnimate();startMotion()}}}})}}
+
 document.getElementById('tv').addEventListener('click',e=>{{showV=!showV;e.target.classList.toggle('on',showV);paint()}});
 }}
 </script></body></html>"""

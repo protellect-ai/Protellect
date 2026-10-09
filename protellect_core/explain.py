@@ -80,10 +80,10 @@ PLOTS: Dict[str, Dict[str, str]] = {
     },
     "structure3d": {
         "title": "Predicted 3D structure (AlphaFold)",
-        "what": "The AlphaFold model, with four colour modes: prediction confidence, the seven helices, AlphaMissense pathogenicity, or ClinVar variant burden. The legend changes with the mode.",
+        "what": "The AlphaFold model, with five colour modes: prediction confidence, the seven helices, AlphaMissense pathogenicity, ClinVar variant burden, or mechanical mobility. The Motion button animates the lowest-frequency collective motions of the fold (an elastic network model on the C-alpha atoms); pick mode 1, 2 or 3.",
         "why": "To see where variants and confident regions sit in space, and which of them are near each other even if far apart in sequence.",
         "read": "Click the viewer to interact; until then the page scrolls normally. Move the mouse out of it to give the wheel back to the page.",
-        "care": "It is a prediction without a ligand. The binding pocket of an orphan is not reliable, and low-confidence loops should not be interpreted.",
+        "care": "It is a prediction without a ligand. The binding pocket of an orphan is not reliable, and low-confidence loops should not be interpreted. The Motion animation shows what the resting fold is mechanically free to do. It is not an active state, not a ligand-induced change and has no lipid or G protein in it.",
     },
     "signalling": {
         "title": "What may be happening, step by step",
