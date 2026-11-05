@@ -54,4 +54,11 @@ def hypothesis_claims(engine, summary, gene: Optional[str] = None) -> List[Claim
                           counters=[{"check": c["check"], "severity": c["severity"], "text": c["text"], "evidence": c.get("evidence", "")} for c in h.counterarguments],
                           how=[h.test_experiment])
             out.append(claim)
+    from ..reported import prior_claims
+    reg = getattr(engine, "registry", {}) or {}
+    for r in summary.results:
+        if gene and r.gene.upper() != gene.upper():
+            continue
+        eff = r.effect if isinstance(r.effect, float) and not math.isnan(r.effect) else None
+        out.extend(prior_claims(r.gene, reg.get(r.gene.upper()), eff, r.effect_type))
     return sorted(out, key=lambda c: -c.score)

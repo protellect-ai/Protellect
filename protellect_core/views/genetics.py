@@ -13,6 +13,7 @@ from ..network import bars_svg, interaction_svg
 from ..topology import motifs as tm_motifs, segment_stats, topology as tm_topology
 from ..viz import architecture_svg, topology_svg
 from .common import render_claims, svg
+from .unknowns_view import render_protein_unknowns
 from .shell import Analysis
 
 ICON = {"meets": "✓ meets", "does not meet": "✗ does not meet", "unavailable": "– no data"}
@@ -89,6 +90,10 @@ def render_genetics(a: Analysis) -> None:
             render_claims(fc, b, "gfac")
 
     _mouse_panel(b)
+    try:
+        render_protein_unknowns(a)
+    except Exception as e:
+        st.caption(f"The unknowns panel could not be built: {type(e).__name__}: {e}")
     alt = st.session_state.get("alterations")
     if alt is not None:
         from ..alterations import summary as alt_summary

@@ -67,6 +67,7 @@ class RunSummary:
     n_orphan: int
     results: List[ReceptorResult] = field(default_factory=list)
     characterized: List[str] = field(default_factory=list)
+    alias_notes: List[str] = field(default_factory=list)
 
 
 class HypothesisEngine:
@@ -227,7 +228,9 @@ class HypothesisEngine:
     def run(self, parsed: pd.DataFrame, context: Optional[dict] = None, top_n: int = 3,
             extra_annotations: Optional[dict] = None) -> RunSummary:
         context = context or {}
-        summary = RunSummary(n_input_genes=len(parsed), n_gpcr=0, n_orphan=0)
+        from ..reported import canonicalize
+        parsed = canonicalize(parsed, self.registry)       # registry synonyms too, so GPR56 and ADGRG1 are one receptor
+        summary = RunSummary(n_input_genes=len(parsed), n_gpcr=0, n_orphan=0, alias_notes=list(parsed.attrs.get("alias_notes", [])))
         for row in parsed.itertuples():
             info = self.registry.get(row.gene)
             if info is None:

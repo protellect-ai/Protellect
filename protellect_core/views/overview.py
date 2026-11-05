@@ -10,11 +10,12 @@ from ..topology import motifs as tm_motifs, segment_stats, topology as tm_topolo
 from ..viz import architecture_svg, signalling_svg
 from ..context import disease_context_claims, factor_claims, medication_claims
 from ..engine.llm_debate import PROVIDERS, LLMError, available_providers, debate, fallback_llm
+from ..engine.memo import decision_memo
 from ..engine.report import hypotheses_table, markdown_report, results_table
 from ..engine.templates import GENERAL_RULES, SHAPES, template_csv
 from ..explain import plot_note
 from ..player import narration, render_player
-from .common import data_audit, experiment_protein_list, focus_picker, render_claims, secret, svg
+from .common import data_audit, experiment_protein_list, focus_picker, for_focus, render_claims, secret, svg
 from .dossier_view import render_dossiers
 from .mission import render_mission
 from .patterns import render_patterns, own_claims
@@ -119,10 +120,15 @@ def render_overview(a: Analysis) -> None:
     st.markdown("#### What may happen (ranked hypotheses)")
     _own = {id(c) for c in own_claims(a)} if _status_orphan(a) else set()
     _rest = [c for c in a.hyp_claims if id(c) not in _own]
+    _keep = for_focus(a, _rest)
+    if len(_keep) != len(_rest):         # one protein at a time: the other proteins' cards are hidden
+        st.caption(("Showing hypotheses for " + a.focus + " only. Pick another protein under Show details for to see its hypotheses.") if a.focus
+                   else "Hypotheses are shown for one protein at a time: pick a protein under Show details for.")
+    _rest = _keep
     if _own and _rest != a.hyp_claims:
         st.caption(f"The {len(_own)} precedent hypotheses for {b.gene} itself are in the Pattern-learned panel above; they are not repeated here.")
     if _rest:
-        st.caption("Ranked by support from documented historical precedents. Each is a hypothesis to test, not a result.")
+        st.caption("Ranked by support. Precedent statements come from documented deorphanisations; statements marked reported or family-level come from the literature and are not learned from your data. Each is a hypothesis to test, not a result.")
         shown = render_claims(_rest, b, "hyp", limit=5)
         _crosscheck(shown[:1], b)
     elif _own:
@@ -142,20 +148,25 @@ def _experiment_table(a: Analysis) -> None:
     st.markdown(f"#### Orphan GPCRs found in {a.source}")
     c1, c2, c3 = st.columns(3)
     c1.metric("Genes read", s.n_input_genes); c2.metric("GPCRs found", s.n_gpcr); c3.metric("Orphan GPCRs", s.n_orphan)
+    for n in getattr(s, "alias_notes", []) or []:
+        st.info("Gene names reconciled: " + n)
     if s.n_orphan:
         experiment_protein_list(a)
         if a.focus:
             from ..engine.report import results_table
-            t = results_table(s)
+            t = results_table(s, a.engine.registry)
             row = t[t["Receptor"] == a.focus]
             if len(row):
                 st.markdown(f"**{a.focus}**")
                 st.dataframe(row.drop(columns=["Receptor"]), hide_index=True)
         elif a.focus_options:
             st.caption("Hypotheses, critic verdicts and the first experiment are shown for one protein at a time: pick one under Show details for, or search it in the sidebar.")
-        d1, d2 = st.columns(2)
+        d1, d2, d3 = st.columns(3)
         d1.download_button("Download all hypotheses (CSV)", hypotheses_table(s).to_csv(index=False), "protellect_hypotheses.csv", "text/csv", key="ov_dl_csv")
-        d2.download_button("Download report", markdown_report(s, a.ctx.engine_ctx(), a.engine.calibration_note(), a.engine.library_verified), "protellect_report.md", key="ov_dl_md")
+        d2.download_button("Download report", markdown_report(s, a.ctx.engine_ctx(), a.engine.calibration_note(), a.engine.library_verified, a.engine.registry), "protellect_report.md", key="ov_dl_md")
+        _rec = dict(st.session_state.get("_csv_meta") or {}, registry_label=st.session_state.get("_registry_label", ""), n_cases=len(getattr(a.engine, "cases", []) or []))
+        d3.download_button("Download decision memo", decision_memo(s, a.ctx.engine_ctx(), a.engine.registry, a.engine.library_verified, _rec), "protellect_decision_memo.md",
+                           help="One page: what to test first, what could be wrong, and a record of the data and settings so the analysis can be repeated.", key="ov_dl_memo")
     st.caption(a.engine.calibration_note())
 
 

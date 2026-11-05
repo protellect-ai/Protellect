@@ -106,12 +106,21 @@ def focus_picker(a) -> None:
                  help="Details (what your data says, what it might mean, the experiments to run) are shown for one protein at a time. Searching a protein in the sidebar selects it here.")
 
 
+def for_focus(a, claims):
+    """One protein at a time: drop cards about the other proteins in the uploaded list; keep the chosen protein's and anything not about a listed protein."""
+    listed = {x.upper() for x in (getattr(a, "focus_options", None) or [])}
+    if not listed:
+        return list(claims)
+    foc = (getattr(a, "focus", None) or "").upper()
+    return [c for c in claims if (c.text.split(":")[0].replace("Confirm or refute", "").strip().upper() not in listed) or (foc and c.text.split(":")[0].strip().upper() == foc)]
+
+
 def experiment_protein_list(a) -> None:
     """Just the proteins found in the uploaded experiment, with the signal each one shows. No per-protein analysis."""
     if a.summary is None or not a.summary.n_orphan:
         return
     from ..engine.report import results_table
-    t = results_table(a.summary)[["Receptor", "Your signal"]].rename(columns={"Receptor": "Protein"})
+    t = results_table(a.summary, a.engine.registry)[["Receptor", "Your signal"]].rename(columns={"Receptor": "Protein"})
     st.dataframe(t, hide_index=True)
 
 
@@ -134,6 +143,17 @@ def claim_card(c: Claim, key: str, bundle=None, how_label: str = "How to go abou
         with st.expander(f"{how_label} ({len(c.how)} step{'s' if len(c.how) != 1 else ''})"):
             for i, h in enumerate(c.how, 1):
                 st.markdown(f"{i}. {h}")
+    if c.outcomes:
+        with st.expander("What each result would mean"):
+            for o in c.outcomes:
+                st.markdown(f"- {o}")
+    if c.controls:
+        with st.expander("Controls and how to call it"):
+            for o in c.controls:
+                st.markdown(f"- {o}")
+    ev_for, ev_against = c.tags.get("for"), c.tags.get("against")
+    if ev_for or ev_against:
+        st.caption("Evidence for: " + ("; ".join(ev_for) if ev_for else "none") + (" · Evidence against: " + "; ".join(ev_against) if ev_against else "") + f" · evidence score {c.score:g} (design-choice weights, not a probability)")
     ak = c.tags.get("assay")
     if ak:
         from ..assays import render_assay

@@ -10,14 +10,14 @@ from .common import render_claims
 from .dossier_view import render_plan
 from .shell import Analysis
 from .fits import render_fits, render_external
-from .common import experiment_protein_list
+from .common import experiment_protein_list, for_focus
 from ..kinetics import kinetics, reading, fmt_molar, fmt_time
 
 
 def _experiment_claims(a: Analysis):
     b = a.b
     out = []
-    for c in a.hyp_claims[:4]:
+    for c in for_focus(a, a.hyp_claims)[:4]:
         out.append(Claim(text=f"Confirm or refute: {c.text}", proofs=c.proofs, kind="rule", score=10 + c.score, tags=dict(c.tags), how=c.how, basis="This is the assay that directly tests the hypothesis; a positive result in receptor-expressing cells with empty-vector controls is the standard confirmation."))
     for c in a.strategies[:3]:
         out.append(Claim(text=f"{c.text}: first experiment", proofs=c.proofs, kind="rule", score=5 + c.score, tags=dict(c.tags), how=c.how, basis=c.basis))

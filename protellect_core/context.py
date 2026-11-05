@@ -65,6 +65,43 @@ class Context:
         return {"disease": self.disease, "tissue": self.tissue, "comparison": self.comparison}
 
 
+_META_COLS = {
+    "disease": ("disease", "disease_type", "indication", "cancer_type", "tumor_type", "tumour_type", "diagnosis"),
+    "tissue": ("tissue", "tissue_type", "organ", "site", "sample_site", "compartment"),
+    "cell": ("cell_type", "celltype", "cell_population", "cell_subset", "population", "cluster_name"),
+    "comparison": ("comparison", "contrast", "condition", "group_comparison"),
+}
+
+
+def metadata_from_df(df) -> dict:
+    """Optional sample-metadata columns in an uploaded table. A field is read only when the whole file agrees on one value
+    (a per-gene results table normally describes one comparison). Returns {'ctx_disease'|'ctx_tissue'|'ctx_comparison': text, 'found': [...], 'ignored': [...]}."""
+    out: dict = {"found": [], "ignored": []}
+    try:
+        norm = {re.sub(r"[\s.\-]+", "_", str(c).strip().lower()): c for c in df.columns}
+    except Exception:
+        return out
+    got = {}
+    for field_, names in _META_COLS.items():
+        col = next((norm[n] for n in names if n in norm), None)
+        if col is None:
+            continue
+        vals = sorted({str(v).strip() for v in df[col].dropna() if str(v).strip() and str(v).strip().lower() != "nan"})
+        if len(vals) == 1:
+            got[field_] = vals[0]
+            out["found"].append(f"{col} = {vals[0]}")
+        elif vals:
+            out["ignored"].append(f"{col} has {len(vals)} different values, so it was not used")
+    if "disease" in got:
+        out["ctx_disease"] = got["disease"]
+    tis = ", ".join(x for x in (got.get("cell"), got.get("tissue")) if x)
+    if tis:
+        out["ctx_tissue"] = tis
+    if "comparison" in got:
+        out["ctx_comparison"] = got["comparison"]
+    return out
+
+
 def factor_claims(ctx: Context, b: Bundle) -> List[Claim]:
     names = {p.name.upper(): p for p in b.partners} | {b.gene.upper(): None}
     out = []

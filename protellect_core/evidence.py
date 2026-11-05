@@ -29,6 +29,8 @@ class Claim:
     verdict: str = "unchecked"         # ML validation: holds up | weakened | contested | unchecked
     counters: List[dict] = field(default_factory=list)
     how: List[str] = field(default_factory=list)   # "how to go about it" steps (themselves rules, with the basis above)
+    outcomes: List[str] = field(default_factory=list)   # "if you see X, it suggests Y" readings of the test
+    controls: List[str] = field(default_factory=list)   # controls and calls that make the test interpretable
 
     @property
     def sources(self) -> List[str]:

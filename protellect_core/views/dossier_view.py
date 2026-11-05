@@ -87,7 +87,7 @@ def render_dossiers(a: Analysis, prefix: str = "dos", full: int = 4, limit: int 
     if a.summary is not None:
         try:
             from ..engine.report import results_table
-            sig = {r["Receptor"]: r["Your signal"] for _, r in results_table(a.summary).iterrows()}
+            sig = {r["Receptor"]: r["Your signal"] for _, r in results_table(a.summary, a.engine.registry).iterrows()}
         except Exception:
             sig = {}
     st.dataframe(pd.DataFrame([{"Rank": i, "Protein": d.gene, "Your signal": sig.get(d.gene, ""), "Expressed in": ", ".join(d.contexts[:2])} for i, d in enumerate(ds, 1)]), hide_index=True)

@@ -100,7 +100,8 @@ def parse_experiment(src: Union[str, pd.DataFrame], shape: Optional[str] = None,
     out = out.loc[out["effect"].abs().groupby(out["gene"]).idxmax()].reset_index(drop=True)
     if out.empty:
         raise InputError("No usable rows after cleaning/filtering.")
-    return out
+    from ..reported import canonicalize      # legacy names (GPR56) -> official symbols (ADGRG1), duplicates merged
+    return canonicalize(out)
 
 
 def lookup_frame(gene: str) -> pd.DataFrame:

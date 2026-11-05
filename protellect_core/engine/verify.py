@@ -63,6 +63,8 @@ def run(cases_path: Path, out_csv: Path, fetch=None, sleep: float = 0.3) -> List
             r.raise_for_status()
             return r.json()
     data = json.loads(Path(cases_path).read_text())
+    if isinstance(data, dict) and isinstance(data.get("cases"), list):    # the bundled file is {"_comment": ..., "cases": [...]}
+        data = data["cases"]
     rows = []
     for cid, case in (data.items() if isinstance(data, dict) else [(c.get("id"), c) for c in data]):
         names = [case.get("id"), case.get("gene")] + list(case.get("aliases") or [])

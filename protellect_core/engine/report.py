@@ -25,19 +25,34 @@ def _top(r, category):
     return next((h for h in r.hypotheses if h.category == category), None)
 
 
-def results_table(summary) -> pd.DataFrame:
-    """One row per orphan receptor: the at-a-glance answer."""
+def results_table(summary, registry: Optional[dict] = None) -> pd.DataFrame:
+    """One row per orphan receptor: the at-a-glance answer.
+
+    When the precedent model has nothing to say, a receptor with a literature report or a family-level pattern shows that instead,
+    marked '(reported)' or '(family-level)' so it is never mistaken for something learned from your data."""
+    from ..reported import prior_text, compare_with_literature
     rows = []
     for r in summary.results:
         lig, sig = _top(r, "ligand-class"), _top(r, "signaling")
         base = {"Receptor": r.gene, "Your signal": _signal(r)}
+        pr = prior_text(r.gene, (registry or {}).get(r.gene.upper()))
         if lig is None:
-            rows.append({**base, "Top ligand-class hypothesis": "No hypothesis (insufficient evidence)", "Relative support": None,
-                         "Critic": "-", "Likely coupling": "-", "First experiment": "Add annotation or tissue context"})
+            if pr:
+                rows.append({**base, "Top ligand-class hypothesis": pr["ligand"], "Relative support": None, "Critic": "-",
+                             "Likely coupling": pr["coupling"], "First experiment": "Test the " + pr["basis"] + " coupling first (see the hypothesis card)"})
+            else:
+                rows.append({**base, "Top ligand-class hypothesis": "No hypothesis (insufficient evidence)", "Relative support": None,
+                             "Critic": "-", "Likely coupling": "-", "First experiment": "No ligand class is supported: run the G-protein panel and the constitutive-activity check (Experiments tab), and add tissue context"})
         else:
+            cp = sig.value if sig else (pr["coupling"] if pr else "-")
             rows.append({**base, "Top ligand-class hypothesis": lig.value, "Relative support": lig.support, "Critic": lig.verdict,
-                         "Likely coupling": sig.value if sig else "-", "First experiment": SHORT_TEST.get(lig.value, "see card")})
-    return pd.DataFrame(rows)
+                         "Likely coupling": cp, "First experiment": SHORT_TEST.get(lig.value, "see card")})
+            cmp = compare_with_literature(r.gene, lig.value, sig.value if sig else None)
+            rows[-1]["Versus the literature"] = cmp["status"] if cmp["status"] != "no entry" else "-"
+            if cmp["status"] == "differs" and pr:
+                rows[-1]["Reported in the literature"] = f"{pr['ligand']}; {pr['coupling']}"
+    df = pd.DataFrame(rows)
+    return df
 
 
 def hypotheses_table(summary) -> pd.DataFrame:
@@ -61,7 +76,7 @@ def hypotheses_table(summary) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def markdown_report(summary, context: Optional[dict] = None, calibration_note: str = "", library_verified: bool = False) -> str:
+def markdown_report(summary, context: Optional[dict] = None, calibration_note: str = "", library_verified: bool = False, registry: Optional[dict] = None) -> str:
     context = context or {}
     L = ["# Protellect hypothesis report", "",
          f"Generated: {datetime.date.today().isoformat()}", "",
@@ -76,8 +91,10 @@ def markdown_report(summary, context: Optional[dict] = None, calibration_note: s
         L += ["> **The historical case library has not been expert-verified. Treat all rankings as illustrative.**"]
     if calibration_note:
         L += [f"> {calibration_note}"]
+    for n in getattr(summary, "alias_notes", []) or []:
+        L += [f"> Gene names: {n}"]
     L += ["", "## Results at a glance", ""]
-    t = results_table(summary)
+    t = results_table(summary, registry)
     if t.empty:
         L += ["No orphan GPCRs from the current registry were found in this data.", ""]
     else:
@@ -87,6 +104,15 @@ def markdown_report(summary, context: Optional[dict] = None, calibration_note: s
         L.append("")
     for r in summary.results:
         L += [f"## {r.gene}", ""]
+        from ..reported import prior_claims, REPORTED_NOTE
+        pcs = prior_claims(r.gene, (registry or {}).get(r.gene.upper()))
+        if pcs:
+            L += ["### Reported in the literature (not learned from your data)", ""]
+            for c in pcs:
+                L += [f"- {c.text}", "  - Papers: " + "; ".join(p.detail for p in c.proofs if p.kind == "literature")]
+                if c.how:
+                    L += ["  - Test it: " + " ".join(c.how)]
+            L += [f"- {REPORTED_NOTE}", ""]
         if r.status != "hypotheses":
             L += [r.message, ""]
             continue

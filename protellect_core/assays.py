@@ -177,11 +177,27 @@ ASSAYS: Dict[str, Assay] = {a.key: a for a in [
          Outcome("Same as wild type", "Not damaging in this assay; the assay may not capture the real defect.", "Test another readout; keep the ClinVar classification in mind.")),
         ("A functional assay in an over-expression system does not replace clinical classification.",),
         ("Richards et al., Genet Med 2015 (ACMG/AMP variant-classification guidelines)",)),
+    Assay(
+        "adhesion_gpcr", "Adhesion receptor: tethered agonist and N-terminal fragment",
+        "Is this adhesion receptor held inactive by its own N-terminus, and does its tethered peptide or a matrix partner switch it on?",
+        ("Make three constructs with the same tag: full-length receptor, a version lacking the N-terminal fragment (the constitutively active form), and a cleavage-site mutant of the GAIN domain.",
+         "In HEK293 cells with an empty-vector control, read the G12/13 output (SRE/SRF-luciferase or RhoA activation) and, as a second readout, a G-protein BRET sensor.",
+         "Add a synthetic tethered-agonist peptide to full-length cells, with a scrambled peptide as the control; add the candidate matrix protein (for example collagen III) as a coating against an irrelevant-protein coating.",
+         "Measure surface expression for every construct and run a Western blot to see whether the receptor is cleaved into two fragments."),
+        (Outcome("The fragment-deleted form signals far above full-length and empty vector", "The N-terminus holds the receptor inactive; a tethered agonist is a plausible activator.", "Test the synthetic peptide on full-length cells and map the peptide sequence with alanine scanning."),
+         Outcome("The peptide activates full-length cells and the scrambled peptide does not", "Supports a tethered-agonist mechanism for this receptor.", "Confirm with a dose-response and a second readout; check the cleavage-site mutant loses the response."),
+         Outcome("The matrix coating activates cells and the irrelevant coating does not", "Supports that matrix protein as a ligand or a cofactor.", "Test binding to the purified N-terminal fragment and block with an antibody to it."),
+         Outcome("Cleavage-site mutant signals like wild type", "Cleavage is not needed in this assay.", "Check cleavage by Western blot; some adhesion receptors signal without it."),
+         Outcome("No construct signals and all are at the surface", "The receptor may couple to another transducer, need a matrix or mechanical force, or need a partner protein.", "Add arrestin recruitment and a shear or substrate-stiffness stimulus."),
+         Outcome("No construct signals and the receptors are not at the surface", "A trafficking problem; inconclusive.", "Add an export tag, change the cell line, or lower the growth temperature.")),
+        ("Over-expressed adhesion receptors can signal with no stimulus, so always compare against the fragment-deleted form and an empty vector.", "Tags placed at the N-terminus can change cleavage; check the tag position."),
+        ("Hamann et al., Pharmacol Rev 2015 (adhesion GPCR review)", "Liebscher et al., Cell Rep 2014 (tethered agonist)", "Stoveken et al., PNAS 2015 (tethered agonists)")),
 ]}
 
 # which assays follow from which kind of hypothesis, in the order they should be run
 CATEGORY_ASSAYS: Dict[str, Tuple[str, ...]] = {
     "ligand-class": ("ligand_screen", "gprotein_panel", "binding_validation"),
+    "adhesion": ("adhesion_gpcr", "second_messenger", "surface_expression"),
     "ligand": ("ligand_screen", "gprotein_panel", "binding_validation"),
     "coupling": ("gprotein_panel", "second_messenger", "antagonist_pathway"),
     "signalling": ("gprotein_panel", "second_messenger", "antagonist_pathway"),

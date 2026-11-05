@@ -58,3 +58,15 @@ def test_picking_a_protein_in_the_selector_changes_the_detail():
 def test_without_an_experiment_nothing_changes():
     at = app_for("overview")
     assert not at.exception and not [s for s in at.selectbox if s.key == "focus_gene"]
+
+
+def test_for_focus_hides_other_proteins_cards_and_keeps_unrelated_ones():
+    from types import SimpleNamespace as NS
+    from protellect_core.evidence import Claim
+    from protellect_core.views.common import for_focus
+    cl = [Claim(text="ADGRG1: reported to signal through G12/13"), Claim(text="GPR171: reported to signal through Gi/o"), Claim(text="Co-expression: receptors track exhaustion")]
+    a = NS(focus_options=["ADGRG1", "GPR171"], focus="ADGRG1")
+    assert [c.text.split(":")[0] for c in for_focus(a, cl)] == ["ADGRG1", "Co-expression"]
+    a.focus = None
+    assert [c.text.split(":")[0] for c in for_focus(a, cl)] == ["Co-expression"]
+    assert len(for_focus(NS(focus_options=[], focus=None), cl)) == 3
