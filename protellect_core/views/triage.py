@@ -16,6 +16,7 @@ from ..viewer import structure_viewer_html
 from ..motion import normal_modes
 from ..states import compare_states, per_segment, add_state_mode, rotation_into, rotate_comparison
 from .common import render_claims, svg, get_pockets
+from .unknowns_view import render_unknown_variant, render_vus_board
 from .shell import Analysis
 
 CLASSES = ["pathogenic", "likely pathogenic", "conflicting", "uncertain", "likely benign", "benign", "other"]
@@ -121,7 +122,9 @@ def _detail(a: Analysis, v) -> None:
         plot_note("am_residue")
         svg(bars_svg([f"{k}" for k in sorted(cands)], [cands[k]["score"] for k in sorted(cands)], f"AlphaMissense score for each substitution at residue {v.pos}", "above 0.564 = likely pathogenic, below 0.34 = likely benign (Cheng 2023)", fmt="{:.2f}",
                      colors=["#ff2d55" if cands[k]["score"] > 0.564 else "#34d399" if cands[k]["score"] < 0.34 else "#fbbf24" for k in sorted(cands)]))
-    with st.expander("How to work this variant, step by step", expanded=True):
+    if v.significance in ("uncertain", "conflicting", "other"):
+        render_unknown_variant(a, v, "uvd")
+    with st.expander("How to work this variant, step by step", expanded=not (v.significance in ("uncertain", "conflicting", "other"))):
         for i, s in enumerate(variant_plan(v, b), 1):
             st.markdown(f"**{i}. {s['step']}.** {s['do']}  \n_Why:_ {s['basis']}" + (f" [source]({s['url']})" if s["url"].startswith("http") else ""))
 
@@ -175,7 +178,13 @@ def render_triage(a: Analysis, helpers: dict) -> None:
             st.dataframe([{"Residues": f"{h.start}-{h.end}", "Variants": h.count, "Enrichment": f"{h.fold:.1f}x", "Domain": b.domain_at((h.start + h.end) // 2)} for h in sorted(b.hotspots, key=lambda h: -h.fold)], hide_index=True)
         if helpers.get("landscape"):
             with st.expander("Variant landscape plot"):
+                st.caption("Each stem is one ClinVar variant at its position. Height is a severity rank: 'Unknown' is a variant of uncertain significance (VUS), a variant nobody has been able to call. "
+                           "The next section ranks every unknown variant by what the data supports and says how to test each one.")
                 try:
                     st.plotly_chart(helpers["landscape"](), use_container_width=True)
                 except Exception as e:
                     st.caption(f"Plot unavailable: {type(e).__name__}")
+        try:
+            render_vus_board(a)
+        except Exception as e:
+            st.caption(f"The unknown-variant board could not be built: {type(e).__name__}: {e}")

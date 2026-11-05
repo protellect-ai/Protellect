@@ -8,7 +8,22 @@ from ..context import FACTORS
 MODELS = ["", "Human patient tissue", "Primary cells", "Cell line", "Organoid", "Mouse model", "Other"]
 
 
+_PREFILL = {"ctx_disease": "ctx_disease_inp", "ctx_tissue": "ctx_tissue_inp", "ctx_comparison": "ctx_comp_inp"}
+
+
+def apply_upload_metadata(ss) -> None:
+    """Fill empty context fields from metadata columns read out of the uploaded file. Runs before the inputs are created."""
+    pf = ss.pop("_meta_prefill", None)
+    if not pf:
+        return
+    for k, widget_key in _PREFILL.items():
+        if pf.get(k) and not str(ss.get(widget_key, "") or ss.get(k, "") or "").strip():
+            ss[widget_key] = pf[k]
+            ss[k] = pf[k]
+
+
 def render_context_sidebar() -> None:
+    apply_upload_metadata(st.session_state)
     st.markdown("<div class='sb-t'>Microenvironment</div>", unsafe_allow_html=True)
     with st.expander("Tailor the workspace", expanded=False):
         st.caption("Everything you set here re-ranks and flags results in every tab. It never adds a claim that is not in the data.")

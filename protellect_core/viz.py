@@ -210,21 +210,35 @@ def architecture_svg(b: Bundle, selected: Optional[Variant] = None, width: int =
     # domains
     dom_y = base + 36
     palette = ["#38bdf8", "#818cf8", "#2dd4bf", "#c084fc", "#60a5fa"]
-    rows: List[float] = []
+    rows: List[List[tuple]] = []   # per row: occupied (lo, hi) intervals, labels included
     for i, d in enumerate(sorted([d for d in b.domains if d["type"] != "Transmembrane"], key=lambda d: d["start"])[:12]):
+        bs, be = X(d["start"]), max(X(d["start"]) + 4, X(d["end"]))
+        full = f'{d["desc"] or d["type"]} {d["start"]}–{d["end"]}'
+        short = f'{d["desc"] or d["type"]}'
+        # choose how the label is drawn: inside the bar, to its right, or to its left
+        if be - bs > len(full) * 5.6 + 10:
+            lab, mode, ext = full, "in", (bs, be)
+        else:
+            lab = short if len(short) <= 22 else short[:21] + "…"
+            lw = len(lab) * 5.6 + 8
+            if be + lw <= width - 10:
+                mode, ext = "right", (bs, be + lw)
+            else:
+                mode, ext = "left", (bs - lw, be)
         row = 0
-        while row < len(rows) and rows[row] > X(d["start"]) - 4:
+        while row < len(rows) and any(not (ext[1] + 6 < lo or ext[0] - 6 > hi) for lo, hi in rows[row]):
             row += 1
         if row == len(rows):
-            rows.append(0)
-        rows[row] = X(d["end"])
+            rows.append([])
+        rows[row].append(ext)
         y = dom_y + row * 24
-        o.append(f'<rect x="{X(d["start"]):.1f}" y="{y}" width="{max(4, X(d["end"]) - X(d["start"])):.1f}" height="18" rx="5" fill="{palette[i % 5]}" opacity=".8"><title>{E(d["type"])}: {E(d["desc"])} {d["start"]}–{d["end"]}</title></rect>')
-        lab = f'{d["desc"] or d["type"]} {d["start"]}–{d["end"]}'
-        if X(d["end"]) - X(d["start"]) > len(lab) * 5.6:
-            o.append(_t(X(d["start"]) + 5, y + 13, lab, 10, "#020617", 700))
+        o.append(f'<rect x="{bs:.1f}" y="{y}" width="{be - bs:.1f}" height="18" rx="5" fill="{palette[i % 5]}" opacity=".8"><title>{E(d["type"])}: {E(d["desc"])} {d["start"]}–{d["end"]}</title></rect>')
+        if mode == "in":
+            o.append(_t(bs + 5, y + 13, lab, 10, "#020617", 700))
+        elif mode == "right":
+            o.append(_t(be + 5, y + 13, lab, 10, TXT))
         else:
-            o.append(_t(X(d["end"]) + 5, y + 13, lab, 10, TXT))
+            o.append(_t(bs - 5, y + 13, lab, 10, TXT, 400, "end"))
     tm = [d for d in b.domains if d["type"] == "Transmembrane"]
     for d in tm:
         o.append(f'<rect x="{X(d["start"]):.1f}" y="{base + 28}" width="{max(3, X(d["end"]) - X(d["start"])):.1f}" height="5" rx="2" fill="#a78bfa"><title>{E(d["desc"])} {d["start"]}–{d["end"]}</title></rect>')
@@ -268,7 +282,8 @@ def architecture_svg(b: Bundle, selected: Optional[Variant] = None, width: int =
         o.append(f'<line x1="{X(selected.pos):.1f}" y1="100" x2="{X(selected.pos):.1f}" y2="{py + 14}" stroke="#fff" stroke-width="1.4" stroke-dasharray="4 3"/>')
         o.append(f'<rect x="{max(20, min(width - 270, X(selected.pos) - 125)):.1f}" y="98" width="250" height="22" rx="7" fill="#fff"/>')
         o.append(_t(max(20, min(width - 270, X(selected.pos) - 125)) + 125, 113, f"selected: residue {selected.pos} · {selected.significance}", 11.5, "#020617", 700, "middle"))
-    # legend
+    # legend (height follows the number of domain rows so nothing overlaps)
+    H = max(H, int(py + 14 + 44))
     ly = H - 18
     lx = 24
     for lab, col in (("pathogenic", SIG["pathogenic"]), ("likely pathogenic", SIG["likely pathogenic"]), ("VUS", SIG["uncertain"])):
