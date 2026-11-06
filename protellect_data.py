@@ -161,23 +161,44 @@ SIG_LABEL = {
 }
 
 # ── Small helpers the fetchers use ──
-def _gene_to_ensembl(gene_symbol: str) -> str:
-    """Gene symbol -> Ensembl gene ID. Returns "" only when the symbol genuinely has no match; RAISES on network failure."""
-    sym = str(gene_symbol).strip()
+def _ensembl_candidates(sym: str) -> list:
+    """Every Ensembl gene ID the lookups offer for a symbol. A gene with an alternative-locus copy (CHRNA7 is one) returns several, and the FIRST is not
+    always the real one: for CHRNA7 it was ENSG00000274542, an alternative-locus ID that Open Targets has no data for."""
+    out = []
     r = _get("https://mygene.info/v3/query", params={"q": f"symbol:{sym}", "species": "human", "fields": "ensembl.gene,symbol", "size": 5})
     r.raise_for_status()
     for hit in r.json().get("hits", []):
-        if str(hit.get("symbol", "")).upper() == sym.upper():
-            ens = hit.get("ensembl", {})
-            ens = ens[0] if isinstance(ens, list) and ens else ens
-            if isinstance(ens, dict) and ens.get("gene"):
-                return ens["gene"]
-    r2 = _get(f"https://rest.ensembl.org/xrefs/symbol/homo_sapiens/{sym}", params={"content-type": "application/json"})
-    if r2.status_code == 200:
-        for x in r2.json():
-            if str(x.get("type", "")).lower() == "gene" and str(x.get("id", "")).startswith("ENSG"):
-                return x["id"]
-    return ""
+        if str(hit.get("symbol", "")).upper() != sym.upper():
+            continue
+        ens = hit.get("ensembl", {})
+        for e in (ens if isinstance(ens, list) else [ens]):
+            if isinstance(e, dict) and str(e.get("gene", "")).startswith("ENSG") and e["gene"] not in out:
+                out.append(e["gene"])
+    try:
+        r2 = _get(f"https://rest.ensembl.org/xrefs/symbol/homo_sapiens/{sym}", params={"content-type": "application/json"})
+        if r2.status_code == 200:
+            for x in r2.json():
+                if str(x.get("type", "")).lower() == "gene" and str(x.get("id", "")).startswith("ENSG") and x["id"] not in out:
+                    out.append(x["id"])
+    except Exception:  # noqa: BLE001
+        pass
+    return out
+
+
+def _gene_to_ensembl(gene_symbol: str) -> str:
+    """Gene symbol -> Ensembl gene ID that Open Targets recognises. When several IDs exist, each is checked against Open Targets and the one whose
+    approved symbol equals the query wins. Returns "" only when the symbol genuinely has no match; RAISES on network failure."""
+    sym = str(gene_symbol).strip()
+    cands = _ensembl_candidates(sym)
+    if len(cands) <= 1:
+        return cands[0] if cands else ""
+    for c in cands:
+        try:
+            if str((_ot("query($id:String!){target(ensemblId:$id){approvedSymbol}}", {"id": c}) or {}).get("approvedSymbol", "")).upper() == sym.upper():
+                return c
+        except Exception:  # noqa: BLE001
+            continue
+    return cands[0]
 
 def clean_sig(raw):
     """Normalise raw ClinVar significance string."""
@@ -1444,7 +1465,6 @@ _OT_SECTIONS = [
                ("query($id:String!){target(ensemblId:$id){drugAndClinicalCandidates{count rows{maxClinicalStage drug{id name} diseases{disease{id name}}}}}}", _ot_drugs_b)]),
     ("diseases", [("query($id:String!){target(ensemblId:$id){associatedDiseases(page:{index:0,size:15}){rows{disease{id name} score}}}}", _ot_dis),
                   ("query($id:String!){target(ensemblId:$id){associatedDiseases(size:15){rows{disease{id name} score}}}}", _ot_dis)]),
-    ("tissues", [("query($id:String!){target(ensemblId:$id){expressions{tissue{label} rna{value}}}}", _ot_expr)]),
     ("mouse phenotypes", [("query($id:String!){target(ensemblId:$id){mousePhenotypes{modelPhenotypeId modelPhenotypeLabel modelPhenotypeClasses{label} biologicalModels{id}}}}", _ot_mouse),
                           ("query($id:String!){target(ensemblId:$id){mousePhenotypes{modelPhenotypeId modelPhenotypeLabel}}}", _ot_mouse)]),
 ]

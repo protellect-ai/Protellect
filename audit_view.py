@@ -173,6 +173,16 @@ def _run_lit_search(gene: str, disease: str, names: list, key: tuple) -> None:
             records = _pd.fetch_europepmc_records(q, 100) or []
         except Exception as e:   # noqa: BLE001
             errs.append(f"Europe PMC: {str(e)[:160]}")
+        if not records and isinstance(fe, dict) and fe.get("Europe PMC search"):      # the long query failed (a 503 is common): retry once with a short one
+            from ..audit_auto import disease_terms
+            q2 = f'"{gene}" AND ' + " AND ".join(disease_terms(disease) or [disease])
+            fe.pop("Europe PMC search", None)
+            try:
+                records = _pd.fetch_europepmc_records(q2, 100) or []
+                if records:
+                    q = q2 + "   (a shorter query, because the longer one failed)"
+            except Exception as e:   # noqa: BLE001
+                errs.append(f"Europe PMC (short query): {str(e)[:160]}")
         try:
             ot = _pd.fetch_ot_disease_scores(gene, disease) or []
         except Exception as e:   # noqa: BLE001
