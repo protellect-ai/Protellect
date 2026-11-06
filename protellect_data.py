@@ -1013,59 +1013,9 @@ def fetch_gnomad(gene: str) -> dict:
     doesn't show 'unavailable' for famous targets when the live API is throttled."""
     import time as _t
 
-    # ── Curated offline constraint table for famous targets ────────────────
-    # Values from gnomAD v4 (published 2024). Used only when the live API fails.
-    # Not all genes — just well-known targets researchers commonly query.
-    _OFFLINE_CONSTRAINT = {
-        # Tumor suppressors (LoF intolerant)
-        "TP53":  {"pLI": 1.00, "oe_lof_upper": 0.11, "mis_z": 4.50, "syn_z": 0.05},
-        "BRCA1": {"pLI": 1.00, "oe_lof_upper": 0.05, "mis_z": 1.20, "syn_z": 0.10},
-        "BRCA2": {"pLI": 1.00, "oe_lof_upper": 0.04, "mis_z": -0.50, "syn_z": 0.20},
-        "PTEN":  {"pLI": 0.99, "oe_lof_upper": 0.16, "mis_z": 3.20, "syn_z": 0.00},
-        "RB1":   {"pLI": 1.00, "oe_lof_upper": 0.13, "mis_z": 1.80, "syn_z": 0.05},
-        "APC":   {"pLI": 1.00, "oe_lof_upper": 0.06, "mis_z": 1.10, "syn_z": 0.00},
-        "ATM":   {"pLI": 1.00, "oe_lof_upper": 0.10, "mis_z": 0.40, "syn_z": 0.05},
-        "VHL":   {"pLI": 0.95, "oe_lof_upper": 0.31, "mis_z": 2.40, "syn_z": 0.00},
-        "NF1":   {"pLI": 1.00, "oe_lof_upper": 0.04, "mis_z": 2.20, "syn_z": 0.00},
-        "TSC1":  {"pLI": 1.00, "oe_lof_upper": 0.12, "mis_z": 1.60, "syn_z": 0.10},
-        "TSC2":  {"pLI": 1.00, "oe_lof_upper": 0.08, "mis_z": 1.90, "syn_z": 0.00},
-        "MLH1":  {"pLI": 0.99, "oe_lof_upper": 0.22, "mis_z": 0.60, "syn_z": 0.00},
-        "MSH2":  {"pLI": 0.99, "oe_lof_upper": 0.24, "mis_z": 0.30, "syn_z": 0.05},
-        "CDKN2A":{"pLI": 0.05, "oe_lof_upper": 0.85, "mis_z": 0.80, "syn_z": 0.10},
-        # Oncogenes & kinases
-        "EGFR":  {"pLI": 1.00, "oe_lof_upper": 0.10, "mis_z": 3.10, "syn_z": 0.00},
-        "ERBB2": {"pLI": 1.00, "oe_lof_upper": 0.08, "mis_z": 3.40, "syn_z": 0.05},
-        "KRAS":  {"pLI": 0.74, "oe_lof_upper": 0.48, "mis_z": 4.10, "syn_z": 0.00},
-        "MYC":   {"pLI": 0.93, "oe_lof_upper": 0.38, "mis_z": 2.20, "syn_z": 0.00},
-        "PIK3CA":{"pLI": 1.00, "oe_lof_upper": 0.07, "mis_z": 5.20, "syn_z": 0.05},
-        "AKT1":  {"pLI": 0.94, "oe_lof_upper": 0.32, "mis_z": 3.70, "syn_z": 0.10},
-        "MTOR":  {"pLI": 1.00, "oe_lof_upper": 0.04, "mis_z": 5.80, "syn_z": 0.00},
-        "BRAF":  {"pLI": 1.00, "oe_lof_upper": 0.09, "mis_z": 3.30, "syn_z": 0.00},
-        "LRRK2": {"pLI": 1.00, "oe_lof_upper": 0.11, "mis_z": 1.40, "syn_z": 0.00},
-        # Filamins / scaffolds (FLNA on X chromosome)
-        "FLNA":  {"pLI": 1.00, "oe_lof_upper": 0.06, "mis_z": 4.40, "syn_z": 0.10},
-        "FLNB":  {"pLI": 1.00, "oe_lof_upper": 0.10, "mis_z": 3.10, "syn_z": 0.00},
-        "FLNC":  {"pLI": 1.00, "oe_lof_upper": 0.08, "mis_z": 3.20, "syn_z": 0.05},
-        # Receptors / ion channels
-        "GRIN2B":{"pLI": 1.00, "oe_lof_upper": 0.06, "mis_z": 4.90, "syn_z": 0.00},
-        "GRIN2A":{"pLI": 1.00, "oe_lof_upper": 0.04, "mis_z": 4.30, "syn_z": 0.05},
-        "SCN1A": {"pLI": 1.00, "oe_lof_upper": 0.05, "mis_z": 5.40, "syn_z": 0.00},
-        "SCN2A": {"pLI": 1.00, "oe_lof_upper": 0.05, "mis_z": 5.50, "syn_z": 0.00},
-        "CHRM3": {"pLI": 0.86, "oe_lof_upper": 0.39, "mis_z": 2.80, "syn_z": 0.10},
-        "CHRM1": {"pLI": 0.84, "oe_lof_upper": 0.42, "mis_z": 2.40, "syn_z": 0.00},
-        # Cardiac / structural
-        "MYH7":  {"pLI": 0.95, "oe_lof_upper": 0.35, "mis_z": 4.60, "syn_z": 0.05},
-        "TTN":   {"pLI": 0.00, "oe_lof_upper": 0.62, "mis_z": -2.10, "syn_z": 0.00},
-        "DMD":   {"pLI": 1.00, "oe_lof_upper": 0.08, "mis_z": -0.30, "syn_z": 0.00},
-        "LMNA":  {"pLI": 0.86, "oe_lof_upper": 0.38, "mis_z": 1.50, "syn_z": 0.00},
-        # Common Mendelian
-        "CFTR":  {"pLI": 0.00, "oe_lof_upper": 0.51, "mis_z": -0.20, "syn_z": 0.00},
-        "HTT":   {"pLI": 1.00, "oe_lof_upper": 0.06, "mis_z": 1.10, "syn_z": 0.05},
-        "SOD1":  {"pLI": 0.00, "oe_lof_upper": 0.93, "mis_z": 0.10, "syn_z": 0.00},
-        "PARK7": {"pLI": 0.42, "oe_lof_upper": 0.60, "mis_z": 0.50, "syn_z": 0.10},
-        "MECP2": {"pLI": 1.00, "oe_lof_upper": 0.07, "mis_z": 2.90, "syn_z": 0.05},
-        "FMR1":  {"pLI": 1.00, "oe_lof_upper": 0.18, "mis_z": 2.30, "syn_z": 0.00},
-    }
+# The hand-typed offline gnomAD constraint table that used to live here was removed: it had no named source, and a number without a source is not shown.
+# If gnomAD cannot be reached the constraint section is simply reported as unavailable in the data audit.
+
 
     _headers = {"Content-Type":"application/json",
                 "User-Agent":"Mozilla/5.0 (Protellect research tool; +https://protellect.streamlit.app)",
@@ -1104,28 +1054,10 @@ def fetch_gnomad(gene: str) -> dict:
 
     data = {}
     def _offline_fallback(reason):
-        """Last resort: serve curated constraint for known genes if API fully fails."""
-        oc = _OFFLINE_CONSTRAINT.get(gene.upper())
-        if oc is None:
-            try: st.session_state["_gnomad_last_error"] = reason + " · no offline data for this gene"
-            except Exception: pass
-            return {}
-        try: st.session_state["_gnomad_last_error"] = reason + " · using curated offline value"
+        """No substitute numbers: constraint values must come from gnomAD itself. Say why they are missing and return nothing."""
+        try: st.session_state["_gnomad_last_error"] = reason + " (no constraint shown: values are only displayed when they come from gnomAD)"
         except Exception: pass
-        pli = oc["pLI"]
-        return {
-            "pLI": pli, "pLI_available": True,
-            "oe_lof": oc["oe_lof_upper"] * 0.85, "oe_lof_upper": oc["oe_lof_upper"],
-            "oe_lof_lower": max(0.0, oc["oe_lof_upper"] - 0.20),
-            "mis_z": oc["mis_z"], "syn_z": oc["syn_z"], "pRec": 0,
-            "url": f"https://gnomad.broadinstitute.org/gene/{gene}?dataset=gnomad_r4",
-            "intolerant": pli > 0.9,
-            "mis_intolerant": False,
-            "constraint_flag": "offline",
-            "variants": {}, "n_variants_fetched": 0,
-            "source": "offline_curated",
-        }
-
+        return {}
     variants_raw = []
     _fail_reason = ""
     try:
@@ -1471,6 +1403,17 @@ def _ot_expr(t):
     return {"top_tissues": ex}
 
 
+def _ot_mouse(t):
+    rows = []
+    for m in (t.get("mousePhenotypes") or []):
+        if not isinstance(m, dict) or not m.get("modelPhenotypeLabel"):
+            continue
+        rows.append({"label": str(m.get("modelPhenotypeLabel")), "id": str(m.get("modelPhenotypeId") or ""),
+                     "classes": [str(c.get("label")) for c in (m.get("modelPhenotypeClasses") or []) if isinstance(c, dict) and c.get("label")],
+                     "models": len(m.get("biologicalModels") or [])})
+    return {"mouse_phenotypes": rows}
+
+
 _OT_SECTIONS = [
     ("tractability", [("query($id:String!){target(ensemblId:$id){tractability{label modality value}}}", lambda t: {"tractability": _ot_tract(t)})]),
     ("drugs", [("query($id:String!){target(ensemblId:$id){knownDrugs(size:25){count rows{drug{id name} phase mechanismOfAction disease{id name}}}}}", _ot_drugs_a),
@@ -1478,6 +1421,8 @@ _OT_SECTIONS = [
     ("diseases", [("query($id:String!){target(ensemblId:$id){associatedDiseases(page:{index:0,size:15}){rows{disease{id name} score}}}}", _ot_dis),
                   ("query($id:String!){target(ensemblId:$id){associatedDiseases(size:15){rows{disease{id name} score}}}}", _ot_dis)]),
     ("tissues", [("query($id:String!){target(ensemblId:$id){expressions{tissue{label} rna{value}}}}", _ot_expr)]),
+    ("mouse phenotypes", [("query($id:String!){target(ensemblId:$id){mousePhenotypes{modelPhenotypeId modelPhenotypeLabel modelPhenotypeClasses{label} biologicalModels{id}}}}", _ot_mouse),
+                          ("query($id:String!){target(ensemblId:$id){mousePhenotypes{modelPhenotypeId modelPhenotypeLabel}}}", _ot_mouse)]),
 ]
 
 
@@ -1488,7 +1433,7 @@ def fetch_opentargets(gene_symbol: str) -> dict:
     eid = _gene_to_ensembl(gene_symbol)
     if not eid:
         return {}
-    out = {"ensembl_id": eid, "tractability": {}, "known_drugs": [], "disease_associations": [], "top_tissues": [], "drug_count": 0,
+    out = {"ensembl_id": eid, "tractability": {}, "known_drugs": [], "disease_associations": [], "top_tissues": [], "mouse_phenotypes": [], "drug_count": 0,
            "url": f"https://platform.opentargets.org/target/{eid}"}
     errors, ok = {}, 0
     for section, variants in _OT_SECTIONS:
@@ -1508,6 +1453,80 @@ def fetch_opentargets(gene_symbol: str) -> dict:
     if errors:
         out["_errors"] = errors
     return out
+
+@_resilient("Europe PMC search", [], 3600)
+def fetch_europepmc_records(query: str, n: int = 100) -> list:
+    """Europe PMC search with abstracts (resultType=core). Returns [{pmid,title,abstract,year,journal,pubtypes,url}]. Raises on network failure (so a failure is never cached)."""
+    import re as _re
+    r = _get("https://www.ebi.ac.uk/europepmc/webservices/rest/search",
+             params={"query": query, "format": "json", "resultType": "core", "pageSize": min(int(n), 100), "sort": "RELEVANCE"}, timeout=25)
+    r.raise_for_status()
+    out = []
+    for x in ((r.json().get("resultList") or {}).get("result") or []):
+        title = _re.sub(r"<[^>]+>", "", str(x.get("title") or "")).strip()
+        if not title:
+            continue
+        pmid, doi = str(x.get("pmid") or ""), str(x.get("doi") or "")
+        url = f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/" if pmid else (f"https://doi.org/{doi}" if doi else f"https://europepmc.org/article/{x.get('source', 'MED')}/{x.get('id', '')}")
+        pts = [str(t) for t in (((x.get("pubTypeList") or {}).get("pubType")) or [])]
+        out.append({"pmid": pmid, "title": title, "abstract": _re.sub(r"<[^>]+>", " ", str(x.get("abstractText") or ""))[:2500], "year": str(x.get("pubYear") or ""),
+                    "journal": str(x.get("journalTitle") or ""), "pubtypes": pts, "url": url})
+    return out
+
+
+@_resilient("Open Targets disease evidence", [], 3600)
+def fetch_ot_disease_scores(gene: str, term: str) -> list:
+    """Open Targets association of one gene with diseases whose name matches `term`, with the score for EACH data type (genetic_association, animal_model,
+    literature, known_drug, ...). Returns [{disease,id,score,datatypes:{type:score}}]. Raises on failure."""
+    eid = _gene_to_ensembl(gene)
+    if not eid:
+        return []
+    rows, last = None, ""
+    for q, client_filter in (
+        ("query($id:String!,$q:String!){target(ensemblId:$id){associatedDiseases(BFilter:$q,page:{index:0,size:25}){rows{disease{id name} score datatypeScores{id score}}}}}", False),
+        ("query($id:String!){target(ensemblId:$id){associatedDiseases(page:{index:0,size:500}){rows{disease{id name} score datatypeScores{id score}}}}}", True),
+    ):
+        try:
+            t = _ot(q, {"id": eid, "q": term} if not client_filter else {"id": eid})
+            rows = ((t.get("associatedDiseases") or {}).get("rows")) or []
+            if client_filter:
+                terms = [w for w in str(term).lower().replace("-", " ").split() if len(w) >= 3]
+                rows = [r for r in rows if any(w in str((r.get("disease") or {}).get("name", "")).lower() for w in terms)]
+            break
+        except Exception as e:  # noqa: BLE001
+            last = str(e)[:200]
+    if rows is None:
+        raise RuntimeError("Open Targets disease evidence: " + last)
+    out = [{"disease": str((r.get("disease") or {}).get("name", "")), "id": str((r.get("disease") or {}).get("id", "")), "score": float(r.get("score") or 0),
+            "datatypes": {str(d.get("id")): float(d.get("score") or 0) for d in (r.get("datatypeScores") or []) if isinstance(d, dict)}} for r in rows]
+    return sorted(out, key=lambda r: -r["score"])[:10]
+
+
+@_resilient("UniProt GPCR sequences", {}, 7 * 86400)
+def fetch_gpcr_sequences() -> dict:
+    """All reviewed human GPCRs from UniProt (keyword KW-0297): {gene: {"seq": str, "tms": [(start, end), ...]}}. Used by the sequence-based coupling classifier."""
+    import re as _re
+    r = _get("https://rest.uniprot.org/uniprotkb/stream",
+             params={"query": "(keyword:KW-0297) AND (reviewed:true) AND (organism_id:9606)", "fields": "gene_primary,sequence,ft_transmem", "format": "tsv"}, timeout=90)
+    r.raise_for_status()
+    lines = r.text.splitlines()
+    if len(lines) < 2:
+        raise RuntimeError("UniProt returned no GPCR rows")
+    head = [h.strip().lower() for h in lines[0].split("\t")]
+    gi = next(i for i, h in enumerate(head) if h.startswith("gene"))
+    si = next(i for i, h in enumerate(head) if h.startswith("sequence"))
+    ti = next(i for i, h in enumerate(head) if h.startswith("transmembrane"))
+    out = {}
+    for ln in lines[1:]:
+        c = ln.split("\t")
+        if len(c) <= max(gi, si, ti) or not c[gi].strip():
+            continue
+        tms = [(int(a), int(b)) for a, b in _re.findall(r"TRANSMEM\s+(\d+)\.\.(\d+)", c[ti])]
+        out[c[gi].strip().upper()] = {"seq": c[si].strip(), "tms": tms}
+    if not out:
+        raise RuntimeError("UniProt GPCR table could not be parsed")
+    return out
+
 
 @_resilient("UniProt isoforms", [], 86400)
 def fetch_isoforms(uniprot_id: str) -> list:
