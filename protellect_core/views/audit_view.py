@@ -74,6 +74,11 @@ def _card(au) -> None:
         st.markdown(f"**Cheapest experiment to separate real from false:** {au.cheapest_test}")
 
 
+def _ex_sums() -> set:
+    from ..audit_report import example_summaries
+    return example_summaries()
+
+
 def _fill_example() -> None:
     st.session_state["any_gene"] = "CHRNA7"
     st.session_state["any_disease"] = "chronic neuropathic pain"
@@ -132,7 +137,7 @@ def render_any_target(expanded: bool = False, bundle=None) -> None:
             st.caption("Click the search button to compare mouse and cell evidence with human genetic evidence. It queries Europe PMC and Open Targets when you click.")
         if au.lines:
             origin = {id(l): "retrieved by the app" for l in auto}
-            st.dataframe([{"Origin": origin.get(id(l), "you entered"), "Kind": l.kind, "Direction": l.direction, "Strength": l.strength, "What it shows": l.summary, "Source": l.source}
+            st.dataframe([{"Origin": origin.get(id(l)) or ("built-in worked example (not entered by you)" if l.summary in _ex_sums() else "you entered"), "Kind": l.kind, "Direction": l.direction, "Strength": l.strength, "What it shows": l.summary, "Source": l.source}
                           for l in au.lines], hide_index=True, use_container_width=True)
         if auto and not mine:
             st.caption("Only retrieved database lines are in this audit. Add pharmacology or literature findings above, each with a named source, to see how they change the tier.")

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import List
 
-from .audit import verdict
+from .audit import EXAMPLE_A7_CSV, lines_from_csv, verdict
 from .audit_auto import CHECKPOINTS, DISCLAIMERS, cross_check_rows
 from .literature import LEVELS, OT_MODERATE, OT_WEAK, best_ot_row, classify, comparison, gap_statement
 from .xlsx_kit import FILLS, TIER_FILL, Book
@@ -18,6 +18,22 @@ TIER_RULES = ("Strong: 3 or more separate studies, 2 or more kinds of evidence, 
               "Weak: one study, or expression or literature mentions alone. Contradicted: a strong line against and at most one supporting study. "
               "Unchecked: no lines. Studies are counted by study ID; the tool cannot tell whether two are from the same group.")
 GROUP = "Evidence audit: how well supported is the target-disease link"
+
+
+def example_summaries() -> set:
+    try:
+        return {l.summary for l in lines_from_csv(EXAMPLE_A7_CSV)}
+    except Exception:   # noqa: BLE001
+        return set()
+
+
+EXAMPLE_ORIGIN = "built-in worked example (written by Protellect from papers; you did not enter it)"
+
+
+def origin_of(l, auto_ids, ex) -> str:
+    if id(l) in auto_ids:
+        return "retrieved by the app"
+    return EXAMPLE_ORIGIN if l.summary in ex else "you entered"
 
 
 def add_audit_sheets(book: Book, au, auto_lines: List, bundle=None, lit=None, question: str = "") -> None:
@@ -34,7 +50,7 @@ def add_audit_sheets(book: Book, au, auto_lines: List, bundle=None, lit=None, qu
         ("Evidence tier", au.tier, "A statement about the evidence entered, not a probability that a drug will work."),
         ("Verdict", f"{v['headline']} {v['body']}", "Built from the tier, the counts and the flags by a fixed template. It does not read the question."),
         ("Cheapest next step", v["next_step"], ""),
-        ("Evidence lines", len(au.lines), f"{n_auto} retrieved by the app, {len(au.lines) - n_auto} entered by a person"),
+        ("Evidence lines", len(au.lines), f"{n_auto} retrieved by the app, {sum(1 for l in au.lines if id(l) not in auto_ids and l.summary in example_summaries())} from the built-in worked example, {sum(1 for l in au.lines if id(l) not in auto_ids and l.summary not in example_summaries())} entered by a person"),
         ("  supporting / against", f"{n_sup} / {n_ag}", "The remainder are neutral."),
         ("  separate studies", studies, "Counted by study ID."),
         ("Red flags raised", len(au.flags), "See the Audit red flags sheet."),
@@ -46,10 +62,10 @@ def add_audit_sheets(book: Book, au, auto_lines: List, bundle=None, lit=None, qu
             rows, widths=(26, 100, 62), fills={3: au.tier if au.tier in TIER_FILL else "none"}, group=GROUP, what="Question, tier, verdict, next step and the tier rules.")
 
     book.table("Audit evidence", "Every evidence line behind the tier",
-               "Origin says whether the app retrieved the line from a database or a person entered it. A retrieved line counts as support only if its retrieved text mentions the disease. Strength and tags on entered lines are human judgment.",
+               "Origin says whether the app retrieved the line from a database, it came from the built-in worked example (the 'Load a worked example' button fills those in), or a person entered it. Clear the 'Evidence lines you add' box in the app to remove example lines. A retrieved line counts as support only if its retrieved text mentions the disease. Strength and tags on entered lines are human judgment.",
                ["Origin", "Kind", "Direction", "Strength", "What it shows", "Source", "Link", "Study ID", "Tags"],
-               [["retrieved by the app" if id(l) in auto_ids else "you entered", l.kind, l.direction, l.strength, l.summary, l.source, l.url, l.study_id or l.source, "; ".join(l.tags)] for l in au.lines],
-               widths=[18, 13, 12, 11, 80, 48, 42, 26, 26], link_cols=[6], fill_col=2,
+               [[origin_of(l, auto_ids, example_summaries()), l.kind, l.direction, l.strength, l.summary, l.source, l.url, l.study_id or l.source, "; ".join(l.tags)] for l in au.lines],
+               widths=[34, 13, 12, 11, 80, 48, 42, 26, 26], link_cols=[6], fill_col=2,
                fill_map={"supports": FILLS["good"], "against": FILLS["bad"], "neutral": FILLS["none"]},
                empty="No evidence lines were entered or retrieved, so the tier is Unchecked.", group=GROUP, what="One row per line of evidence, with its source and link.")
 
