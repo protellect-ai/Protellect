@@ -79,6 +79,11 @@ def _ex_sums() -> set:
     return example_summaries()
 
 
+def _clear_example() -> None:
+    st.session_state["any_csv_text"] = ""
+    st.session_state.pop("any_csv_up", None)
+
+
 def _fill_example() -> None:
     st.session_state["any_gene"] = "CHRNA7"
     st.session_state["any_disease"] = "chronic neuropathic pain"
@@ -96,7 +101,9 @@ def render_any_target(expanded: bool = False, bundle=None) -> None:
         st.caption("Two kinds of evidence lines go in. (1) Lines the app builds from data it already retrieved for the protein you searched (ClinVar, UniProt, mouse knockouts, gnomAD), "
                    "each marked as retrieved. A retrieved line only counts as support if its text mentions your disease (a keyword match). (2) Lines you paste, each with a named source. "
                    "The audit does not search the literature, cannot tell whether two studies come from the same group, and the tier is not a chance of success.")
-        st.button("Load a worked example (alpha7 nicotinic receptor and chronic neuropathic pain)", on_click=_fill_example, key="any_example")
+        b1, b2 = st.columns(2)
+        b1.button("Load a worked example (alpha7 nicotinic receptor and chronic neuropathic pain)", on_click=_fill_example, key="any_example")
+        b2.button("Clear all evidence lines (audit only what the app retrieves)", on_click=_clear_example, key="any_clear")
         c1, c2 = st.columns(2)
         gene = c1.text_input("Gene symbol", key="any_gene", placeholder="e.g. CHRNA7")
         disease = c2.text_input("Disease or condition", key="any_disease", placeholder="e.g. chronic neuropathic pain")
@@ -126,6 +133,12 @@ def render_any_target(expanded: bool = False, bundle=None) -> None:
         if lit:
             comp = comparison(lit["records"])
             lit_lines = lines_from_literature(gene.strip(), (disease or "").strip(), comp, lit["ot"], len(lit["records"]))
+        if (text or "").strip():
+            from ..audit_report import example_summaries
+            n_ex = sum(1 for l in mine if l.summary in example_summaries())
+            if n_ex:
+                st.warning(f"{n_ex} built-in worked-example line(s) are in the evidence box. They were written by Protellect, not retrieved or entered by you, and they raise the tier. "
+                           "Press 'Clear all evidence lines' to audit only what the app retrieves.")
         auto = auto + lit_lines
         au = audit_target(gene.strip(), (disease or "").strip(), auto + mine)
         question = (st.session_state.get("research_question") or "").strip()

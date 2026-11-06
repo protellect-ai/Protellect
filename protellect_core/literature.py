@@ -100,13 +100,13 @@ def lines_from_literature(gene: str, disease: str, comp: Dict[str, dict], ot_row
     if n_pre:
         out.append(EvidenceLine(gene=gene, disease=d, kind="literature", direction="supports", strength="weak",
                                 summary=f"{comp['animal']['n']} mouse/rat and {comp['cell']['n']} cell-based records among {n_records} retrieved mention the gene and '{d}' (keyword classification of abstracts; a mention is not a finding, and direction was not judged)",
-                                source="Europe PMC search (retrieved by the app)", url="", study_id="Europe PMC preclinical records",
+                                source="Literature search, Europe PMC or PubMed (retrieved by the app)", url="", study_id="Literature keyword search",
                                 tags=[] if human else ["no_human_evidence"]))
     h = comp["human_clinical"]["n"] + comp["human_genetic"]["n"]
     if h:
         out.append(EvidenceLine(gene=gene, disease=d, kind="literature", direction="supports", strength="weak",
                                 summary=f"{comp['human_genetic']['n']} human-genetics and {comp['human_clinical']['n']} human-clinical records among {n_records} retrieved mention the gene and '{d}' (keyword classification; a mention is not a finding, and direction was not judged)",
-                                source="Europe PMC search (retrieved by the app)", url="", study_id="Europe PMC human records"))
+                                source="Literature search, Europe PMC or PubMed (retrieved by the app)", url="", study_id="Literature keyword search"))
     return out
 
 
