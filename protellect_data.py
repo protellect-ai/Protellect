@@ -661,12 +661,22 @@ def fetch_clinvar(gene, max_v=150):
                         raw_traits = ts
                     else:
                         raw_traits = []
+                    # The current ClinVar summary keeps the disease names INSIDE the classification block
+                    # (germline_classification.trait_set, a list of {trait_name, trait_xrefs}); older replies put
+                    # trait_set at the top level. Reading only the top level left every condition blank.
+                    for blk in (gc, cs, e.get("somatic_clinical_impact") or {}, e.get("oncogenicity_classification") or {}):
+                        bts = blk.get("trait_set") if isinstance(blk, dict) else None
+                        if isinstance(bts, dict):
+                            bts = bts.get("trait", []) or []
+                        if isinstance(bts, list):
+                            raw_traits = list(raw_traits) + bts
                     for t in raw_traits:
                         if isinstance(t, dict):
                             tn = t.get("trait_name","") or t.get("name","")
                             if tn: trait_list.append(str(tn))
                         elif isinstance(t, str) and t.strip():
                             trait_list.append(t.strip())
+                    trait_list = list(dict.fromkeys(x for x in trait_list if x and x.lower() not in ("not provided", "not specified")))
                     # Also try condition_list
                     for cl in (e.get("condition_list") or []):
                         if isinstance(cl, dict):
@@ -689,15 +699,10 @@ def fetch_clinvar(gene, max_v=150):
                     pm = _re.search(r"p\.([A-Za-z]{1,3})(\d+)", str(var_name))
                     if pm: prot_pos = pm.group(2)
                     if not prot_pos:
-                        cm = _re.search(r"c\.(\d+)", str(var_name))
+                        # coding position only when it is a plain exonic c.N (not intronic c.N+2 / c.N-18, not a range)
+                        cm = _re.search(r"c\.(\d+)(?![\d+\-_*])", str(var_name))
                         if cm: prot_pos = str(int(cm.group(1))//3 + 1)
-
-                    # ── Position from location_list ───────────────────────────────
-                    if not prot_pos:
-                        for loc in (e.get("location_list") or []):
-                            if isinstance(loc, dict):
-                                start = loc.get("assembly_start") or loc.get("start")
-                                if start: prot_pos = str(start); break
+                    # A genomic coordinate (assembly_start) is NOT a protein position and is no longer used as one.
 
                     # ── Origin / germline / somatic ───────────────────────────────
                     origin_raw = e.get("origin") or e.get("allele_origin") or {}
@@ -718,8 +723,27 @@ def fetch_clinvar(gene, max_v=150):
                             mol_cons = mc.get("molecular_consequence","")
                             if mol_cons: break
 
+                    vtype = ""
+                    for vs in vset:
+                        if isinstance(vs, dict) and vs.get("variant_type"):
+                            vtype = str(vs.get("variant_type")); break
+                    vtype = vtype or str(e.get("obj_type", "") or "")
+                    cdna = ""
+                    for vs in vset:
+                        if isinstance(vs, dict) and vs.get("cdna_change"):
+                            cdna = str(vs.get("cdna_change")); break
+                    genes_l = [str(g_.get("symbol", "")) for g_ in (e.get("genes") or []) if isinstance(g_, dict) and g_.get("symbol")]
+                    pchg = str(e.get("protein_change", "") or "")
+                    if not pchg:
+                        pm2 = _re.search(r"\((p\.[^)]+)\)", str(var_name))
+                        pchg = pm2.group(1) if pm2 else ""
+
                     variants.append({
                         "uid": uid,
+                        "variant_type": vtype,
+                        "cdna_change": cdna,
+                        "protein_change": pchg,
+                        "genes": genes_l,
                         "title": e.get("title",""),
                         "variant_name": var_name,
                         "sig": sig,
