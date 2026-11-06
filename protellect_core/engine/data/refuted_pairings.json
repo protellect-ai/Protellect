@@ -1,0 +1,11 @@
+{
+  "_comment": "Ligand pairings that were refuted, contested or never replicated. The critic uses these as grounded counter-arguments. SEED ONLY: each entry must be verified against primary literature before use.",
+  "pairings": [
+    {"gene": "GPR151", "ligand_class": "peptide", "ligand": "galanin", "status": "refuted",
+     "note": "Proposed in 2004; a later study did not replicate it.", "source": "seed-unverified (Ignatov 2004; Foster 2019)"},
+    {"gene": "GPR35", "ligand_class": "organic acid", "ligand": "kynurenic acid", "status": "contested",
+     "note": "Species selectivity and physiological-concentration disputes.", "source": "seed-unverified"},
+    {"gene": "GPR6", "ligand_class": "lipid mediator", "ligand": "sphingosine 1-phosphate", "status": "unreplicated",
+     "note": "Single-study proposal that was not broadly replicated.", "source": "seed-unverified (Uhlenbrock 2002)"}
+  ]
+}
