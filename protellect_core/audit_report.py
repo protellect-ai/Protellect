@@ -38,28 +38,33 @@ def origin_of(l, auto_ids, ex) -> str:
 
 def add_audit_sheets(book: Book, au, auto_lines: List, bundle=None, lit=None, question: str = "") -> None:
     v = verdict(au, question)
+    no_disease = not (au.disease or "").strip()
+    if no_disease:
+        v = dict(v, headline="Audit not run: no disease was entered.",
+                 body="The app needs a disease to test the link against, so every retrieved line is neutral and no tier or red flag can be given. This is not a finding about the target. Use the other sheets for the target profile.",
+                 next_step="Enter a disease in Overview > Check any target and download again.")
     auto_ids = {id(l) for l in auto_lines}
     n_auto = sum(1 for l in au.lines if id(l) in auto_ids)
     n_sup = sum(1 for l in au.lines if l.direction == "supports")
     n_ag = sum(1 for l in au.lines if l.direction == "against")
-    studies = len({(l.study_id or l.source) for l in au.lines})
+    studies = len({(l.study_id or l.source) for l in au.lines if l.direction == "supports"})
     rows = [
         ("Question", v["question"], "Typed in the Research Goal box, or the default if none was typed."),
         ("Gene", au.gene, ""),
         ("Disease or condition", au.disease or "(none entered)", ""),
-        ("Evidence tier", au.tier, "A statement about the evidence entered, not a probability that a drug will work."),
+        ("Evidence tier", "Not run (no disease entered)" if no_disease else au.tier, "A statement about the evidence entered, not a probability that a drug will work." if not no_disease else "No disease to test against, so no tier is given. Not a finding about the target."),
         ("Verdict", f"{v['headline']} {v['body']}", "Built from the tier, the counts and the flags by a fixed template. It does not read the question."),
         ("Cheapest next step", v["next_step"], ""),
         ("Evidence lines", len(au.lines), f"{n_auto} retrieved by the app, {sum(1 for l in au.lines if id(l) not in auto_ids and l.summary in example_summaries())} from the built-in worked example, {sum(1 for l in au.lines if id(l) not in auto_ids and l.summary not in example_summaries())} entered by a person"),
         ("  supporting / against", f"{n_sup} / {n_ag}", "The remainder are neutral."),
-        ("  separate studies", studies, "Counted by study ID."),
-        ("Red flags raised", len(au.flags), "See the Audit red flags sheet."),
+        ("  separate supporting studies", studies, "Counted by study ID, supporting lines only (matches the verdict)."),
+        ("Red flags raised", "not run" if no_disease else len(au.flags), "See the Audit red flags sheet."),
         ("Caveat", v["caveat"], ""),
         ("Tier rules", TIER_RULES, "These rules are design choices. They have been tested for software correctness only, not against drug-development outcomes."),
     ]
     book.kv("Audit summary", f"Evidence audit: {au.gene}" + (f" and {au.disease}" if au.disease else ""),
             "How well supported the link is, and what to check next. Early tool, not validated: it rates the evidence you and the app supplied; it does not look for evidence it was not given.",
-            rows, widths=(26, 100, 62), fills={3: au.tier if au.tier in TIER_FILL else "none"}, group=GROUP, what="Question, tier, verdict, next step and the tier rules.")
+            rows, widths=(26, 100, 62), fills={3: "none" if no_disease else (au.tier if au.tier in TIER_FILL else "none")}, group=GROUP, what="Question, tier, verdict, next step and the tier rules.")
 
     book.table("Audit evidence", "Every evidence line behind the tier",
                "Origin says whether the app retrieved the line from a database, it came from the built-in worked example (the 'Load a worked example' button fills those in), or a person entered it. Clear the 'Evidence lines you add' box in the app to remove example lines. A retrieved line counts as support only if its retrieved text mentions the disease. Strength and tags on entered lines are human judgment.",
@@ -73,7 +78,8 @@ def add_audit_sheets(book: Book, au, auto_lines: List, bundle=None, lit=None, qu
                "A flag is a reason for caution found by a written rule. It is not proof that the link is wrong.",
                ["Flag", "Why it matters", "Cheapest check"],
                [[f["flag"].replace("_", " "), f["why"], f["test"]] for f in au.flags], widths=[26, 80, 80],
-               empty="No red flag rule fired for the lines entered. That does not mean none apply: the rules only see what was entered.", group=GROUP, what="Reasons for caution and the cheapest way to resolve each.")
+               empty=("Not run: no disease was entered, so no line counts as support and the rules have nothing to check. Enter a disease and download again." if no_disease else
+                      "No red flag rule fired for the lines entered. That does not mean none apply: the rules only see what was entered."), group=GROUP, what="Reasons for caution and the cheapest way to resolve each.")
 
     if not lit:
         book.table("Lit vs genetics", "Cell and animal evidence against human evidence",

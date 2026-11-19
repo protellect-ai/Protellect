@@ -89,10 +89,24 @@ def protein_xlsx(b: Bundle, *, gi: Optional[Mapping] = None, raw: Optional[Mappi
             rows.append(("Variant-burden label", f"{gi.get('verdict')} / {str(gi.get('pursue', '')).upper()}", note))
     fills = {}
     if au is not None:
-        rows.insert(1, ("Evidence tier (audit)", f"{au.tier} for {au.disease or 'no disease entered'}", "See the Audit sheets: a statement about the evidence, not a probability"))
-        fills[1] = au.tier
+        if (au.disease or "").strip():
+            rows.insert(1, ("Evidence tier (audit)", f"{au.tier} for {au.disease}", "See the Audit sheets: a statement about the evidence, not a probability"))
+            fills[1] = au.tier
+        else:
+            rows.insert(1, ("Evidence tier (audit)", "Not run (no disease entered)", "No disease to test the link against, so no tier is given. This is not a finding about the target."))
+            fills[1] = "none"
     book.kv("Summary", f"{b.gene}: summary", "One row per fact, with where it came from. 'Not retrieved' means the source returned nothing: that is different from 'none exists'.",
             rows, widths=(46, 40, 90), fills=fills, group=G_OVER, what="Key facts about the protein and counts from every source.")
+
+    cmp_name = str((raw or {}).get("cmpd_name") or "").strip()
+    if cmp_name:
+        book.kv("Compound context", f"Compound context: {cmp_name} and {b.gene}",
+                "Entered by you in the left panel. Protellect did not look this up or check it: it only records what you typed so the report shows why this target was chosen.",
+                [("Compound", cmp_name, "Entered by you"),
+                 ("Target in this report", b.gene, "Your search"),
+                 ("How the compound relates to this target", str((raw or {}).get("cmpd_relation") or "(not given)"), "Entered by you"),
+                 ("Source for that link", str((raw or {}).get("cmpd_source") or "(not given)"), "Entered by you. Check it before relying on it")],
+                widths=(40, 80, 60), group=G_OVER, what="The compound you entered and the source you gave for its link to this target.")
 
     if audit:
         from .audit_report import add_audit_sheets
