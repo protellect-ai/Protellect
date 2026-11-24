@@ -80,7 +80,7 @@ def lines_from_bundle(b, disease: str) -> List[EvidenceLine]:
 
     papers = [p for p in (getattr(b, "papers", []) or []) if d and matches(d, " ".join(str(p.get(k, "")) for k in ("title", "abstract", "text", "summary")))]
     if papers:
-        add("literature", "supports", "weak", f"{len(papers)} retrieved literature record(s) mention '{d}' (a mention is not evidence of a causal link)", "Literature records retrieved by the app")
+        add("literature", "supports", "weak", f"{len(papers)} retrieved literature record(s) mention '{d}' (a mention is not evidence of a causal link)", "Literature records retrieved by the app", sid="Literature keyword search")
 
     tr = getattr(b, "tractability", {}) or {}
     if tr:
